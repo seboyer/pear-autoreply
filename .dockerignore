@@ -1,0 +1,27 @@
+.git
+.github
+.venv
+venv
+.env
+.env.*
+!.env.example
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+
+# Don't ship the planning artefacts or training data into the image
+PLAN.md
+FALLBACK_TEMPLATE.md
+*.mbox
+fixtures/
+legacy/
+
+# Don't ship Caddy state or compose overrides
+caddy_data/
+caddy_config/
+docker-compose.override.yml
+logs/

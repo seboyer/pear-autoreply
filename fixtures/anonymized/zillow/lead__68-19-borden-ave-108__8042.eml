@@ -1,0 +1,249 @@
+X-GM-THRID: 1858834878320061911
+X-Gmail-Labels: Inbox,Important,Category Personal,Autoreply
+Delivered-To: garland@pearnyc.com
+Received: by 2002:a05:6022:3206:b0:f1:a751:41e5 with SMTP id bi6csp833159lab;
+        Thu, 5 Mar 2026 07:49:43 -0800 (PST)
+X-Received: by 2002:ac8:5d04:0:b0:4f1:ccdd:ffde with SMTP id
+ d75a77b69052e-508db2910bcmr88315801cf.21.1772725783186;
+        Thu, 05 Mar 2026 07:49:43 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1772725783; cv=none;
+        d=google.com; s=arc-20240605;
+        b=N10kCTkwxkNuV+SDoBn4alzZrBTPccJo6T/m8tgysUF1KU9dJy2w0Xn98TcBROoSXA
+         pBBlroDm4QSgkTUu5JS714cQfyVXloc9WqCb4jUdaT+6TvMA3OrHDNj4spsvEzAOnrbW
+         y5GGZn7ZzTLQPlVZUjQ5+88qSJNxSs/xwgG2Jlipf1uwLMfmyojDVQMPVL19/oD0xASh
+         UJUK2A8SLdGFfqhhkSkEuN05gi7dHU2vj1/9zRlA+oGdgX1023PRdj2FURriT/YuPYSz
+         NZC04+ri64fyK9wT0GfLxAI6uVO6aVUJ0egC8CCa3WUJs8NTtLhNA7CKMgsYm3SBebVb
+         PDGw==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com;
+ s=arc-20240605;
+        h=feedback-id:mime-version:subject:message-id:to:reply-to:from:date
+         :dkim-signature:dkim-signature;
+        bh=3URsVMpf5fbVAgmm0mmLKnjvBGi9P90bDGJadg5Jbeg=;
+        fh=pdhPv3sNFAAfc/pLrjwYy5413teDgUKLIMV8s2bwE7Q=;
+        b=KaNgo4VIKKaidFK5rgrBTRISnry1yYgDenQxgwRnA2htSbQWUAWDf2K/bAkU2p3nLz
+         CIyVYLJos2BGQJDihLqheeYUBPriTspRJ3/ENHp9+jtnnqn8YWy4deNZPGA6T99tO4wz
+         5De1v1BQAFkfI3XWEnKMU48LbIliQShQ/cYKxUI47mWWBhYMDoQHN2ZoJvn3KZ2YdvDZ
+         A67F833JbkLkMIH/EegEFsqUUb7tereNL3xzcSlnfv99b+25CL/st0JN29epeHUKKd4V
+         s07EDjOtjO8OqAYIE2/jKnJsahHUkCpLA5wAWUiGgChV756vPZVs0z4NaRJ40bykff+X
+         IKqA==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@amazonses.com
+ header.s=6gbrjpgwjskckoa6a5zn6fwqkn67xbtw header.b=OKHoCP4z;
+       dkim=pass header.i=@zillowrentals.com header.s=zrnleads
+ header.b=iBEjX+ya;
+       spf=pass (google.com: domain of
+ 0100019cbeb0c829-23ff0b02-ac9d-42b5-abf5-4eb78bba0742-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender)
+ smtp.mailfrom=0100019cbeb0c829-23ff0b02-ac9d-42b5-abf5-4eb78bba0742-000000@amazonses.com
+Return-Path: 
+ <0100019cbeb0c829-23ff0b02-ac9d-42b5-abf5-4eb78bba0742-000000@amazonses.com>
+Received: from a48-83.smtp-out.amazonses.com (a48-83.smtp-out.amazonses.com.
+ [54.240.48.83])
+        by mx.google.com with ESMTPS id
+ d75a77b69052e-50744fa263asi281687981cf.34.2026.03.05.07.49.42
+        for <garland@pearnyc.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Thu, 05 Mar 2026 07:49:43 -0800 (PST)
+Received-SPF: pass (google.com: domain of
+ 0100019cbeb0c829-23ff0b02-ac9d-42b5-abf5-4eb78bba0742-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender) client-ip=54.240.48.83;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@amazonses.com
+ header.s=6gbrjpgwjskckoa6a5zn6fwqkn67xbtw header.b=OKHoCP4z;
+       dkim=pass header.i=@zillowrentals.com header.s=zrnleads
+ header.b=iBEjX+ya;
+       spf=pass (google.com: domain of
+ 0100019cbeb0c829-23ff0b02-ac9d-42b5-abf5-4eb78bba0742-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender)
+ smtp.mailfrom=0100019cbeb0c829-23ff0b02-ac9d-42b5-abf5-4eb78bba0742-000000@amazonses.com
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=6gbrjpgwjskckoa6a5zn6fwqkn67xbtw; d=amazonses.com; t=1772725782;
+	h=Date:From:Reply-To:To:Message-ID:Subject:MIME-Version:Content-Type:Feedback-ID;
+	bh=TUa2rv5kmeS9UP2BmSgIkwuypMUy3a1yeEALOaRV+xQ=;
+	b=OKHoCP4z+D6/K4w114yU5EJPs5s666nyjAFMkztwqCF8oyASUJMd5H9Y36kMejRJ
+	5c89ZHjWQ4D8cA8tTDJcXzKLqDgBQEw3556WxvVI1qC7Y/Dw+sl76f7z8T9m0ZSVJm/
+	3DZav61EEwnBSrdijbds1/Hv47exgdZMAMaZyYPg=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; t=1772725782;
+	s=zrnleads; d=zillowrentals.com;
+	h=Content-Type:MIME-Version:Subject:To:Reply-To:From;
+	bh=TUa2rv5kmeS9UP2BmSgIkwuypMUy3a1yeEALOaRV+xQ=;
+	b=iBEjX+yaVSyFEO6sL7fsuilImKilJmiX0UoXbhHbKmCerw49EGl24ww9cMj6WOY9
+	CmZyV6hNePYXlZGrKxvST5+6avCrf3SYDAYQfTfYG84Vgs2c1fftvj4TIM9seIFRDh6
+	q0bbxQC530wiXcoDIVFoY9SaG/02yW3DZcDvECRQ=
+Date: Thu, 5 Mar 2026 15:49:42 +0000
+From: Zillow Group Rentals <rentalclientservices@zillowrentals.com>
+Reply-To: poly5400@gmail.com
+To: garland@pearnyc.com
+Message-ID: 
+ <0100019cbeb0c829-23ff0b02-ac9d-42b5-abf5-4eb78bba0742-000000@email.amazonses.com>
+Subject: New Zillow Group Rentals Contact: 68-19 Borden Ave #108
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_Part_908980_1082496640.1772725782537"
+x-cid: inquiry
+x-nid: ecf126db-18aa-11f1-a453-f2d931e3dc4d
+Feedback-ID: 
+ ::1.us-east-1.VYfDSUunTafCfHv9uAuINOM04I5ALkGioPiDTkblwno=:AmazonSES
+X-SES-Outgoing: 2026.03.05-54.240.48.83
+
+------=_Part_908980_1082496640.1772725782537
+Content-Type: multipart/related;
+	boundary="----=_Part_908981_846345596.1772725782537"
+
+------=_Part_908981_846345596.1772725782537
+Content-Type: multipart/alternative;
+	boundary="----=_Part_908982_1849487491.1772725782537"
+
+------=_Part_908982_1849487491.1772725782537
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org=
+/TR/xhtml1/DTD/xhtml1-strict.dtd"> <html xmlns=3D"http://www.w3.org/1999/xh=
+tml" xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:o=3D"urn:schemas-micro=
+soft-com:office:office"> <head> <meta http-equiv=3D"Content-Type" content=
+=3D"text/html; charset=3Dutf-8"></meta> <meta http-equiv=3D"X-UA-Compatible=
+" content=3D"IE=3Dedge"></meta> <meta name=3D"viewport" content=3D"width=3D=
+device-width"></meta><!--[if gte mso 9]> <xml> <o:OfficeDocumentSettings> <=
+o:AllowPNG/> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettin=
+gs> </xml> <![endif]--> <style>a {text-decoration: none}</style></head><bod=
+y bgcolor=3D"#FFFFFF" width=3D"100%" style=3D"-webkit-font-smoothing: antia=
+liased; background:#FFFFFF;-webkit-text-size-adjust:none; margin:0; padding=
+:0;"><img src=3D"https://hotpads.com/t/ecf126db-18aa-11f1-a453-f2d931e3dc4d=
+" height=3D"0" width=3D"0" style=3D"display:none;width:0;height:0;"></img><=
+table cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"padding:0px=
+;margin:0px;width:100%;"><tr><td colspan=3D"3" style=3D"padding:0px;margin:=
+0px;font-size:20px;height:20px;" height=3D"20">&#xa0;</td></tr><tr><td styl=
+e=3D"padding:0px;margin:0px;">&#xa0;</td><td style=3D"padding:0px;margin:0p=
+x;" width=3D"600"><span style=3D"display: none !important; color: #FFFFFF; =
+margin:0; padding:0; font-size:1px; line-height:1px;">Zillow Rentals Inquir=
+y</span> <table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"w=
+idth:100%"><tbody><tr><td style=3D"color:#2A2A33;font-size:16px;font-family=
+:Arial;line-height:22px;padding:0;border:10px solid #F9F9FB"><table border=
+=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"width:100%;margin:auto"=
+><tbody><tr><td style=3D"text-align:center;padding-left:20px;padding-right:=
+20px"><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" width=3D"150"=
+ align=3D"center"><tbody><tr><td style=3D"padding:20px 5px;text-align:cente=
+r;border-bottom:3px solid #FFD237"><a style=3D"text-decoration:none;cursor:=
+pointer;color:#006AFF;font-weight:bold" href=3D"https://zillow.com/r/s1u3yc=
+qdubpx"><img src=3D"https://nodes3cdn.hotpads.com/email-renderer/14035/medi=
+a/zillow-rental-network-tri-brand.e6d05f0797eb590ee4c1.png" style=3D"height=
+:70px;width:300px" width=3D"140"></img></a></td></tr></tbody></table></td><=
+/tr></tbody></table><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0"=
+ style=3D"padding:16px"><tbody><tr><td><div style=3D"font-size:24px;line-he=
+ight:32px;font-weight:bold">New Contact</div></td></tr><tr><td style=3D"pad=
+ding-bottom:16px"><div style=3D"font-size:20px;line-height:32px;font-weight=
+:normal">Parvin Akter says:</div></td></tr><tr><td><div style=3D"font-size:=
+16px;line-height:22px;font-weight:normal">&quot;I&apos;m interested in your=
+ property.&quot;</div></td></tr><tr><td><div style=3D"font-size:17px;line-h=
+eight:24px;font-weight:bold;margin:16px 0px 4px">Income and time frame</div=
+><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"border-co=
+llapse:collapse;width:100%"><tbody><tr><td style=3D"padding:4px 0px;width:5=
+0%"><div style=3D"font-size:16px;line-height:22px;font-weight:normal">Credi=
+t score</div></td><td style=3D"padding:4px 0px;width:50%"><div style=3D"fon=
+t-size:16px;line-height:22px;font-weight:normal">720 to 850</div></td></tr>=
+<tr><td style=3D"padding:4px 0px;width:50%"><div style=3D"font-size:16px;li=
+ne-height:22px;font-weight:normal">Yearly income</div></td><td style=3D"pad=
+ding:4px 0px;width:50%"><div style=3D"font-size:16px;line-height:22px;font-=
+weight:normal">&#x24;150001</div></td></tr><tr><td style=3D"padding:4px 0px=
+;width:50%"><div style=3D"font-size:16px;line-height:22px;font-weight:norma=
+l">Move-in period</div></td><td style=3D"padding:4px 0px;width:50%"><div st=
+yle=3D"font-size:16px;line-height:22px;font-weight:normal">flexible</div></=
+td></tr><tr><td style=3D"padding:4px 0px;width:50%"><div style=3D"font-size=
+:16px;line-height:22px;font-weight:normal">Lease length</div></td><td style=
+=3D"padding:4px 0px;width:50%"><div style=3D"font-size:16px;line-height:22p=
+x;font-weight:normal">13 months</div></td></tr></tbody></table></td></tr><t=
+r><td><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"marg=
+in:0 auto;padding-top:16px"><tbody><tr><td><table border=3D"0" cellPadding=
+=3D"0" cellSpacing=3D"0" align=3D"left"><tbody><tr><td style=3D"border-radi=
+us:4px;background-color:#006AFF"><a style=3D"width:auto;min-width:68px;marg=
+in:0px;cursor:pointer;text-align:center;text-decoration:none;white-space:no=
+rmal;border-radius:4px;outline:none;font-size:14px;display:inline-block;box=
+-sizing:border-box;border-width:6px 20px;border-style:solid;color:white;bac=
+kground-color:#006AFF;border-color:#006AFF;font-weight:600;text-transform:n=
+one" rel=3D"noopener noreferrer" target=3D"_blank" href=3D"mailto:poly5400@=
+gmail.com"><img src=3D"http://filenet.hotpads.com/images/icons/zrnMail.png"=
+ width=3D"20" alt=3D"" style=3D"vertical-align:middle;padding-right:8px"></=
+img><span>poly5400@gmail.com</span></a></td></tr></tbody></table></td><td s=
+tyle=3D"padding-left:8px"><table border=3D"0" cellPadding=3D"0" cellSpacing=
+=3D"0" align=3D"left"><tbody><tr><td style=3D"border-radius:4px;background-=
+color:#006AFF"><a style=3D"width:auto;min-width:68px;margin:0px;cursor:poin=
+ter;text-align:center;text-decoration:none;white-space:normal;border-radius=
+:4px;outline:none;font-size:14px;display:inline-block;box-sizing:border-box=
+;border-width:6px 20px;border-style:solid;color:#FFF;background-color:#006A=
+FF;border-color:#006AFF;font-weight:600" rel=3D"noopener noreferrer" target=
+=3D"_blank" href=3D"tel:516-800-5557"><img src=3D"http://filenet.hotpads.co=
+m/images/icons/zrnPhone.png" width=3D"20" alt=3D"" style=3D"vertical-align:=
+middle;padding-right:8px"></img><span>516.800.5557</span></a></td></tr></tb=
+ody></table></td></tr></tbody></table></td></tr><tr><td><div style=3D"margi=
+n-top:20px;margin-bottom:20px;height:0;line-height:0;width:100%;border-bott=
+om:1px solid #A7A6AB">&#xa0;</div><div style=3D"clear:both;padding:16px 0px=
+"><div style=3D"font-size:17px;line-height:24px;font-weight:bold">Your list=
+ing</div></div></td></tr><tr><td><table border=3D"0" cellPadding=3D"0" cell=
+Spacing=3D"0"><tbody><tr><td style=3D"padding-right:16px"><a style=3D"text-=
+decoration:none;cursor:pointer;color:#006AFF;font-weight:bold" href=3D"http=
+s://hotpads.com/68-19-borden-ave-maspeth-ny-11378-1xrt78h/108/pad?item_id=
+=3D4914761475024055246&amp;nid=3Decf126db-18aa-11f1-a453-f2d931e3dc4d&amp;r=
+ef=3Dinquiry&amp;utm_campaign=3Dinquiry&amp;utm_hash=3D2faeb1e4ef&amp;utm_m=
+edium=3Demail&amp;utm_source=3Dinquiry"><img src=3D"https://photos.zillowst=
+atic.com/fp/2e8983489de12a40715dac91f0c3004a-rentals_medium_500_500.webp?ut=
+m_source=3Dinquiry&amp;utm_medium=3Demail&amp;utm_campaign=3Dinquiry&amp;ut=
+m_hash=3D2faeb1e4ef&amp;item_id=3D4914761475024055246" height=3D"120" alt=
+=3D"Listing photo"></img></a></td><td><table border=3D"0" cellPadding=3D"0"=
+ cellSpacing=3D"0"><tbody><tr><td><a style=3D"text-decoration:underline;cur=
+sor:pointer;color:#54545A" href=3D"https://hotpads.com/68-19-borden-ave-mas=
+peth-ny-11378-1xrt78h/108/pad?item_id=3D4914761475024055246&amp;nid=3Decf12=
+6db-18aa-11f1-a453-f2d931e3dc4d&amp;ref=3Dinquiry&amp;utm_campaign=3Dinquir=
+y&amp;utm_hash=3D2faeb1e4ef&amp;utm_medium=3Demail&amp;utm_source=3Dinquiry=
+"><div style=3D"font-size:16px;line-height:22px;font-weight:bold">FOR RENT<=
+/div></a></td></tr><tr><td><a style=3D"text-decoration:underline;cursor:poi=
+nter;color:#54545A" href=3D"https://hotpads.com/68-19-borden-ave-maspeth-ny=
+-11378-1xrt78h/108/pad?item_id=3D4914761475024055246&amp;nid=3Decf126db-18a=
+a-11f1-a453-f2d931e3dc4d&amp;ref=3Dinquiry&amp;utm_campaign=3Dinquiry&amp;u=
+tm_hash=3D2faeb1e4ef&amp;utm_medium=3Demail&amp;utm_source=3Dinquiry"><div =
+style=3D"font-size:16px;line-height:22px;font-weight:normal">&#x24;2,295</d=
+iv></a></td></tr><tr><td><a style=3D"text-decoration:underline;cursor:point=
+er;color:#54545A" href=3D"https://hotpads.com/68-19-borden-ave-maspeth-ny-1=
+1378-1xrt78h/108/pad?item_id=3D4914761475024055246&amp;nid=3Decf126db-18aa-=
+11f1-a453-f2d931e3dc4d&amp;ref=3Dinquiry&amp;utm_campaign=3Dinquiry&amp;utm=
+_hash=3D2faeb1e4ef&amp;utm_medium=3Demail&amp;utm_source=3Dinquiry"><div st=
+yle=3D"font-size:16px;line-height:22px;font-weight:normal">1 bedroom, 1 bat=
+hroom</div></a></td></tr><tr><td><a style=3D"text-decoration:underline;curs=
+or:pointer;color:#54545A" href=3D"https://hotpads.com/68-19-borden-ave-masp=
+eth-ny-11378-1xrt78h/108/pad?item_id=3D4914761475024055246&amp;nid=3Decf126=
+db-18aa-11f1-a453-f2d931e3dc4d&amp;ref=3Dinquiry&amp;utm_campaign=3Dinquiry=
+&amp;utm_hash=3D2faeb1e4ef&amp;utm_medium=3Demail&amp;utm_source=3Dinquiry"=
+><div style=3D"font-size:16px;line-height:22px;font-weight:normal">68-19 Bo=
+rden Ave #108, Maspeth, NY</div></a></td></tr></tbody></table></td></tr><tr=
+><td><div style=3D"clear:both;padding:24px 0px"><table border=3D"0" cellPad=
+ding=3D"0" cellSpacing=3D"0" align=3D"left"><tbody><tr><td style=3D"border-=
+radius:4px;background-color:#006AFF"><a style=3D"width:auto;min-width:68px;=
+margin:0px;cursor:pointer;text-align:center;text-decoration:none;white-spac=
+e:normal;border-radius:4px;outline:none;font-size:14px;display:inline-block=
+;box-sizing:border-box;border-width:6px 20px;border-style:solid;color:#FFF;=
+background-color:#006AFF;border-color:#006AFF;font-weight:600" rel=3D"noope=
+ner noreferrer" target=3D"_blank" href=3D"https://hotpads.com/68-19-borden-=
+ave-maspeth-ny-11378-1xrt78h/108/pad?item_id=3D4914761475024055246&amp;nid=
+=3Decf126db-18aa-11f1-a453-f2d931e3dc4d&amp;ref=3Dinquiry&amp;utm_campaign=
+=3Dinquiry&amp;utm_hash=3D2faeb1e4ef&amp;utm_medium=3Demail&amp;utm_source=
+=3Dinquiry">See all listing details</a></td></tr></tbody></table></div></td=
+></tr></tbody></table></td></tr></tbody></table><table border=3D"0" cellPad=
+ding=3D"0" cellSpacing=3D"0" style=3D"font-size:14px;width:100%;color:#7575=
+7A;padding-top:10px;padding-bottom:12px;border-top:1px solid #F9F9FB" width=
+=3D"100%"><tbody><tr><td align=3D"center"><div style=3D"text-align:center;m=
+argin:auto"><div style=3D"clear:both;padding:8px 0px"><div>Zillow, Inc.</di=
+v><div>1301 Second Avenue, Floor 36</div><div>Seattle, WA 98101</div><div>&=
+#xa9; 2006-2026</div></div><div style=3D"clear:both;padding:8px 0px"><a sty=
+le=3D"text-decoration:none;cursor:pointer;color:#75757A;font-weight:bold" h=
+ref=3D"https://zillow.com/r/4kkv087qpxfsu">Privacy policy</a></div></div></=
+td></tr></tbody></table></td></tr></tbody></table></td><td style=3D"padding=
+:0px;margin:0px;">&#xa0;</td></tr><tr><td colspan=3D"3" style=3D"padding:0p=
+x;margin:0px;font-size:20px;height:20px;" height=3D"20">&#xa0;</td></tr></t=
+able></body></html>
+------=_Part_908982_1849487491.1772725782537--
+
+------=_Part_908981_846345596.1772725782537--
+
+------=_Part_908980_1082496640.1772725782537--
+

@@ -1,0 +1,216 @@
+X-GM-THRID: 1820425284865146293
+X-Gmail-Labels: Inbox,Important,Category Personal,Autoreply
+Delivered-To: garland@pearnyc.com
+Received: by 2002:a05:6022:627:b0:65:2f17:551b with SMTP id bo39csp2227983lab;
+        Mon, 6 Jan 2025 12:25:10 -0800 (PST)
+X-Google-Smtp-Source: 
+ AGHT+IEVlT9ntY/IQ+RpoGVWNhpbBvTXj5weje3V738BODgFDGTf9YcjU59gq3nKGg+agOUJTx68
+X-Received: by 2002:ac8:5d09:0:b0:467:6553:a85d with SMTP id
+ d75a77b69052e-46a4a9b763dmr1169722361cf.50.1736195109884;
+        Mon, 06 Jan 2025 12:25:09 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1736195109; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Sty2LdBxAQOnUxg/QynNed4ZhSJsx9k1YwNO6CtL7seY5rLjN1Zz93NAlDp5p2di1W
+         GEv0kixkRiEJIRBhIvbihcuVqx1DozQcuwq+/0m4XQuhUQW/Sev4WV5taHjj9aHrx5YV
+         F0wlmwEBZEwn+TKZfavwMOsxn9RfWLXAfe/uq0Bo4gDN45W9SDLPW6lnlugiN4H3ImeI
+         Fj8MCf4mJWn1jG6JMsksLxJHbV4PkAIQO3oQI3v6Tx/stH51VSTOxrPAvIaENc/F+xr2
+         DkEjNg/N1TwdBPXB9IUPr7IuPwghFVgw5GUyypMHUxycxUL2o9LuTmVP/Rdix2vSwDGf
+         9dig==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com;
+ s=arc-20240605;
+        h=feedback-id:mime-version:subject:message-id:to:reply-to:from:date
+         :dkim-signature:dkim-signature;
+        bh=/8He/RYFxVHRlc8fF1qElosRtLdClBDdf3aQ71ll/JE=;
+        fh=pdhPv3sNFAAfc/pLrjwYy5413teDgUKLIMV8s2bwE7Q=;
+        b=c39zagc0TQ4DvZ7SSALUozR0oTp7c5TFVnm7hM/C+wQvxb1aNNx8Pm9rA7y97G26zt
+         7wBugFTQDgt/tdtmBvHxhMjSbNKaAzML5kobrlxhRgjmRBmAAQsPz3rsf1w9cLTt0bns
+         6xBWO3sxB8HUl6CM0d5YC3T8vkzfaPeUtTeZ4j7SJqskYAHAslBoC3YGS7GRNIiJcWjr
+         XMaX6KiyEvWThZtvrCXG2I5OjxPlHH+rwBD8v/l8oPxPSoNkNHMaStFd51+N8wYoD+Ro
+         Uv1lKRCpnsSJj8Mv2CjVm9hCWPjXUH9blagS0zNTrn9aUqaHLtHvUyfs+28HodCbqW5A
+         a7TA==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@amazonses.com
+ header.s=ug7nbtf4gccmlpwj322ax3p6ow6yfsug header.b=EAlyzTBz;
+       dkim=pass header.i=@zillowrentals.com header.s=zrnleads
+ header.b=q5JomW8D;
+       spf=pass (google.com: domain of
+ 010001943d4af11b-822ee66c-c07f-4d22-a54a-8bfa59fe4d5b-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender)
+ smtp.mailfrom=010001943d4af11b-822ee66c-c07f-4d22-a54a-8bfa59fe4d5b-000000@amazonses.com
+Return-Path: 
+ <010001943d4af11b-822ee66c-c07f-4d22-a54a-8bfa59fe4d5b-000000@amazonses.com>
+Received: from a48-83.smtp-out.amazonses.com (a48-83.smtp-out.amazonses.com.
+ [54.240.48.83])
+        by mx.google.com with ESMTPS id
+ d75a77b69052e-46a3ebf84absi474805741cf.632.2025.01.06.12.25.09
+        for <garland@pearnyc.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Mon, 06 Jan 2025 12:25:09 -0800 (PST)
+Received-SPF: pass (google.com: domain of
+ 010001943d4af11b-822ee66c-c07f-4d22-a54a-8bfa59fe4d5b-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender) client-ip=54.240.48.83;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@amazonses.com
+ header.s=ug7nbtf4gccmlpwj322ax3p6ow6yfsug header.b=EAlyzTBz;
+       dkim=pass header.i=@zillowrentals.com header.s=zrnleads
+ header.b=q5JomW8D;
+       spf=pass (google.com: domain of
+ 010001943d4af11b-822ee66c-c07f-4d22-a54a-8bfa59fe4d5b-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender)
+ smtp.mailfrom=010001943d4af11b-822ee66c-c07f-4d22-a54a-8bfa59fe4d5b-000000@amazonses.com
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=ug7nbtf4gccmlpwj322ax3p6ow6yfsug; d=amazonses.com; t=1736195109;
+	h=Date:From:Reply-To:To:Message-ID:Subject:MIME-Version:Content-Type:Feedback-ID;
+	bh=5Flt0guY/JSd18cIkELGE8TCbaiSxbD3+n5e0KizTkE=;
+	b=EAlyzTBzYupFKDATl2Hsoj1rCZcXRJuUsewsOfEPNg56dEFuL8OO4VcUnHERNKrT
+	5BtjBW4P2CNWc70Eyv1/RNcpEvSAEHOSJ/SIkh1xojvmXBgPlNO2WcNVst1IQn49DNW
+	V66NAwRFmAR/boF8ouyMbUrd8WyvSNzLXOHI/X1g=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; t=1736195109;
+	s=zrnleads; d=zillowrentals.com;
+	h=Content-Type:MIME-Version:Subject:To:Reply-To:From;
+	bh=5Flt0guY/JSd18cIkELGE8TCbaiSxbD3+n5e0KizTkE=;
+	b=q5JomW8DGYLBfYHCP2WYyszl7RaKWy0YovbTsSEjvNYUHSPzx7L8D3qLdyIRp6ev
+	Tjim2UYOlbdjH1gAYb9CbPQfEIaqzf1r9uSYFIc82zugrO6UYsmY/YHI1YrVunxcHtu
+	NZ+pGYdfBNYsv/LYb/j8IF/+DiTWn/ktB/Xk29wc=
+Date: Mon, 6 Jan 2025 20:25:09 +0000
+From: Zillow Group Rentals <rentalclientservices@zillowrentals.com>
+Reply-To: mollyolson@icloud.com
+To: garland@pearnyc.com
+Message-ID: 
+ <010001943d4af11b-822ee66c-c07f-4d22-a54a-8bfa59fe4d5b-000000@email.amazonses.com>
+Subject: New Zillow Group Rentals Contact: 1926 Madison St #2L
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_Part_107810_1194458412.1736195109128"
+x-cid: inquiry
+x-nid: 52d01f7f-cc6c-11ef-854a-4a67abf24cff
+Feedback-ID: 
+ ::1.us-east-1.VYfDSUunTafCfHv9uAuINOM04I5ALkGioPiDTkblwno=:AmazonSES
+X-SES-Outgoing: 2025.01.06-54.240.48.83
+
+------=_Part_107810_1194458412.1736195109128
+Content-Type: multipart/related;
+	boundary="----=_Part_107811_1756688360.1736195109128"
+
+------=_Part_107811_1756688360.1736195109128
+Content-Type: multipart/alternative;
+	boundary="----=_Part_107812_2076383462.1736195109128"
+
+------=_Part_107812_2076383462.1736195109128
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org=
+/TR/xhtml1/DTD/xhtml1-strict.dtd"> <html xmlns=3D"http://www.w3.org/1999/xh=
+tml" xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:o=3D"urn:schemas-micro=
+soft-com:office:office"> <head> <meta http-equiv=3D"Content-Type" content=
+=3D"text/html; charset=3Dutf-8"></meta> <meta http-equiv=3D"X-UA-Compatible=
+" content=3D"IE=3Dedge"></meta> <meta name=3D"viewport" content=3D"width=3D=
+device-width"></meta><!--[if gte mso 9]> <xml> <o:OfficeDocumentSettings> <=
+o:AllowPNG/> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettin=
+gs> </xml> <![endif]--> <style>a {text-decoration: none}</style></head><bod=
+y bgcolor=3D"#FFFFFF" width=3D"100%" style=3D"-webkit-font-smoothing: antia=
+liased; background:#FFFFFF;-webkit-text-size-adjust:none; margin:0; padding=
+:0;"><img src=3D"https://hotpads.com/t/52d01f7f-cc6c-11ef-854a-4a67abf24cff=
+" height=3D"0" width=3D"0" style=3D"display:none;width:0;height:0;"></img><=
+table cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"padding:0px=
+;margin:0px;width:100%;"><tr><td colspan=3D"3" style=3D"padding:0px;margin:=
+0px;font-size:20px;height:20px;" height=3D"20">&#xa0;</td></tr><tr><td styl=
+e=3D"padding:0px;margin:0px;">&#xa0;</td><td style=3D"padding:0px;margin:0p=
+x;" width=3D"600"><span style=3D"display: none !important; color: #FFFFFF; =
+margin:0; padding:0; font-size:1px; line-height:1px;">Zillow Rentals Inquir=
+y</span> <table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"w=
+idth:100%"><tbody><tr><td style=3D"color:#2A2A33;font-size:16px;font-family=
+:Arial;line-height:22px;padding:0;border:10px solid #F9F9FB"><table border=
+=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"width:100%;margin:auto"=
+><tbody><tr><td style=3D"text-align:center;padding-left:20px;padding-right:=
+20px"><table align=3D"center" border=3D"0" cellPadding=3D"0" cellSpacing=3D=
+"0" width=3D"150"><tbody><tr><td style=3D"padding:20px 5px;text-align:cente=
+r;border-bottom:3px solid #FFD237"><a style=3D"text-decoration:none;cursor:=
+pointer;color:#006AFF;font-weight:bold" href=3D"https://zillow.com/r/5euxpk=
+aquyb9t"><img src=3D"https://nodes3cdn.hotpads.com/email-renderer/7895/medi=
+a/zillow-rental-network-tri-brand.e6d05f0797eb590ee4c1.png" style=3D"height=
+:70px;width:300px" width=3D"140"></img></a></td></tr></tbody></table></td><=
+/tr></tbody></table><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0"=
+ style=3D"padding:16px"><tbody><tr><td><div style=3D"font-size:24px;line-he=
+ight:32px;font-weight:bold">New Contact</div></td></tr><tr><td style=3D"pad=
+ding-bottom:16px"><div style=3D"font-size:20px;line-height:32px;font-weight=
+:normal">Molly Olson says:</div></td></tr><tr><td><div style=3D"font-size:1=
+6px;line-height:22px;font-weight:normal">&quot;I am interested in this rent=
+al and would like to schedule a viewing. Please let me know when this would=
+ be possible.&quot;</div></td></tr><tr><td></td></tr><tr><td><table border=
+=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"margin:0 auto;padding-t=
+op:16px"><tbody><tr><td><table align=3D"left" border=3D"0" cellPadding=3D"0=
+" cellSpacing=3D"0"><tbody><tr><td style=3D"border-radius:4px;background-co=
+lor:#006AFF"><a style=3D"width:auto;min-width:68px;margin:0px;cursor:pointe=
+r;text-align:center;text-decoration:none;white-space:normal;border-radius:4=
+px;outline:none;font-size:14px;display:inline-block;box-sizing:border-box;b=
+order-width:6px 20px;border-style:solid;color:white;background-color:#006AF=
+F;border-color:#006AFF;font-weight:600;text-transform:none" rel=3D"noopener=
+ noreferrer" target=3D"_blank" href=3D"mailto:mollyolson@icloud.com"><img s=
+rc=3D"http://filenet.hotpads.com/images/icons/zrnMail.png" width=3D"20" alt=
+=3D"" style=3D"vertical-align:middle;padding-right:8px"></img><span>mollyol=
+son@icloud.com</span></a></td></tr></tbody></table></td><td style=3D"paddin=
+g-left:8px"><table align=3D"left" border=3D"0" cellPadding=3D"0" cellSpacin=
+g=3D"0"><tbody><tr><td style=3D"border-radius:4px;background-color:#006AFF"=
+><a style=3D"width:auto;min-width:68px;margin:0px;cursor:pointer;text-align=
+:center;text-decoration:none;white-space:normal;border-radius:4px;outline:n=
+one;font-size:14px;display:inline-block;box-sizing:border-box;border-width:=
+6px 20px;border-style:solid;color:#FFF;background-color:#006AFF;border-colo=
+r:#006AFF;font-weight:600" rel=3D"noopener noreferrer" target=3D"_blank" hr=
+ef=3D"tel:347-302-3488"><img src=3D"http://filenet.hotpads.com/images/icons=
+/zrnPhone.png" width=3D"20" alt=3D"" style=3D"vertical-align:middle;padding=
+-right:8px"></img><span>347.302.3488</span></a></td></tr></tbody></table></=
+td></tr></tbody></table></td></tr><tr><td><div style=3D"margin-top:20px;mar=
+gin-bottom:20px;height:0;line-height:0;width:100%;border-bottom:1px solid #=
+A7A6AB">&#xa0;</div><div style=3D"clear:both;padding:16px 0px"><div style=
+=3D"font-size:17px;line-height:24px;font-weight:bold">Your listing</div></d=
+iv></td></tr><tr><td><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0=
+"><tbody><tr><td style=3D"padding-right:16px"><a style=3D"text-decoration:n=
+one;cursor:pointer;color:#006AFF;font-weight:bold" href=3D"https://zillow.c=
+om/r/3kde8nexszhwk"><img src=3D"https://photos.zillowstatic.com/fp/db4783a9=
+62920d446241c28f763e9866-rentals_medium_500_500.webp?utm_source=3Dinquiry&a=
+mp;utm_medium=3Demail&amp;utm_campaign=3Dinquiry&amp;utm_hash=3D6594f5a2cc&=
+amp;item_id=3D4218014937548627364" height=3D"120" alt=3D"Listing photo"></i=
+mg></a></td><td><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0"><tb=
+ody><tr><td><a style=3D"text-decoration:underline;cursor:pointer;color:#545=
+45A" href=3D"https://zillow.com/r/12wm4sfqpmhkj"><div style=3D"font-size:16=
+px;line-height:22px;font-weight:bold">FOR RENT</div></a></td></tr><tr><td><=
+a style=3D"text-decoration:underline;cursor:pointer;color:#54545A" href=3D"=
+https://zillow.com/r/5cpqrgy2z8skd"><div style=3D"font-size:16px;line-heigh=
+t:22px;font-weight:normal">&#x24;2,500</div></a></td></tr><tr><td><a style=
+=3D"text-decoration:underline;cursor:pointer;color:#54545A" href=3D"https:/=
+/zillow.com/r/15es3bfannxkn"><div style=3D"font-size:16px;line-height:22px;=
+font-weight:normal"> bedrooms, 1.0 bathrooms</div></a></td></tr><tr><td><a =
+style=3D"text-decoration:underline;cursor:pointer;color:#54545A" href=3D"ht=
+tps://zillow.com/r/2m9tyb1jnwp03"><div style=3D"font-size:16px;line-height:=
+22px;font-weight:normal">1926 Madison St #2L, Ridgewood, NY</div></a></td><=
+/tr></tbody></table></td></tr><tr><td><div style=3D"clear:both;padding:24px=
+ 0px"><table align=3D"left" border=3D"0" cellPadding=3D"0" cellSpacing=3D"0=
+"><tbody><tr><td style=3D"border-radius:4px;background-color:#006AFF"><a st=
+yle=3D"width:auto;min-width:68px;margin:0px;cursor:pointer;text-align:cente=
+r;text-decoration:none;white-space:normal;border-radius:4px;outline:none;fo=
+nt-size:14px;display:inline-block;box-sizing:border-box;border-width:6px 20=
+px;border-style:solid;color:#FFF;background-color:#006AFF;border-color:#006=
+AFF;font-weight:600" rel=3D"noopener noreferrer" target=3D"_blank" href=3D"=
+https://zillow.com/r/mtqcn7z48rry">See all listing details</a></td></tr></t=
+body></table></div></td></tr></tbody></table></td></tr></tbody></table><tab=
+le border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"font-size:14px=
+;width:100%;color:#75757A;padding-top:10px;padding-bottom:12px;border-top:1=
+px solid #F9F9FB" width=3D"100%"><tbody><tr><td align=3D"center"><div style=
+=3D"text-align:center;margin:auto"><div style=3D"clear:both;padding:8px 0px=
+"><div>Zillow, Inc.</div><div>1301 Second Avenue, Floor 36</div><div>Seattl=
+e, WA 98101</div><div>&#xa9; 2006-2025</div></div><div style=3D"clear:both;=
+padding:8px 0px"><a style=3D"text-decoration:none;cursor:pointer;color:#757=
+57A;font-weight:bold" href=3D"https://zillow.com/r/1p1nd4fcj6145">Privacy p=
+olicy</a></div></div></td></tr></tbody></table></td></tr></tbody></table></=
+td><td style=3D"padding:0px;margin:0px;">&#xa0;</td></tr><tr><td colspan=3D=
+"3" style=3D"padding:0px;margin:0px;font-size:20px;height:20px;" height=3D"=
+20">&#xa0;</td></tr></table></body></html>
+------=_Part_107812_2076383462.1736195109128--
+
+------=_Part_107811_1756688360.1736195109128--
+
+------=_Part_107810_1194458412.1736195109128--
+

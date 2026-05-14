@@ -1,0 +1,109 @@
+# Pear Autoreplies — Docker Compose
+#
+# In dev: `docker compose up -d` exposes the FastAPI on http://localhost:8000.
+# In prod: same compose file runs on the DO droplet behind Caddy on :443.
+#
+# The web container handles Pub/Sub push + admin endpoints.
+# Worker(s) drain the RQ queue; the scheduler renews Gmail watches daily.
+# Redis is local + persisted to a named volume.
+
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz').status == 200 else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+    # Caddy publishes :80 / :443 to the host; web only talks to the internal network.
+    expose:
+      - "8000"
+    volumes:
+      # Mount the GCP service account JSON read-only into the container.
+      - ./secrets/sa.json:/etc/pear-autoreply/sa.json:ro
+
+  worker:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["python", "-m", "autoreplies.workers.worker"]
+    deploy:
+      replicas: 2
+    volumes:
+      - ./secrets/sa.json:/etc/pear-autoreply/sa.json:ro
+
+  scheduler:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["python", "-m", "autoreplies.workers.scheduler"]
+    volumes:
+      - ./secrets/sa.json:/etc/pear-autoreply/sa.json:ro
+
+  harness-poller:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["python", "-m", "autoreplies.harness", "watch"]
+    volumes:
+      - ./secrets/sa.json:/etc/pear-autoreply/sa.json:ro
+      - harness_state:/var/lib/pear-autoreply
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
+volumes:
+  redis_data:
+  caddy_data:
+  caddy_config:
+  harness_state:

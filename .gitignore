@@ -1,0 +1,51 @@
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+sa.json
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors / OS / dev tools
+.vscode/
+.idea/
+.claude/
+.DS_Store
+Thumbs.db
+pytest-cache-files-*/
+
+# Local-only data — keep raw mailbox + real-PII fixtures out of git
+*.mbox
+fixtures/raw/
+fixtures/*.eml
+!fixtures/anonymized/
+
+# Caddy state
+caddy_data/
+caddy_config/
+
+# Docker
+.dockerignore  # don't double-include
+docker-compose.override.yml
+
+# Log output
+logs/
+*.log

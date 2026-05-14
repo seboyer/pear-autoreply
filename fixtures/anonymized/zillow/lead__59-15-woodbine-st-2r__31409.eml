@@ -1,0 +1,249 @@
+X-GM-THRID: 1823607847508238470
+X-Gmail-Labels: Inbox,Important,Category Personal,Autoreply
+Delivered-To: garland@pearnyc.com
+Received: by 2002:a05:6022:14d:b0:68:e9c6:9ff4 with SMTP id 13csp729769laf;
+        Mon, 10 Feb 2025 10:25:35 -0800 (PST)
+X-Google-Smtp-Source: 
+ AGHT+IF8T8c7Q0zHG5rVwh0Pet28++mecjMp+wr7EDRONh2bnXpNn2+9mKhpp/9owScEYBKYkXLF
+X-Received: by 2002:a05:622a:1a0c:b0:467:5734:da89 with SMTP id
+ d75a77b69052e-471a1419f25mr5933111cf.23.1739211935065;
+        Mon, 10 Feb 2025 10:25:35 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1739211935; cv=none;
+        d=google.com; s=arc-20240605;
+        b=NuZwgF1TqwVOlnfzg8FhJqan/yEjgxrIYGesyDGznVehKZpeEDd51VpvOxnu777on0
+         f4olwjYa3QzNNQIlmbUWXudvnzE/szB0HMrhEQxd0TdRQN+QB/q6S6YcsYD6K/YXh59U
+         glecuwyhFL9fJYJI83hTpYFr5urmx9tpRg0Hy9gaqIBN8yXnzmZWh5yYsH8QW6YMGm1O
+         cT4jZOWyOk/CXrRXaRFb8sySDjhsel2zWJaQAjZLLsDWWrYkvlynx2V9oC76YflSqU9G
+         EWUD6mGiJG51wO/gTkVO7wB6BWOZufw13Vz8b6ljtebyUhUanR+ie3P3H1G3XGspx6MS
+         uEfQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com;
+ s=arc-20240605;
+        h=feedback-id:mime-version:subject:message-id:to:reply-to:from:date
+         :dkim-signature:dkim-signature;
+        bh=or089Ke6KOQN9FEvnEde5RSMBxWsYU8IzCHuoe4LNKg=;
+        fh=pdhPv3sNFAAfc/pLrjwYy5413teDgUKLIMV8s2bwE7Q=;
+        b=TIOZIVmdc7e77H3M7Eag6HQObRT0CPOzYq3dZkCxQaIi2P7Q6q7RMqQdgZQ3nxKz6X
+         dAQv7Yajs+vJcbFasK17Ics7pvBcfK6hnbPY0rGESCsKzhL8O35ssSuHY5YKJVE1cGOQ
+         LLYOdiOQQbmkYtKemw8iIA+99e5iLvfIh+x69n+YABxxcCK/x0AMTyjP0LqrQtnXNmTN
+         74L/Tw2XXpL4dRCYbeOjtMGq+To7GbART23izz60fAXXJBq+wVhyU4eGyIjb5bkzrkXU
+         XEZHxAgBIxC/NdkkGCBoCNWMcod0qJ9LcZXwst/CP29PNttdNGSZk8or8fyHSPm5eZPI
+         7j2Q==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@amazonses.com
+ header.s=ug7nbtf4gccmlpwj322ax3p6ow6yfsug header.b=lKg589XZ;
+       dkim=pass header.i=@zillowrentals.com header.s=zrnleads
+ header.b=OsqIFAaE;
+       spf=pass (google.com: domain of
+ 01000194f11c0b0c-8afaa0e3-b9c1-420f-876c-afbb1ba4ca9b-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender)
+ smtp.mailfrom=01000194f11c0b0c-8afaa0e3-b9c1-420f-876c-afbb1ba4ca9b-000000@amazonses.com
+Return-Path: 
+ <01000194f11c0b0c-8afaa0e3-b9c1-420f-876c-afbb1ba4ca9b-000000@amazonses.com>
+Received: from a48-83.smtp-out.amazonses.com (a48-83.smtp-out.amazonses.com.
+ [54.240.48.83])
+        by mx.google.com with ESMTPS id
+ d75a77b69052e-4719e7d79eesi6732971cf.173.2025.02.10.10.25.34
+        for <garland@pearnyc.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Mon, 10 Feb 2025 10:25:35 -0800 (PST)
+Received-SPF: pass (google.com: domain of
+ 01000194f11c0b0c-8afaa0e3-b9c1-420f-876c-afbb1ba4ca9b-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender) client-ip=54.240.48.83;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@amazonses.com
+ header.s=ug7nbtf4gccmlpwj322ax3p6ow6yfsug header.b=lKg589XZ;
+       dkim=pass header.i=@zillowrentals.com header.s=zrnleads
+ header.b=OsqIFAaE;
+       spf=pass (google.com: domain of
+ 01000194f11c0b0c-8afaa0e3-b9c1-420f-876c-afbb1ba4ca9b-000000@amazonses.com
+ designates 54.240.48.83 as permitted sender)
+ smtp.mailfrom=01000194f11c0b0c-8afaa0e3-b9c1-420f-876c-afbb1ba4ca9b-000000@amazonses.com
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=ug7nbtf4gccmlpwj322ax3p6ow6yfsug; d=amazonses.com; t=1739211934;
+	h=Date:From:Reply-To:To:Message-ID:Subject:MIME-Version:Content-Type:Feedback-ID;
+	bh=2yTUze1Hg9DZfw18mFc09N4WOizO7OEQk2t4C2o+z3I=;
+	b=lKg589XZqqh2zhVRSCMrBtubnRJZlaW5WVHYHF7meOYImblj+KmzcyJVOigJHP30
+	j7uUzzwQRaz+fMrPgU87WvrIz5i8sD4G67UXNVMuG9YE8sTuqRXgeAp4n+b6058bPCo
+	RIQYiytRb3YneEBxEFTqcLFbk+R4k7sRY5QCJ4kk=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; t=1739211934;
+	s=zrnleads; d=zillowrentals.com;
+	h=Content-Type:MIME-Version:Subject:To:Reply-To:From;
+	bh=2yTUze1Hg9DZfw18mFc09N4WOizO7OEQk2t4C2o+z3I=;
+	b=OsqIFAaEHYDH3PwiC6dr+0PN0csviHsvW+nBS/7CYjKNmgb28dHI/wgsnjtOQqB1
+	ZWlBJNte7Cpk+0GO26cC/Ach9hH9Me+SiUdXaOWA00QDOkF79G7ZMTXmZIWdRNq1LNC
+	Djy0j/eboQTQ9ysn9QUmJJOJ1hJDCURIzU8dB/VI=
+Date: Mon, 10 Feb 2025 18:25:34 +0000
+From: Zillow Group Rentals <rentalclientservices@zillowrentals.com>
+Reply-To: samira.esmailzada@gmail.com
+To: garland@pearnyc.com
+Message-ID: 
+ <01000194f11c0b0c-8afaa0e3-b9c1-420f-876c-afbb1ba4ca9b-000000@email.amazonses.com>
+Subject: New Zillow Group Rentals Contact: 59-15 Woodbine St #2R
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=_Part_2630_1509130685.1739211934429"
+x-cid: inquiry
+x-nid: 6ad1cb11-e7dc-11ef-b34d-262a586a8f55
+Feedback-ID: 
+ ::1.us-east-1.VYfDSUunTafCfHv9uAuINOM04I5ALkGioPiDTkblwno=:AmazonSES
+X-SES-Outgoing: 2025.02.10-54.240.48.83
+
+------=_Part_2630_1509130685.1739211934429
+Content-Type: multipart/related;
+	boundary="----=_Part_2631_1727422779.1739211934429"
+
+------=_Part_2631_1727422779.1739211934429
+Content-Type: multipart/alternative;
+	boundary="----=_Part_2632_1277994791.1739211934429"
+
+------=_Part_2632_1277994791.1739211934429
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org=
+/TR/xhtml1/DTD/xhtml1-strict.dtd"> <html xmlns=3D"http://www.w3.org/1999/xh=
+tml" xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:o=3D"urn:schemas-micro=
+soft-com:office:office"> <head> <meta http-equiv=3D"Content-Type" content=
+=3D"text/html; charset=3Dutf-8"></meta> <meta http-equiv=3D"X-UA-Compatible=
+" content=3D"IE=3Dedge"></meta> <meta name=3D"viewport" content=3D"width=3D=
+device-width"></meta><!--[if gte mso 9]> <xml> <o:OfficeDocumentSettings> <=
+o:AllowPNG/> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettin=
+gs> </xml> <![endif]--> <style>a {text-decoration: none}</style></head><bod=
+y bgcolor=3D"#FFFFFF" width=3D"100%" style=3D"-webkit-font-smoothing: antia=
+liased; background:#FFFFFF;-webkit-text-size-adjust:none; margin:0; padding=
+:0;"><img src=3D"https://hotpads.com/t/6ad1cb11-e7dc-11ef-b34d-262a586a8f55=
+" height=3D"0" width=3D"0" style=3D"display:none;width:0;height:0;"></img><=
+table cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"padding:0px=
+;margin:0px;width:100%;"><tr><td colspan=3D"3" style=3D"padding:0px;margin:=
+0px;font-size:20px;height:20px;" height=3D"20">&#xa0;</td></tr><tr><td styl=
+e=3D"padding:0px;margin:0px;">&#xa0;</td><td style=3D"padding:0px;margin:0p=
+x;" width=3D"600"><span style=3D"display: none !important; color: #FFFFFF; =
+margin:0; padding:0; font-size:1px; line-height:1px;">Zillow Rentals Inquir=
+y</span> <table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"w=
+idth:100%"><tbody><tr><td style=3D"color:#2A2A33;font-size:16px;font-family=
+:Arial;line-height:22px;padding:0;border:10px solid #F9F9FB"><table border=
+=3D"0" cellPadding=3D"0" cellSpacing=3D"0" style=3D"width:100%;margin:auto"=
+><tbody><tr><td style=3D"text-align:center;padding-left:20px;padding-right:=
+20px"><table align=3D"center" border=3D"0" cellPadding=3D"0" cellSpacing=3D=
+"0" width=3D"150"><tbody><tr><td style=3D"padding:20px 5px;text-align:cente=
+r;border-bottom:3px solid #FFD237"><a style=3D"text-decoration:none;cursor:=
+pointer;color:#006AFF;font-weight:bold" href=3D"https://zillow.com/r/wr8uve=
+yu923h"><img src=3D"https://nodes3cdn.hotpads.com/email-renderer/8422/media=
+/zillow-rental-network-tri-brand.e6d05f0797eb590ee4c1.png" style=3D"height:=
+70px;width:300px" width=3D"140"></img></a></td></tr></tbody></table></td></=
+tr></tbody></table><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" =
+style=3D"padding:16px"><tbody><tr><td><div style=3D"font-size:24px;line-hei=
+ght:32px;font-weight:bold">New Contact</div></td></tr><tr><td style=3D"padd=
+ing-bottom:16px"><div style=3D"font-size:20px;line-height:32px;font-weight:=
+normal">Samira Esmailzada says:</div></td></tr><tr><td><div style=3D"font-s=
+ize:16px;line-height:22px;font-weight:normal">&quot;I&apos;d like to schedu=
+le a viewing for Woodbine St #2R, Ridgewood, NY 11385, US. Please contact m=
+e with more information!&quot;</div></td></tr><tr><td><div style=3D"font-si=
+ze:17px;line-height:24px;font-weight:bold;margin:16px 0px 4px">Income and t=
+ime frame</div><table border=3D"0" cellPadding=3D"0" cellSpacing=3D"0" styl=
+e=3D"border-collapse:collapse;width:100%"><tbody><tr><td style=3D"padding:4=
+px 0px;width:50%"><div style=3D"font-size:16px;line-height:22px;font-weight=
+:normal">Credit score</div></td><td style=3D"padding:4px 0px;width:50%"><di=
+v style=3D"font-size:16px;line-height:22px;font-weight:normal">580 to 619</=
+div></td></tr><tr><td style=3D"padding:4px 0px;width:50%"><div style=3D"fon=
+t-size:16px;line-height:22px;font-weight:normal">Yearly income</div></td><t=
+d style=3D"padding:4px 0px;width:50%"><div style=3D"font-size:16px;line-hei=
+ght:22px;font-weight:normal">&#x24;150001</div></td></tr><tr><td style=3D"p=
+adding:4px 0px;width:50%"><div style=3D"font-size:16px;line-height:22px;fon=
+t-weight:normal">Lease length</div></td><td style=3D"padding:4px 0px;width:=
+50%"><div style=3D"font-size:16px;line-height:22px;font-weight:normal">13 m=
+onths</div></td></tr></tbody></table></td></tr><tr><td><table border=3D"0" =
+cellPadding=3D"0" cellSpacing=3D"0" style=3D"margin:0 auto;padding-top:16px=
+"><tbody><tr><td><table align=3D"left" border=3D"0" cellPadding=3D"0" cellS=
+pacing=3D"0"><tbody><tr><td style=3D"border-radius:4px;background-color:#00=
+6AFF"><a style=3D"width:auto;min-width:68px;margin:0px;cursor:pointer;text-=
+align:center;text-decoration:none;white-space:normal;border-radius:4px;outl=
+ine:none;font-size:14px;display:inline-block;box-sizing:border-box;border-w=
+idth:6px 20px;border-style:solid;color:white;background-color:#006AFF;borde=
+r-color:#006AFF;font-weight:600;text-transform:none" rel=3D"noopener norefe=
+rrer" target=3D"_blank" href=3D"mailto:samira.esmailzada@gmail.com"><img sr=
+c=3D"http://filenet.hotpads.com/images/icons/zrnMail.png" width=3D"20" alt=
+=3D"" style=3D"vertical-align:middle;padding-right:8px"></img><span>samira.=
+esmailzada@gmail.com</span></a></td></tr></tbody></table></td><td style=3D"=
+padding-left:8px"><table align=3D"left" border=3D"0" cellPadding=3D"0" cell=
+Spacing=3D"0"><tbody><tr><td style=3D"border-radius:4px;background-color:#0=
+06AFF"><a style=3D"width:auto;min-width:68px;margin:0px;cursor:pointer;text=
+-align:center;text-decoration:none;white-space:normal;border-radius:4px;out=
+line:none;font-size:14px;display:inline-block;box-sizing:border-box;border-=
+width:6px 20px;border-style:solid;color:#FFF;background-color:#006AFF;borde=
+r-color:#006AFF;font-weight:600" rel=3D"noopener noreferrer" target=3D"_bla=
+nk" href=3D"tel:201-838-9679"><img src=3D"http://filenet.hotpads.com/images=
+/icons/zrnPhone.png" width=3D"20" alt=3D"" style=3D"vertical-align:middle;p=
+adding-right:8px"></img><span>201.838.9679</span></a></td></tr></tbody></ta=
+ble></td></tr></tbody></table></td></tr><tr><td><div style=3D"margin-top:20=
+px;margin-bottom:20px;height:0;line-height:0;width:100%;border-bottom:1px s=
+olid #A7A6AB">&#xa0;</div><div style=3D"clear:both;padding:16px 0px"><div s=
+tyle=3D"font-size:17px;line-height:24px;font-weight:bold">Your listing</div=
+></div></td></tr><tr><td><table border=3D"0" cellPadding=3D"0" cellSpacing=
+=3D"0"><tbody><tr><td style=3D"padding-right:16px"><a style=3D"text-decorat=
+ion:none;cursor:pointer;color:#006AFF;font-weight:bold" href=3D"https://hot=
+pads.com/59-15-woodbine-st-ridgewood-ny-11385-240d5wq/2r/pad?item_id=3D1730=
+075178744952055&amp;nid=3D6ad1cb11-e7dc-11ef-b34d-262a586a8f55&amp;ref=3Din=
+quiry&amp;utm_campaign=3Dinquiry&amp;utm_hash=3Db73c94dd06&amp;utm_medium=
+=3Demail&amp;utm_source=3Dinquiry"><img src=3D"https://photos.zillowstatic.=
+com/fp/f3671fa83c731b70b4d0a39975e59d4f-rentals_medium_500_500.webp?utm_sou=
+rce=3Dinquiry&amp;utm_medium=3Demail&amp;utm_campaign=3Dinquiry&amp;utm_has=
+h=3Db73c94dd06&amp;item_id=3D1730075178744952055" height=3D"120" alt=3D"Lis=
+ting photo"></img></a></td><td><table border=3D"0" cellPadding=3D"0" cellSp=
+acing=3D"0"><tbody><tr><td><a style=3D"text-decoration:underline;cursor:poi=
+nter;color:#54545A" href=3D"https://hotpads.com/59-15-woodbine-st-ridgewood=
+-ny-11385-240d5wq/2r/pad?item_id=3D1730075178744952055&amp;nid=3D6ad1cb11-e=
+7dc-11ef-b34d-262a586a8f55&amp;ref=3Dinquiry&amp;utm_campaign=3Dinquiry&amp=
+;utm_hash=3Db73c94dd06&amp;utm_medium=3Demail&amp;utm_source=3Dinquiry"><di=
+v style=3D"font-size:16px;line-height:22px;font-weight:bold">FOR RENT</div>=
+</a></td></tr><tr><td><a style=3D"text-decoration:underline;cursor:pointer;=
+color:#54545A" href=3D"https://hotpads.com/59-15-woodbine-st-ridgewood-ny-1=
+1385-240d5wq/2r/pad?item_id=3D1730075178744952055&amp;nid=3D6ad1cb11-e7dc-1=
+1ef-b34d-262a586a8f55&amp;ref=3Dinquiry&amp;utm_campaign=3Dinquiry&amp;utm_=
+hash=3Db73c94dd06&amp;utm_medium=3Demail&amp;utm_source=3Dinquiry"><div sty=
+le=3D"font-size:16px;line-height:22px;font-weight:normal">&#x24;2,600</div>=
+</a></td></tr><tr><td><a style=3D"text-decoration:underline;cursor:pointer;=
+color:#54545A" href=3D"https://hotpads.com/59-15-woodbine-st-ridgewood-ny-1=
+1385-240d5wq/2r/pad?item_id=3D1730075178744952055&amp;nid=3D6ad1cb11-e7dc-1=
+1ef-b34d-262a586a8f55&amp;ref=3Dinquiry&amp;utm_campaign=3Dinquiry&amp;utm_=
+hash=3Db73c94dd06&amp;utm_medium=3Demail&amp;utm_source=3Dinquiry"><div sty=
+le=3D"font-size:16px;line-height:22px;font-weight:normal"> bedrooms, 1.0 ba=
+throoms</div></a></td></tr><tr><td><a style=3D"text-decoration:underline;cu=
+rsor:pointer;color:#54545A" href=3D"https://hotpads.com/59-15-woodbine-st-r=
+idgewood-ny-11385-240d5wq/2r/pad?item_id=3D1730075178744952055&amp;nid=3D6a=
+d1cb11-e7dc-11ef-b34d-262a586a8f55&amp;ref=3Dinquiry&amp;utm_campaign=3Dinq=
+uiry&amp;utm_hash=3Db73c94dd06&amp;utm_medium=3Demail&amp;utm_source=3Dinqu=
+iry"><div style=3D"font-size:16px;line-height:22px;font-weight:normal">59-1=
+5 Woodbine St #2R, Ridgewood, NY</div></a></td></tr></tbody></table></td></=
+tr><tr><td><div style=3D"clear:both;padding:24px 0px"><table align=3D"left"=
+ border=3D"0" cellPadding=3D"0" cellSpacing=3D"0"><tbody><tr><td style=3D"b=
+order-radius:4px;background-color:#006AFF"><a style=3D"width:auto;min-width=
+:68px;margin:0px;cursor:pointer;text-align:center;text-decoration:none;whit=
+e-space:normal;border-radius:4px;outline:none;font-size:14px;display:inline=
+-block;box-sizing:border-box;border-width:6px 20px;border-style:solid;color=
+:#FFF;background-color:#006AFF;border-color:#006AFF;font-weight:600" rel=3D=
+"noopener noreferrer" target=3D"_blank" href=3D"https://hotpads.com/59-15-w=
+oodbine-st-ridgewood-ny-11385-240d5wq/2r/pad?item_id=3D1730075178744952055&=
+amp;nid=3D6ad1cb11-e7dc-11ef-b34d-262a586a8f55&amp;ref=3Dinquiry&amp;utm_ca=
+mpaign=3Dinquiry&amp;utm_hash=3Db73c94dd06&amp;utm_medium=3Demail&amp;utm_s=
+ource=3Dinquiry">See all listing details</a></td></tr></tbody></table></div=
+></td></tr></tbody></table></td></tr></tbody></table><table border=3D"0" ce=
+llPadding=3D"0" cellSpacing=3D"0" style=3D"font-size:14px;width:100%;color:=
+#75757A;padding-top:10px;padding-bottom:12px;border-top:1px solid #F9F9FB" =
+width=3D"100%"><tbody><tr><td align=3D"center"><div style=3D"text-align:cen=
+ter;margin:auto"><div style=3D"clear:both;padding:8px 0px"><div>Zillow, Inc=
+.</div><div>1301 Second Avenue, Floor 36</div><div>Seattle, WA 98101</div><=
+div>&#xa9; 2006-2025</div></div><div style=3D"clear:both;padding:8px 0px"><=
+a style=3D"text-decoration:none;cursor:pointer;color:#75757A;font-weight:bo=
+ld" href=3D"https://zillow.com/r/4vu39vevf5uyh">Privacy policy</a></div></d=
+iv></td></tr></tbody></table></td></tr></tbody></table></td><td style=3D"pa=
+dding:0px;margin:0px;">&#xa0;</td></tr><tr><td colspan=3D"3" style=3D"paddi=
+ng:0px;margin:0px;font-size:20px;height:20px;" height=3D"20">&#xa0;</td></t=
+r></table></body></html>
+------=_Part_2632_1277994791.1739211934429--
+
+------=_Part_2631_1727422779.1739211934429--
+
+------=_Part_2630_1509130685.1739211934429--
+

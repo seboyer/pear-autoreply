@@ -1,0 +1,50 @@
+# Caddy reverse proxy for Pear Autoreplies.
+# - Auto-provisions Let's Encrypt TLS for the public hostname.
+# - Reverse-proxies all routes to the internal `web` container on :8000.
+# - Rate-limits /admin/* to blunt brute-force on the bearer token.
+# - /pubsub/inbox and /healthz get no app-level rate limit (Pub/Sub bursts;
+#   monitoring needs unimpeded access). Pub/Sub auth is JWT-verified inside
+#   the FastAPI app, not at this layer.
+
+{
+	# Let's Encrypt registration email for cert renewal notifications.
+	# Override at deploy time via env: ACME_EMAIL=...
+	email {$ACME_EMAIL:ops@pearnyc.com}
+}
+
+{$AUTOREPLIES_HOSTNAME:autoreplies.pearnyc.com} {
+	encode zstd gzip
+
+	# Strip identifying server header.
+	header {
+		-Server
+	}
+
+	# Rate-limit admin endpoints. Token-bucket: 30 req/min/IP.
+	# Caddy's built-in limiter; no plugin needed.
+	@admin path /admin/*
+	rate_limit @admin {
+		zone admin_zone
+		key {client_ip}
+		events 30
+		window 1m
+	}
+
+	reverse_proxy web:8000 {
+		# Forward original client IP / proto for app-side logging + rate-limit.
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+
+		# Long-running pipeline calls are async; keep idle timeout reasonable.
+		transport http {
+			read_timeout 30s
+			write_timeout 30s
+		}
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

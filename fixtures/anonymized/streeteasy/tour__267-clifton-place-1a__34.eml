@@ -1,0 +1,832 @@
+X-GM-THRID: 1863365801260345191
+X-Gmail-Labels: Inbox,Category Updates,Autoreply
+Delivered-To: garland@pearnyc.com
+Received: by 2002:a05:6022:9021:b0:f5:326:54e with SMTP id bc33csp5172843lab;
+        Fri, 24 Apr 2026 08:21:46 -0700 (PDT)
+X-Received: by 2002:a05:690c:6e87:b0:7af:6904:3f47 with SMTP id
+ 00721157ae682-7b9ecf8654fmr336373347b3.29.1777044106569;
+        Fri, 24 Apr 2026 08:21:46 -0700 (PDT)
+ARC-Seal: i=1; a=rsa-sha256; t=1777044106; cv=none;
+        d=google.com; s=arc-20240605;
+        b=QTmOl4lVDpClbAN3xtGZaDeGQXxTURDLEvtySdUWnu+QsPBQsOttzaId2NbZglfIqn
+         daEJoHSBIEHp9TuWeh61uVmAHqS/pdoj3KDbL0p60/lpj9dBAe5JZlrQWCbX5SkPGYtp
+         s+KdN2lqCluhefRMvvqV01uGset5e9YphwCRusrVdOX607BPRaqtp4KfIcnejSzz9i/C
+         7qbDNgr8u71yFV2k4sAXWXodrIVir7k7U+IQqhTGRjEbXUwMB2KnULnrcH/I7RxiNc8u
+         Ek32bNRLhvgSKrJQzr9ksMFhW/ehJvU66f93LNnhfxOeEcSm0ExbqJL5RO6mUC9U1tyn
+         w6vA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com;
+ s=arc-20240605;
+        h=feedback-id:message-id:from:subject:reply-to:mime-version:date:to
+         :dkim-signature;
+        bh=0anBbna9oHRrHHOt6YhhoVsnvwJ5F65klmN3S0Sgq/k=;
+        fh=pdhPv3sNFAAfc/pLrjwYy5413teDgUKLIMV8s2bwE7Q=;
+        b=GvOuZ5EVWUzwelhJL5t+gthOnDGX64TRYFYnA5vuDrxWkfApmBnd64gk5UdlbIRMaD
+         QbIhob33FmGfel/EvLGVlwOlbWPim4M5h9pno4ajjb/mJLgxjlOI+Km9/LTXGwqFRt1j
+         JgZ/SoJz4ixmeXaifYMdWgdmW8vpotTWiDEcFO3tCk5T3oUtuqpz+N12hpZw+J8IPAo0
+         fPA+lnr/AIwuZHNDjIqejFzPLATjKFoNBmx8CJJx3EKHXq8X/1zM0o52cLlrJE3h0x/v
+         LQag8u5GYQAIYJXenLdUodqBTUTC+9WYAUyqbjyIS/9M9L99wq5HF5IcRKJRomf9yjCj
+         zx1A==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@email.streeteasy.com header.s=scph0422
+ header.b=MLqu9bht;
+       spf=pass (google.com: domain of
+ msprvs1=20574h1a6tmj5=bounces-317038-1@email.streeteasy.com designates
+ 192.158.253.34 as permitted sender)
+ smtp.mailfrom="msprvs1=20574H1A6tMj5=bounces-317038-1@email.streeteasy.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE)
+ header.from=email.streeteasy.com
+Return-Path: <msprvs1=20574H1A6tMj5=bounces-317038-1@email.streeteasy.com>
+Received: from mta-253-34.zillowmail.com (mta-253-34.zillowmail.com.
+ [192.158.253.34])
+        by mx.google.com with ESMTPS id
+ 00721157ae682-7b9ee8ad027si231869507b3.59.2026.04.24.08.21.45
+        for <garland@pearnyc.com>
+        (version=TLS1_2 cipher=ECDHE-ECDSA-AES128-GCM-SHA256 bits=128/128);
+        Fri, 24 Apr 2026 08:21:46 -0700 (PDT)
+Received-SPF: pass (google.com: domain of
+ msprvs1=20574h1a6tmj5=bounces-317038-1@email.streeteasy.com designates
+ 192.158.253.34 as permitted sender) client-ip=192.158.253.34;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@email.streeteasy.com header.s=scph0422
+ header.b=MLqu9bht;
+       spf=pass (google.com: domain of
+ msprvs1=20574h1a6tmj5=bounces-317038-1@email.streeteasy.com designates
+ 192.158.253.34 as permitted sender)
+ smtp.mailfrom="msprvs1=20574H1A6tMj5=bounces-317038-1@email.streeteasy.com";
+       dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE)
+ header.from=email.streeteasy.com
+Return-Path: <msprvs1=20574H1A6tMj5=bounces-317038-1@email.streeteasy.com>
+X-MSFBL: sY7QnQ1P3uGOAnfSEjfgnHXS5wIsdaDLlkn1tedVB0A=|eyJtZXNzYWdlX2lkIjo
+	iNjllYTg5OGFlYjY5NzMzNzJhNjUiLCJyIjoiZ2FybGFuZEBwZWFybnljLmNvbSI
+	sImN1c3RvbWVyX2lkIjoiMzE3MDM4IiwidGVuYW50X2lkIjoic3BjIiwic3ViYWN
+	jb3VudF9pZCI6IjEifQ==
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+	d=email.streeteasy.com; s=scph0422; t=1777044105;
+	i=@email.streeteasy.com;
+	bh=0anBbna9oHRrHHOt6YhhoVsnvwJ5F65klmN3S0Sgq/k=;
+	h=To:Date:Content-Type:Subject:From:Message-ID:From:To:Cc:Subject;
+	b=MLqu9bht0u8cfMRmR0gcHNWx7QCIeeu1TWdG1GgjpzmcWf9TbqII0oLQgTvhEPTtp
+	 2SOwlKcqgKO5fVweBi32bi3ArRCDbVsVpHsIoLtH7LvzfYTey4eujaAy49Tj9dWpAj
+	 Y9fPP7ZmTQLlKMkhoDU1lSJec0Ys5dP+7HutZXn8=
+Received: from [10.90.26.230] ([10.90.26.230])
+	by i-00cdd4ccc339c0eff.mta1vrest.sd.prd.sparkpost (ecelerity 5.2.0.75597
+ r(msys-ecelerity:tags/5.2.0.19)) with REST
+	id 56/AA-32822-98A8BE96; Fri, 24 Apr 2026 15:21:45 +0000
+To: garland@pearnyc.com
+Date: Fri, 24 Apr 2026 15:21:45 +0000
+Content-Type: multipart/alternative;
+ boundary="_----4fREvgYkjJ+X5RRAQfvdCg===_75/AA-32822-98A8BE96"
+MIME-Version: 1.0
+Reply-To: emily.kleypas@gmail.com
+Subject: 267 Clifton Place #1A StreetEasy Inquiry From Emily Kleypas
+X-Campaign-ID: 3979562
+From: "StreetEasy" <noreply@email.streeteasy.com>
+Message-ID: <b04e649cefd34acf9beb6e1ff8639352@sparkpost.com>
+X-Message-ID: b04e649cefd34acf9beb6e1ff8639352
+X-Feedback-ID: 5419220:3979562:39768:iterable
+Feedback-ID: 5419220:3979562:39768:iterable
+
+--_----4fREvgYkjJ+X5RRAQfvdCg===_75/AA-32822-98A8BE96
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="UTF-8"
+
+Emily Kleypas inquired about your listing. =0A=0A=0A=0A=0A=0A <https://stre=
+eteasy.com/> Industry Hub =0A<https://streeteasy.com/agent-resources> =0A=
+=0A=0A=0A Emily Kleypas Has Requested a Tour for 267 Clifton Place #1A =0A=
+=0A Renter's Preferred Tour: In Person =0A=0A=0A=0A=0A=0A=0A=0A=0A Emily Kl=
+eypas  emily.kleypas@gmail.com  <mailto:emily.kleypas@gmail.com>  =0A+12549=
+131395 <tel:+12549131395> =0A=0A=0ASat at 5:30 PM  <> Sat at 5:30 PM =0A Ap=
+r 25 at Anytime  <>  Apr 25 at Anytime =0A=0A REPLY  <mailto:emily.kleypas@=
+gmail.com> =0A=0A=0A <https://streeteasy.com/rental/5018624> =0A=0A=0A RENT=
+AL IN BEDFORD-STUYVESANT =0A 267 Clifton Place #1A  <https://streeteasy.com=
+/rental/5018624> =0A $3,595 base rent =0A=0A=0A=0A=0A 2 Bed =0A 1 Bath =0A =
+Listing by Pear NYC LLC (1100 Bedford Avenue, Brooklyn, NY 11216) =0A=0A=0A=
+=0A=0A=0A=0A =0A<https://streeteasy.com/business/agent-advantage=3Futm_cont=
+ent=3Demail_banner_agent_advantage_membership_live>=0A=0A=0A=0A=0A=0A Keep =
+your StreetEasy account secure by using a strong, unique password, =0Achang=
+ing your password regularly, and being cautious of suspicious emails, =0Ame=
+ssages, or links.Never share your password or one-time access code. =0A Vis=
+it Keeping Your StreetEasy Account Secure: Tips for Agents  =0A<https://str=
+eeteasy.com/blog/agent-tips-keeping-your-streeteasy-account-secure> =0Afor =
+more information. =0A=0A=0A=0A=0A=0A=0AGet the StreetEasy App =0A=0A=0A <ht=
+tps://app.us.adjust.com/tpd6xfo>  <https://app.us.adjust.com/43cg3wd> =0A=
+=0A=0A=0A Customer Support  <https://support.streeteasy.com/>  Industry Hub=
+  =0A<https://streeteasy.com/blog/industry-hub/> =0A=0A=C2=A92026 StreetEas=
+y=C2=AE=0A 1250 Broadway, New York, NY 10001 <> =0A=0A This email was sent =
+to garland@pearnyc.com <>=0A Can=E2=80=99t view this message=3F Click Here =
+=0A<https://links.streeteasy.com/e/evib=3F_t=3Dd2badf3f98c7449b8c39c3a30ce7=
+9f47&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DFc61zJAnusjXL517YHm3n3AWDcj=
+M51_ZrzuiGUtprsOSoq3xsU68KDMUkuetK_lB>=0A=0ANotification Settings =0A<https=
+://streeteasy.com/nyc/user/notification_preferences> Privacy Policy =0A<htt=
+ps://www.zillowgroup.com/zg-privacy-policy/> =0A=0A StreetEasy is a registe=
+red trademark of MFTB Hold Co Inc., and assumed name =0Aof Zillow Inc. whic=
+h has a real estate brokerage license in all 50 states and =0AD.C. Seereal =
+estate licenses. =0A<https://www.zillow.com/z/info/real-estate-licenses/> =
+=0A=0A 3979562
+--_----4fREvgYkjJ+X5RRAQfvdCg===_75/AA-32822-98A8BE96
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset="UTF-8"
+
+<!DOCTYPE html> <html xmlns=3D"http://www.w3.org/1999/xhtml" xmlns:v=3D"urn=
+:schemas-microsoft-com:vml" xmlns:o=3D"urn:schemas-microsoft-com:office:off=
+ice"> <head> <!--[if gte mso 9]><xml><o:OfficeDocumentSettings><o:AllowPNG/=
+><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![e=
+ndif]--> <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3D=
+UTF-8"> <meta name=3D"viewport" content=3D"width=3Ddevice-width, maximum-sc=
+ale=3D1"> <meta name=3D"format-detection" content=3D"telephone=3Dno"> <meta=
+ name=3D"x-apple-disable-message-reformatting"> <meta http-equiv=3D"content=
+-type" content=3D"text/html; charset=3Dutf-8"> <!--[if !mso]><!--><meta htt=
+p-equiv=3D"X-UA-Compatible" content=3D"IE=3Dedge"><!--<![endif]--> <meta na=
+me=3D"color-scheme" content=3D"light dark"> <meta name=3D"supported-color-s=
+chemes" content=3D"light dark"> <meta name=3D"lead_information_version" con=
+tent=3D"1.0"> <meta name=3D"lead_source" content=3D"Streeteasy"> <meta name=
+=3D"lead_name" content=3D"Emily Kleypas"> <meta name=3D"lead_email" content=
+=3D"emily.kleypas@gmail.com"> <meta name=3D"lead_phone" content=3D"+1254913=
+1395"> <meta name=3D"lead_message" content=3D"Message: "> <meta name=3D"lea=
+d_date_contacted" content=3D""> <meta name=3D"lead_property_address" conten=
+t=3D"267 Clifton Place #1A Brooklyn, NY, 11216"> <meta name=3D"lead_tag" co=
+ntent=3D"267 Clifton Place #1A"> <meta name=3D"lead_property_city" content=
+=3D"Brooklyn"> <meta name=3D"lead_property_state" content=3D"NY"> <meta nam=
+e=3D"lead_property_zip" content=3D"11216"> <meta name=3D"lead_mls" content=
+=3D""> <meta name=3D"lead_property_type" content=3D"Renter"> <meta name=3D"=
+lead_property_url" content=3D"https://streeteasy.com/rental/5018624"> <meta=
+ name=3D"lead_property_price" content=3D"3595"> <meta name=3D"lead_property=
+_bedrooms" content=3D"2"> <meta name=3D"lead_property_bathrooms" content=3D=
+"1.0"> <style type=3D"text/css" media=3D"all">:root{color-scheme:light dark=
+;supported-color-schemes:light dark}@media(max-width:640px){u ~ div .lightm=
+ode{display:none!important}u ~ div .gmail{display:block!important}}@support=
+s(-webkit-touch-callout:none){.darkmode.headerTextDark{color:#032765!import=
+ant}.darkmode.hide{display:none!important}.lightmode.darkSwap{display:block=
+!important}@media(prefers-color-scheme:dark){.darkmode.headerBarDark{border=
+-color:#032765!important}}}</style> <style type=3D"text/css" media=3D"all">=
+@media(prefers-color-scheme:dark){.lightmode{display:none!important}.darkmo=
+de{display:block!important}.bodyText,body[data-outlook-cycle] .bodyTextOutl=
+ook{color:#f5f5f5!important}.darkModeBkgd{background-color:#1c1c1e!importan=
+t;box-shadow:none!important}.darkModeBorder,.divider.darkModeBorder,body[da=
+ta-outlook-cycle] .darkModeBorder{border-color:#515760!important;box-shadow=
+:none!important}.bodyTextBlue{color:#0f77db!important}.cardFlagGrey{border-=
+top:8px solid #e8e8e8!important}.cardFlagBlue{border-top:8px solid #e6f8fe!=
+important}[class=3D"x_darkmode x_headerTextDark"]{color:#032765!important}[=
+class~=3Dx_darkModeBkgd]{background-color:#fff!important}[class~=3Dx_darkMo=
+deBorder]{border-color:#d8d8d8!important}[class~=3Dx_bodyText]{color:#1a1f2=
+c!important}[class=3D"x_darkmode x_headerBarDark"]{border-color:#032765!imp=
+ortant}[class=3D"x_darkmode x_hide"],[class~=3Dx_darkmode]{display:none!imp=
+ortant}[class=3D"x_lightmode x_darkSwap"],[class~=3Dx_lightmode]{display:bl=
+ock!important}body[data-outlook-cycle] .darkModeBkgd{background-color:#1414=
+14!important;[}*{box-shadow:none!important}}</style> <!--[if !mso]><!--> <s=
+tyle type=3D"text/css" media=3D"all">@media(prefers-dark-interface){.darkmo=
+de.headerBarDark{border-color:#032765!important}.darkmode.headerTextDark{co=
+lor:#032765!important}.darkmode.hide{display:none!important}.lightmode.dark=
+Swap{display:block!important}.darkModeBkgd{background-color:#1e2023!importa=
+nt;box-shadow:none!important}}</style> <style type=3D"text/css" media=3D"al=
+l">[data-ogsb] [class=3D"x_darkmode x_headerBarDark"]{border-color:#e6f8fe!=
+important}[data-ogsb] [class=3D"x_darkmode x_headerTextDark"]{color:#e6f8fe=
+!important}[data-ogsb] [class~=3Dx_darkModeBorder]{border-color:#515760!imp=
+ortant}[data-ogsb] [class~=3Dx_lightmode]{display:none!important}[data-ogsb=
+] [class~=3Dx_darkmode]{display:block!important}[data-ogsb] [class~=3Dx_dar=
+kModeBkgd]{background-color:#333!important}[data-ogsb] [class~=3Dx_receiptC=
+ontainer]{background-color:#1c1c1e!important}[data-ogsb] [class~=3Dx_bodyTe=
+xtOutlook]{color:#f5f5f5!important}body[data-outlook-cycle] [data-ogsb] .li=
+ghtmode{display:none!important}body[data-outlook-cycle] [data-ogsb] .darkmo=
+de{display:block!important}body[data-outlook-cycle] [data-ogsb] .bodyText,b=
+ody[data-outlook-cycle] [data-ogsb] .bodyTextOutlook{color:#f5f5f5!importan=
+t}body[data-outlook-cycle] [data-ogsb] .darkModeBkgd{background-color:#1c1c=
+1e!important;box-shadow:none!important}body[data-outlook-cycle] [data-ogsb]=
+ .darkModeBorder,.divider.darkModeBorder{border-color:#515760!important;box=
+-shadow:none!important}body[data-outlook-cycle] [data-ogsb] .bodyTextBlue{c=
+olor:#0f77db!important}body[data-outlook-cycle] [data-ogsb] .cardFlagGrey{b=
+order-top:8px solid #e8e8e8!important}body[data-outlook-cycle] [data-ogsb] =
+.cardFlagBlue{border-top:8px solid #e6f8fe!important}body[data-outlook-cyc=
+le] [data-ogsb] .outlookDarkBkgd{background-color:transparent!important}</s=
+tyle> <!--<![endif]--> <style>.dark-img{display:none!important}@media(prefe=
+rs-color-scheme:dark){.dark-img{display:block!important}.light-img{display:=
+none!important}}[data-ogsc] .dark-img{display:block!important}[data-ogsc] .=
+light-img{display:none!important}</style> <style>@media screen{@import url(=
+'https://fonts.googleapis.com/css2=3Ffamily=3DSource+Sans+Pro:wght@200;300;=
+400;600;700&display=3Dswap');@font-face{font-family:'Source Sans Pro';font-=
+style:normal;font-weight:200;font-display:swap;src:local('Source Sans Pro L=
+ight'),local('SourceSansPro-Light'),url(https://fonts.gstatic.com/s/sources=
+anspro/v13/6xKydSBYKcSV-LCoeQqfX1RYOo3ik4zwmhdu3cOWxy40.woff2) format('woff=
+2')}@font-face{font-family:'Source Sans Pro';font-style:normal;font-weight:=
+300;font-display:swap;src:local('Source Sans Pro Light'),local('SourceSansP=
+ro-Light'),url(https://fonts.gstatic.com/s/sourcesanspro/v13/6xKydSBYKcSV-L=
+CoeQqfX1RYOo3ik4zwmhdu3cOWxy40.woff2) format('woff2')}@font-face{font-famil=
+y:'Source Sans Pro';font-style:normal;font-weight:400;font-display:swap;src=
+:local('Source Sans Pro Regular'),local('SourceSansPro-Regular'),url(https:=
+//fonts.gstatic.com/s/sourcesanspro/v13/6xK3dSBYKcSV-LCoeQqfX1RYOo3qNa7lujV=
+j9_mf.woff2) format('woff2')}@font-face{font-family:'Source Sans Pro';font-=
+style:normal;font-weight:600;font-display:swap;src:local('Source Sans Pro S=
+emiBold'),local('SourceSansPro-SemiBold'),url(https://fonts.gstatic.com/s/s=
+ourcesanspro/v13/6xKydSBYKcSV-LCoeQqfX1RYOo3i54rwmhdu3cOWxy40.woff2) format=
+('woff2')}@font-face{font-family:'Source Sans Pro';font-style:normal;font-w=
+eight:700;font-display:swap;src:local('Source Sans Pro Bold'),local('Source=
+SansPro-Bold'),url(https://fonts.gstatic.com/s/sourcesanspro/v13/6xKydSBYKc=
+SV-LCoeQqfX1RYOo3ig4vwmhdu3cOWxy40.woff2) format('woff2')}@font-face{font-f=
+amily:'Source Sans 3';font-style:normal;font-weight:200 900;font-display:sw=
+ap;src:url(https://fonts.gstatic.com/s/sourcesans3/v19/nwpStKy2OAdR1K-IwhWu=
+dF-R3w8aZQ.woff2) format('woff2')}@font-face{font-family:'Inter';font-style=
+:normal;font-weight:500;font-display:swap;src:url(https://fonts.gstatic.com=
+/s/inter/v18/UcC73FwrK3iLTeHuS_fjbvMwCp500DAa1ZL7.woff2) format('woff2')}}<=
+/style> <style>.ExternalClass *{line-height:100%}img{-ms-interpolation-mode=
+:bicubic}#outlook a{padding:0}.ReadMsgBody{width:100%}.ExternalClass{width:=
+100%}table,td,tr{vertical-align:top}html,body{margin:0!important;padding:0!=
+important;height:100%!important;width:100%!important;border:0;outline:0}tab=
+le,td{mso-table-lspace:0!important;mso-table-rspace:0!important;padding:0;m=
+argin:0}table,tr,td,p,li,span,font,a{font-family:'Source Sans Pro','Helveti=
+ca',sans-serif}img{max-width:100%;max-height:100%;display:block;border:0 no=
+ne;outline:0;line-height:100%;outline:0;text-decoration:none;vertical-align=
+:bottom}a img{border:0 none}body{-webkit-text-size-adjust:none;-ms-text-siz=
+e-adjust:none}body a{color:inherit;text-decoration:none;font-size:inherit;l=
+ine-height:inherit}u ~ div a{color:inherit;text-decoration:none;font-size:i=
+nherit;line-height:inherit}div{display:block}img{background-color:transpare=
+nt!important}</style> <style>@media(max-width:620px){.mobile_hide{min-heigh=
+t:0;max-height:0;max-width:0;display:none;overflow:hidden;font-size:0}.desk=
+top_hide{display:block!important;max-height:none!important}.deviceWidth{wid=
+th:100%!important;padding:0}.contentContainer{width:100%!important;padding:=
+0 20px}.container{padding:0 16px!important}.spacer24{height:24px!important;=
+line-height:24px!important;font-size:24px!important}.spacer32{height:32px!i=
+mportant;line-height:32px!important;font-size:32px!important}.spacer48{heig=
+ht:48px!important;line-height:48px!important;font-size:48px!important}.padd=
+ing0{padding:0!important}.bannerWidth{width:480px!important}.border0{border=
+:none!important}.fullImg{width:100%!important;height:auto!important}.text13=
+{font-size:13px!important;line-height:14px!important}.text14{font-size:14px=
+!important;line-height:16px!important}.text16{font-size:16px!important;line=
+-height:24px!important}.text18{font-size:18px!important;line-height:24px!im=
+portant}.text20{font-size:20px!important;line-height:24px!important}.text28=
+{font-size:28px!important;line-height:36px!important}.text26{font-size:26px=
+!important;line-height:36px!important}.text24{font-size:24px!important;line=
+-height:34px!important}.colsContainer{width:100%!important}.fullWidth{width=
+:100%!important}.fullWidth table{width:100%!important}.fullWidth div{width:=
+100%!important}.heightauto{height:auto!important}.height95{height:95px!impo=
+rtant}.colContainer{display:inline-block!important;width:100%!important}.ce=
+nter{text-align:center!important}.mStack{display:block!important}.padL0{pad=
+ding-left:0!important}.padL10{padding-left:10px!important}.padR0{padding-ri=
+ght:0!important}.padL26{padding-left:26px!important}.padR0{padding-right:0!=
+important}.padT0{padding-top:0!important}.padB0{padding-bottom:0!important}=
+.padT30px{padding-top:30px!important}.padB30px{padding-bottom:30px!importa=
+nt}.padB20px{padding-bottom:20px!important}.padB24px{padding-bottom:24px!im=
+portant}.padT16px{padding-top:16px!important}.padT18px{padding-top:18px!imp=
+ortant}.padT10px{padding-top:10px!important}.padLR30px{padding-left:30px!im=
+portant;padding-right:30px!important}.padLR32px{padding-left:32px!important=
+;padding-right:32px!important}.padLR20px{padding-left:20px!important;paddin=
+g-right:20px!important}.padL20px{padding-left:20px!important}.padLR15px{pad=
+ding-left:15px!important;padding-right:15px!important}.padLR5px{padding-lef=
+t:5px!important;padding-right:5px!important}.headerLogo{width:112px!importa=
+nt;height:24px!important}.left{text-align:left!important}.width70{width:70%=
+!important}.width60{width:60%!important}.width50{width:50%!important}.width=
+40{width:40%!important}.width30{width:30%!important}.width20{width:20%!impo=
+rtant}.font24px{font-size:24px!important;line-height:28px!important}.mShow{=
+display:block!important}.mobileRadius{border-radius:0 0 12px 12px!important=
+}.mobileBorderBanner{border-radius:0 0 10px 10px!important}.mobileRadiusRig=
+ht{border-top:0!important;border-right:10px solid #7bdcef!important;border-=
+left:10px solid #7bdcef!important;border-bottom:10px solid #7bdcef!importan=
+t;border-radius:0 0 10px 10px!important}.width135{width:135px!important}.wi=
+dth120{width:120px!important}.width50{width:140px!important}}</style> <styl=
+e type=3D"text/css" media=3D"all">@media(max-width:360px){.container{paddin=
+g:0 10px!important}}</style> <style type=3D"text/css" media=3D"all">.openHo=
+use a{color:inherit!important}</style> <style type=3D"text/css" media=3D"al=
+l">@media(max-width:620px){.cardImg{width:100%!important}.spacer8{height:8p=
+x!important;line-height:8px!important;font-size:8px!important}.spacer42{hei=
+ght:42px!important;line-height:42px!important;font-size:42px!important}.lis=
+tingBy-long{padding:20px 0 5px 0!important}}</style> <style type=3D"text/cs=
+s" media=3D"all">@media(max-width:360px){.hideSmall{display:none!important}=
+@supports(-webkit-touch-callout:none){.hideSmall{display:block!important}}}=
+</style> <style type=3D"text/css" media=3D"all">@media(max-width:640px){.ag=
+entLeadMessageText .colContainer{line-height:24px!important}.agentLeadMessa=
+geText .colContainer a{line-height:24px!important}.messageContainer{padding=
+:20px 27px!important}.spacer20{height:20px!important;line-height:20px!impor=
+tant;font-size:20px!important}}</style> </head> <body width=3D"100%" ; styl=
+e=3D"margin: 0 !important; padding: 0 !important; mso-line-height-rule: exa=
+ctly; -webkit-text-size-adjust:none !important;">=0D=0A<div style=3D"color:=
+transparent;visibility:hidden;opacity:0;font-size:0px;border:0;max-height:1=
+px;width:1px;margin:0px;padding:0px;border-width:0px!important;display:none=
+!important;line-height:0px!important;"><img border=3D"0" width=3D"1" height=
+=3D"1" src=3D"https://post.spmailtechnolo.com/q/Mva5Ly_yFBVZzttn501DEA~~/AA=
+TWbhA~/gBJEioO5NaJMHFxiQAAlsNxaUJFejLAhebP7l9CBVTRoA0YrfpKPfEOoXrAzEPUp4uEp=
+iswWX2TbGcIQ-DJXQQ~~" alt=3D""/></div>=0D=0A<span style=3D"color:transparen=
+t;visibility:hidden;display:none;opacity:0;height:0;width:0;font-size:0;">E=
+mily Kleypas inquired about your listing.</span><img src=3D"https://links.s=
+treeteasy.com/e/eo=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&amp;_m=3Db04e649=
+cefd34acf9beb6e1ff8639352&amp;_e=3DFc61zJAnusjXL517YHm3n3AWDcjM51_ZrzuiGUtp=
+rsOxK4IfZVUE_uT_kfKhG6TpR_efBLsRKmuHOdNWMwaqr4EjfXDNWToFeRHi8lMFAx3jcOkRtWE=
+Zmb1T3PHCdMxTvwLVi2D9gtwW_38AZY7TcA%3D%3D" style=3D"border:0;width:1px;heig=
+ht:1px;border-width:0px!important;display:none!important;line-height:0!impo=
+rtant;" width=3D"1" height=3D"1"/> <!----> <!--[if (mso)|(IE)]><style>table=
+,tr,td,span,table td,font,a{font-family:Helvetica,Arial,san-serif!important=
+}td{line-height:100%!important}a{text-decoration:none}.deviceWidth{width:64=
+0px!important;text-align:center}.contentContainer{width:540px!important}</s=
+tyle><![endif]--> <!-- Wrapper --> <table width=3D"100%" border=3D"0" cellp=
+adding=3D"0" cellspacing=3D"0" align=3D"center" style=3D"margin: 0 !importa=
+nt; padding: 0 !important; mso-line-height-rule: exactly;"> <tr><td width=
+=3D"100%" valign=3D"top" bgcolor=3D"#ffffff" cellpadding=3D"0" cellspacing=
+=3D"0" align=3D"center"><table width=3D"100%" class=3D"deviceWidth" align=
+=3D"center" style=3D"max-width: 640px; min-width: 320px; width: 100%;" bord=
+er=3D"0" cellpadding=3D"0" cellspacing=3D"0"> <!--[if mso]><tr><td><table w=
+idth=3D"640" align=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D=
+"0" style=3D"width:640px;"><![endif]--> <tr><td width=3D"100%" border=3D"0"=
+ cellpadding=3D"0" cellspacing=3D"0" align=3D"center"> <tr> <td width=3D"10=
+0%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" align=3D"center"> <tab=
+le cellpadding=3D"0" cellspacing=3D"0" border=3D"0" width=3D"100%" style=3D=
+"width: 100%;"> <tr> <td bgcolor=3D"#ffffff" align=3D"center" valign=3D"top=
+"> <table cellpadding=3D"0" cellspacing=3D"0" border=3D"0" width=3D"540" st=
+yle=3D"width: 540px;" class=3D"fullWidth"> <tr> <td align=3D"center" valign=
+=3D"middle" style=3D"padding: 15px 15px; width: 540px; pading-bottom:0px;ve=
+rtical-align: middle;" width=3D"540" class=3D"fullWidth"> <table cellpaddin=
+g=3D"0" cellspacing=3D"0" border=3D"0" width=3D"540" style=3D"width: 540px;=
+" class=3D"fullWidth"> <tr> <td align=3D"center" valign=3D"middle" width=3D=
+"240" style=3D"width: 240px;"> <a href=3D"https://links.streeteasy.com/a/cl=
+ick=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&_m=3Db04e649cefd34acf9beb6e1ff8=
+639352&_e=3DL8hVTfBiILz4uFwRPYLfWGr16gQ_YHweYqtROpGy4ZTm-RDOrBU2pGtQW5FLn33=
+SkW7ILaQDm6l56pQk3UMvIMxSSbiXULqCi6ke4VTaZ-UnMMYCqVxIm2aLY2bO0xoSoUDtMCOvM4=
+7M4OA12hAJPVek7UOejG1cbEdOLr4AlmFz_8v1UKuwC8DjS6igvwwC8cSsTLH_uODjqO8z9V3q9=
+Hlg0-IY47xLoxXct07cYfImhah8kQyXF7SxMvQBOwU2D_xIWsTerUbcCXw2OR2mZcWsx9nXbBWk=
+ihZ18S2kqDySGegXCwnJL3LgPl5DaOpI8vrxAAG4BMMx4XKOx1JMT2b3f7UiiGDxNt1o9A93O41=
+vtI38Sj7HiGT_W-4p1f4w_4SXlQfozxCzrT95vjg1MgZWe3SGneYQSQnpsVVHaOh98bZaLz-eMM=
+KNAAZO7-g1"> <img alt=3D"=F0=9F=8F=A2 StreetEasy=C2=AE" src=3D"https://libr=
+ary.iterable.com/1555/4891/3f5e17e9abd141309684c5b4cc58b042-Logo_1.png" sty=
+le=3D"width: 142px;" width=3D"142"/> </a> </td> <td align=3D"center" valign=
+=3D"middle" width=3D"240" style=3D"width: 240px;"> <a href=3D"https://links=
+.streeteasy.com/u/click=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&_m=3Db04e6=
+49cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4uFwRPYLfWKbSoTxmUyHMd4EDcG_-ZW=
+8698fm5yb-Zx-MyHtL2hvB3ld8mqMrv8PL8ntGLtTSy2czrHptRWxIM0AugxmnI7VMIAXvoHl44=
+GDedVXrNpcc9MiDKmfGNvsfc2hTnWQNKy5y5rnWMUzMqzUgT3-QCm3Deb-p5aGUGxio9pvymDIw=
+r9sXodUd-VQnWzOL26NTAbqZUGHIONn653OqfsEC3sgC4tSSELDfRB26-hAh9wvSoLTVBWtGwn9=
+ELmQWdunc8x6ef-rd6KOEdMDKQ_gLI3aP-1ZQ9R88e1NcAfj-FA38XkL7nMWoJi0Q2TajjYcd_q=
+iTk4JzC3uXEnRTPL3PeW4f98IUiNEyDTH1YKnjfNt8ngEzEK_tcfbz2FM754Jb9RAOziZamktLs=
+9rMQkhQ7OUEjwdtW3U0ftX0q-C1x7d-u3CIrvPZKGX0Ns6m7c8Q06d9nxBnm1G_kliTjTraANs%=
+3D" style=3D"color: #0041D9; text-decoration: none; font-weight: 700;font-f=
+amily: 'Source Sans Pro', Arial, sans-serif; font-size: 14px;">Industry Hub=
+</a> </td> </tr> </table> </td> </tr> </table> </td> </tr> </table> </td> <=
+/tr></td></tr> <!----> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --=
+> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <=
+!-- --> <!----> <tr><td width=3D"100%"><table width=3D"100%" border=3D"0" c=
+ellpadding=3D"0" cellspacing=3D"0" style=3D"border-collapse:collapse;backgr=
+ound:#ffffff;"> <tr><td align=3D"center" valign=3D"middle" style=3D"vertica=
+l-align:middle;" class=3D"container"><table align=3D"center" width=3D"100%"=
+ border=3D"0" cellpadding=3D"0" cellspacing=3D"0" style=3D"border-collapse:=
+collapse;max-width:540px;" class=3D"contentContainer"> <!--[if mso]><tr><td=
+><table width=3D"540" cellpadding=3D"0" cellspacing=3D"0" align=3D"center" =
+style=3D"border-collapse: collapse;width:540px;"><![endif]--> <tr><td heigh=
+t=3D"30" style=3D"height:30px;line-height:30px;font-size:30px;" class=3D"sp=
+acer24"></td></tr> <tr> <td align=3D"center" style=3D"font-family:'Source S=
+ans Pro',Helvetica,sans-serif;font-size:20px;line-height: 28px;color:#272d3=
+9;padding:0 70px;" class=3D"text18 padding0 bodyText"> Emily Kleypas Has Re=
+quested a Tour for <b style=3D"color: #032765;" class=3D"bodyTextBlue">267 =
+Clifton Place #1A</b> </td> </tr> <tr><td height=3D"10" style=3D"height:10p=
+x;line-height:10px;font-size:10px;" class=3D"spacer20"></td></tr> <tr> <td =
+align=3D"center" style=3D"font-family:'Source Sans Pro',Helvetica,sans-seri=
+f;font-size:16px;line-height: 28px;color:#272d39;padding:0px; 70px;" class=
+=3D"text18 padding0 bodyText"> Renter's Preferred Tour: <b style=3D"color: =
+#032765;" class=3D"bodyTextBlue">In Person</b> </td> </tr> <tr><td height=
+=3D"30" style=3D"height:30px;line-height:30px;font-size:30px;" class=3D"spa=
+cer20"></td></tr> <!--[if mso]></table></td></tr><![endif]--> </table></td>=
+</tr></table></td></tr> <!-- ------Message Box------ --> <!----> <!-- --> <=
+!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!--=
+ --> <!-- --> <!-- --> <!-- --> <!-- --> <!-- --> <!----> <tr><td width=3D"=
+100%"><table width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0=
+" style=3D"border-collapse:collapse;background:#ffffff;"> <tr><td align=3D"=
+center" valign=3D"middle" style=3D"vertical-align:middle;" class=3D"contain=
+er"><table align=3D"center" width=3D"100%" border=3D"0" cellpadding=3D"0" c=
+ellspacing=3D"0" style=3D"border-collapse:collapse;max-width:540px;" class=
+=3D"contentContainer"> <!--[if mso]><tr><td><table width=3D"540" cellpaddin=
+g=3D"0" cellspacing=3D"0" align=3D"center" style=3D"border-collapse: collap=
+se;width:540px;"><![endif]--> <tr> <td> <table align=3D"center" cellpadding=
+=3D"0" cellspacing=3D"0" border=3D"0" width=3D"100%" style=3D"border-collap=
+se:collapse;"> <tr> <td align=3D"center"> <table align=3D"center" cellpaddi=
+ng=3D"0" cellspacing=3D"0" border=3D"0" width=3D"538" style=3D"width:538px;=
+border-collapse:collapse;background:#ffffff;border:1px solid #e8e8e8;" clas=
+s=3D"fullWidth"> <tr> <td style=3D"padding:30px 30px;" class=3D"messageCont=
+ainer"> <table align=3D"center" cellpadding=3D"0" cellspacing=3D"0" border=
+=3D"0" width=3D"100%" style=3D"border-collapse:collapse;background:#ffffff;=
+"> <!----> <!----> <tr><td height=3D"10" style=3D"height:10px;line-height:1=
+0px;font-size:10px;" class=3D"mobile_hide"></td></tr> <tr> <td style=3D"pad=
+ding:16px 0 30px;"> <table align=3D"left" cellpadding=3D"0" cellspacing=3D"=
+0" border=3D"0" style=3D"border-collapse:collapse;" class=3D"colsContainer =
+agentLeadMessageText"> <tr> <th align=3D"left" style=3D"font-family:'Source=
+ Sans Pro',Helvetica,sans-serif;font-size:16px;line-height:16px;color:#272d=
+39;font-weight:600;padding-right:12px;vertical-align:middle;" class=3D"colC=
+ontainer padding0 border0 bodyText"> Emily Kleypas </th> <th align=3D"left"=
+ style=3D"padding:0 12px;border-left:1px solid #cdcdcd;line-height:16px;" c=
+lass=3D"colContainer padding0 border0"> <a href=3D"mailto:emily.kleypas@gma=
+il.com" style=3D"font-family:'Source Sans Pro',Helvetica,sans-serif;font-si=
+ze:16px;line-height:16px;color:#1876db;font-weight:600;text-decoration:none=
+;"> emily.kleypas@gmail.com </a> </th> <!----> <th align=3D"left" style=3D"=
+padding-left:12px;border-left:1px solid #cdcdcd;line-height:16px;" class=3D=
+"colContainer padding0 border0"> <a href=3D"tel:+12549131395" style=3D"font=
+-family:'Source Sans Pro',Helvetica,sans-serif;font-size:16px;line-height:1=
+6px;color:#1876db;font-weight:600;text-decoration:none;"> +12549131395 </a>=
+ </th> <!----> </tr> </table> </td> </tr> <tr> <td style=3D"font-family:'So=
+urce Sans Pro',Helvetica,sans-serif;font-size:12px;line-height:15px;color:#=
+62646a;padding-bottom:8px;font-weight:700;" class=3D"bodyText"> <!----> <!-=
+---> </td> </tr> <tr><td height=3D"10" style=3D"height:10px;line-height:10p=
+x;font-size:10px;" class=3D"mobile_hide"></td></tr> <!----> <tr> <td style=
+=3D"padding-right:7px;padding-bottom:24px;" align=3D"left"> <!----> <a name=
+=3D"Date" style=3D"background-color: #d5f3fd; border-radius: 20px; border: =
+2px solid #d5f3fd; font-size: 14px; font-family: 'Source Sans Pro',Helvetic=
+a,sans-serif; font-weight: 700; text-decoration: none; padding: 4px 20px; c=
+olor:#272d39; cursor: default; display: inline-block; mso-padding-alt: 0;li=
+ne-height:24px; vertical-align:middle"> <!--[if mso]><i style=3D"letter-spa=
+cing: 8px; mso-font-width: -100%; mso-text-raise: 8pt;">&nbsp;</i><![endif]=
+--> <span style=3D"mso-text-raise: 4pt;">Sat at 5:30 PM</span> <!--[if mso]=
+><i style=3D"letter-spacing: 8px; mso-font-width: -100%;">&nbsp;</i><![endi=
+f]--> </a> <div align=3D"left" style=3D"padding-top:0px;padding-right:0px;p=
+adding-bottom:0px;padding-left:0px;"> <!--[if mso]><table align=3D"left" wi=
+dth=3D"100%" cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"bord=
+er-spacing: 0; border-collapse: collapse; mso-table-lspace:0pt; mso-table-r=
+space:0pt;"><tr><td style=3D"padding-top: 0px; padding-right: 0px; padding-=
+bottom: 0px; padding-left: 0px" align=3D"left"><v:roundrect xmlns:v=3D"urn:=
+schemas-microsoft-com:vml" xmlns:w=3D"urn:schemas-microsoft-com:office:word=
+" href=3D"" style=3D"height:25.5pt; width:px; v-text-anchor:middle;" arcsiz=
+e=3D"106%" stroke=3D"false" fillcolor=3D"#d5f3fd"><w:anchorlock/><v:textbox=
+ inset=3D"0,0,0,0"><center style=3D"color:#272d39; font-family:Helvetica, A=
+rial, sans-serif; font-size:14px"><![endif]--> <div style=3D"text-decoratio=
+n:none;display:inline-block;color:#272d39;background-color:#d5f3fd;border-r=
+adius:36px;-webkit-border-radius:36px;-moz-border-radius:36px;width:auto;bo=
+rder-top:1px solid #d5f3fd;border-right:1px solid #d5f3fd;border-bottom:1px=
+ solid #d5f3fd;border-left:1px solid #d5f3fd;padding-top:4px;padding-bottom=
+:4px;font-family:'Source Sans Pro', Helvetica Neue, Helvetica, sans-serif;t=
+ext-align:center;mso-border-alt:none;word-break:keep-all;"><span style=3D"p=
+adding-left:20px;padding-right:20px;font-size:14px;display:inline-block;"><=
+span style=3D"font-size:14x;line-height:24px;word-break:break-word;mso-line=
+-height-alt:24px;"><span style=3D"font-size:14px;line-height:24px;" data-mc=
+e-style=3D"font-size: 14px;line-height:24px;"><strong>Sat at 5:30 PM</stron=
+g></span></span></span></div> <!--[if mso]></center></v:textbox></v:roundre=
+ct></td></tr></table><![endif]--> </div> </td> </tr> <tr> <td style=3D"padd=
+ing-right:7px;padding-bottom:24px;" align=3D"left"> <!----> <a name=3D"Date=
+" style=3D"background-color: #d5f3fd; border-radius: 20px; border: 2px soli=
+d #d5f3fd; font-size: 14px; font-family: 'Source Sans Pro',Helvetica,sans-s=
+erif; font-weight: 700; text-decoration: none; padding: 4px 20px; color:#27=
+2d39; cursor: default; display: inline-block; mso-padding-alt: 0;line-heigh=
+t:24px; vertical-align:middle"> <!--[if mso]><i style=3D"letter-spacing: 8p=
+x; mso-font-width: -100%; mso-text-raise: 8pt;">&nbsp;</i><![endif]--> <spa=
+n style=3D"mso-text-raise: 4pt;"> Apr 25 at Anytime</span> <!--[if mso]><i =
+style=3D"letter-spacing: 8px; mso-font-width: -100%;">&nbsp;</i><![endif]--=
+> </a> <div align=3D"left" style=3D"padding-top:0px;padding-right:0px;paddi=
+ng-bottom:0px;padding-left:0px;"> <!--[if mso]><table align=3D"left" width=
+=3D"100%" cellpadding=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-=
+spacing: 0; border-collapse: collapse; mso-table-lspace:0pt; mso-table-rspa=
+ce:0pt;"><tr><td style=3D"padding-top: 0px; padding-right: 0px; padding-bot=
+tom: 0px; padding-left: 0px" align=3D"left"><v:roundrect xmlns:v=3D"urn:sch=
+emas-microsoft-com:vml" xmlns:w=3D"urn:schemas-microsoft-com:office:word" h=
+ref=3D"" style=3D"height:25.5pt; width:px; v-text-anchor:middle;" arcsize=
+=3D"106%" stroke=3D"false" fillcolor=3D"#d5f3fd"><w:anchorlock/><v:textbox =
+inset=3D"0,0,0,0"><center style=3D"color:#272d39; font-family:Helvetica, Ar=
+ial, sans-serif; font-size:14px"><![endif]--> <div style=3D"text-decoration=
+:none;display:inline-block;color:#272d39;background-color:#d5f3fd;border-ra=
+dius:36px;-webkit-border-radius:36px;-moz-border-radius:36px;width:auto;bor=
+der-top:1px solid #d5f3fd;border-right:1px solid #d5f3fd;border-bottom:1px =
+solid #d5f3fd;border-left:1px solid #d5f3fd;padding-top:4px;padding-bottom:=
+4px;font-family:'Source Sans Pro', Helvetica Neue, Helvetica, sans-serif;te=
+xt-align:center;mso-border-alt:none;word-break:keep-all;"><span style=3D"pa=
+dding-left:20px;padding-right:20px;font-size:14px;display:inline-block;"><s=
+pan style=3D"font-size:14x;line-height:24px;word-break:break-word;mso-line-=
+height-alt:24px;"><span style=3D"font-size:14px;line-height:24px;" data-mce=
+-style=3D"font-size: 14px;line-height:24px;"><strong> Apr 25 at Anytime</st=
+rong></span></span></span></div> <!--[if mso]></center></v:textbox></v:roun=
+drect></td></tr></table><![endif]--> </div> </td> </tr> <!----> <tr> <td al=
+ign=3D"left"> <!-- --Full width button-- --> <table width=3D"100%" cellpadd=
+ing=3D"0" cellspacing=3D"0" border=3D"0" style=3D"border-collapse:collapse;=
+background:transparent;" class=3D"fullWidth"> <tr> <td align=3D"center" sty=
+le=3D"background-color:#1278dc;"> <div class=3D"button-container" align=3D"=
+center" style=3D"padding-top:0px;padding-right:0px;padding-bottom:0px;paddi=
+ng-left:0px;"> <!--[if mso]><table width=3D"100%" cellpadding=3D"0" cellspa=
+cing=3D"0" border=3D"0" style=3D"border-spacing: 0; border-collapse: collap=
+se; mso-table-lspace:0pt; mso-table-rspace:0pt;"><tr><td style=3D"padding-t=
+op: 0px; padding-right: 0px; padding-bottom: 0px; padding-left: 0px" align=
+=3D"center"><v:roundrect xmlns:v=3D"urn:schemas-microsoft-com:vml" xmlns:w=
+=3D"urn:schemas-microsoft-com:office:word" href=3D"mailto:emily.kleypas@gma=
+il.com" style=3D"height:48px; width:400; v-text-anchor:middle;" arcsize=3D"=
+0%" strokeweight=3D"0.75pt" strokecolor=3D"#1278dc" fillcolor=3D"#1278dc"><=
+w:anchorlock/><v:textbox inset=3D"0,0,0,0"><center style=3D"color:#ffffff;f=
+ont-family:Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;"><![e=
+ndif]--> <a href=3D"mailto:emily.kleypas@gmail.com" target=3D"_blank" style=
+=3D"-webkit-text-size-adjust:none;text-decoration: none; display:inline-blo=
+ck;color:#ffffff;background-color:#1278dc;border-radius: 0px;-webkit-border=
+-radius:0px;-moz-border-radius:0px;width:100%;border-top:1px solid #1278dc;=
+border-right:1px solid #1278dc;border-bottom:1px solid #1278dc;border-left:=
+1px solid #1278dc;padding-top:8px;padding-bottom:8px;font-family: 'Source S=
+ans Pro',Helvetica,sans-serif;text-align: center; mso-border-alt: none; wor=
+d-break: keep-all;" class=3D"fullWidth"> <span style=3D"padding-left:32px;p=
+adding-right:32px;font-size:14px;font-weight:700;display:inline-block;"> <s=
+pan style=3D"font-size: 14px; line-height: 2;mso-line-height-alt:32px;"> RE=
+PLY </span> </span> </a> <!--[if mso]></center></v:textbox></v:roundrect></=
+td></tr></table><![endif]--> </div> </td> </tr> </table> <!-- --End full wi=
+dth button-- --> </td> </tr> </table> </td> </tr> </table> </td> </tr> <tr>=
+<td height=3D"32" style=3D"height:32px;line-height:32px;font-size:32px;"></=
+td></tr> </table> </td> </tr> <!-- ------End message box------ --> <!-- ---=
+---Listing card------ --> <tr> <td align=3D"center" style=3D"padding-bottom=
+:32px;"> <!----> <table width=3D"540" border=3D"0" cellpadding=3D"0" cellsp=
+acing=3D"0" style=3D"border-collapse:collapse;box-shadow:4px 4px 30px 0 rgb=
+a(0,0,0,0.12);border:1px solid #e8e8e8;background-color:#ffffff;width:540px=
+;" class=3D"colsContainer darkModeBorder"> <tr><th class=3D"colContainer" a=
+lign=3D"left" valign=3D"middle" style=3D"font-weight:400;line-height:0px;ve=
+rtical-align:middle;font-size:0px;"> <!----> <!----> <a href=3D"https://lin=
+ks.streeteasy.com/a/click=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&_m=3Db04e=
+649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4uFwRPYLfWEJ6U_kPRNKowNy03iwER=
+2XNH2N0F45UiDTrFSDF0H9Q-9R8lPBgEWCTAMiCl0AaZgCyq_sZa9bLwjU9zfufr86OE6H1wJSi=
+4speuX80Riyme0Ul7f9LHoIK4_NWa5mj0xgH0IC2N-Lr3GQLIKk2IQEXV0SgDTuPttIMPcNqqus=
+LbJMN3ZCc5AJqn7qxzz11UJxh6Eb1HWHk7iTUBGbwV2AVravYIxVN-gHytIzXjpJ-93cTAvKiYI=
+M3YHe9vP6cbfqSGl3rrqNB23pAalu79OkuA71-iP_T7K99gqy0gcaoaMfEWOFw9OZs0Gep-CzN1=
+f-tSk3qhF1i2C0p4iI_U216uwCMvE3uMfrmka1ovjcfFeNzvI6Wvqmzwy2bPBswbOO0i6OoIlOe=
+MKyOcmxEuO-fTK6AU03j31y4BSjYCPS0_7Ejm7P0SKEgh9BX6H5pCOD4KT7TZxtQSk8FspUR6nE=
+%3D" style=3D"text-decoration:none;" target=3D"_blank"><img src=3D"https://=
+photos.zillowstatic.com/fp/e551131dad564d625f930d8a4428a0bf-d_c.png" class=
+=3D"fullWidth" width=3D"259" style=3D"width:259px;display:inline-block;line=
+-height:0px;"></a> </th> <th class=3D"colContainer darkModeBkgd" align=3D"r=
+ight" valign=3D"middle" height=3D"auto" style=3D"font-weight:400;width:299p=
+x;" width=3D"299"> <table width=3D"100%" border=3D"0" cellpadding=3D"0" cel=
+lspacing=3D"0" height=3D"100%" style=3D"border-collapse:collapse;"> <tr><td=
+ style=3D"padding:20px;"> <table width=3D"100%" border=3D"0" cellpadding=3D=
+"0" cellspacing=3D"0" height=3D"100%" style=3D"border-collapse:collapse;"> =
+<tr><td width=3D"100%" height=3D"65" valign=3D"top"> <table border=3D"0" ce=
+llpadding=3D"0" cellspacing=3D"0" style=3D"border-collapse:collapse;" align=
+=3D"left"> <tr><td style=3D"font-family:'Source Sans Pro',Helvetica,sans-se=
+rif;color:#8c8c8c;line-height:12px;font-weight:700;font-size:12px;padding-b=
+ottom:1px;" class=3D"address"> <!----> RENTAL IN BEDFORD-STUYVESANT <!---->=
+ </td></tr> <tr><td style=3D"font-family:'Source Sans Pro',Helvetica,sans-s=
+erif;font-size:16px;font-weight:600;line-height:24px;color:#62646a;padding:=
+4px 0;" class=3D"address"> <!----> <!----> <!----> <!----> <a href=3D"https=
+://links.streeteasy.com/a/click=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&_m=
+=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4uFwRPYLfWEJ6U_kPRNKowN=
+y03iwER2XNH2N0F45UiDTrFSDF0H9Q-9R8lPBgEWCTAMiCl0AaZgCyq_sZa9bLwjU9zfufr86OE=
+6H1wJSi4speuX80Riyme0Ul7f9LHoIK4_NWa5mj0xgH0IC2N-Lr3GQLIKk2IQEXV0SgDTuPttIM=
+PcNqqusLbJMN3ZCc5AJqn7qxzz11UNejQ05XCssK55rYxqSOmnx7XFabzaAAKLwMw9NBqZeH8tA=
+8TKyEHzi-emStTYCNSLNteTlo33gbyrAx0Kcy4CvQcYo_mQh9g_VlIgYXxVzbnSjpuHzpYRKPuZ=
+Ktb7wNdAVVfwjOFFYfaWth5GZrrmofN6aVLc2wPbB8oWeqALFSQ3uYwbdn8QXkT1bRJ0W-u1rLw=
+E_oZlYaSWjVyuGn1oSnpQL_LuQKyq5FpeoU2mpd4LIpMcm28ZOi60V8Cqa0Em7Y98llWL3MMDXh=
+GW0RIaQ%3D" style=3D"font-family:'Source Sans Pro',Helvetica,sans-serif;fon=
+t-size:16px;font-weight:600;line-height:24px;color:#0f77db;text-decoration:=
+none;"> <span><font color=3D"#0f77db"> <!----> 267 Clifton Place #1A <!----=
+> </font></span> </a> <!----> </td></tr> <tr><td style=3D"font-family:'Sour=
+ce Sans Pro',Helvetica,sans-serif;font-size:24px;line-height:31px;color:#1a=
+1f2c;font-weight:700;" class=3D"bodyText"> <!----> $3,595&nbsp;<span style=
+=3D"font-size:12px; color:#8c8c8c;font-weight:normal;">base rent</span> </t=
+able> </td></tr> <!-- ----Pill---- --> <tr> <!----> <td height=3D"20" valig=
+n=3D"middle" style=3D"padding-top:12px;height:20px;line-height:20px;font-si=
+ze:20px;vertical-align:top;" class=3D"spacer32"> <table border=3D"0" cellpa=
+dding=3D"0" cellspacing=3D"0" style=3D"border-collapse:collapse;" align=3D"=
+left"> <tr><td align=3D"left" style=3D"vertical-align:top;line-height:0px;h=
+eight:0px;font-size:0px;"> <!----> </td></tr> </table> </td></tr> <!-- ----=
+End Pill---- --> <tr><td width=3D"400" height=3D"16" valign=3D"bottom" styl=
+e=3D"vertical-align:bottom;"> <table border=3D"0" cellspacing=3D"0" cellpad=
+ding=3D"0" style=3D"border-collapse:collapse;"> <tr><td valign=3D"middle" s=
+tyle=3D"padding-right:8px;vertical-align:middle;height:14px;line-height:1;"=
+ height=3D"14"> <table valign=3D"middle" border=3D"0" cellspacing=3D"0" cel=
+lpadding=3D"0" style=3D"border-collapse:collapse;vertical-align:middle;"> <=
+tr><td valign=3D"middle" style=3D"vertical-align:middle;line-height:14px;he=
+ight:14px;mso-text-raise:-1px;" height=3D"14"> <img src=3D"https://d15k2d11=
+r6t6rl.cloudfront.net/public/users/Integrators/669d5713-9b6a-46bb-bd7e-c542=
+cff6dd6a/fb0928316b874a6abbc833892aeb67fa/seIcons/icon_bed.png" alt=3D"Bed"=
+ height=3D"12" width=3D"18" style=3D"height:12px;width:18px;display:block;p=
+adding:0;margin:0;"> </td> <td style=3D"font-family:'Source Sans Pro',Helve=
+tica,sans-serif;font-size:14px;color:#191f2d;line-height:1;padding-left:8px=
+;" class=3D"bodyText"> <!----> 2 Bed </td></tr> </table> </td> <td valign=
+=3D"middle" style=3D"padding:0 8px;vertical-align:middle;height:14px;line-h=
+eight:1;border-left:1px solid #979797;" height=3D"14"> <table valign=3D"mid=
+dle" border=3D"0" cellspacing=3D"0" cellpadding=3D"0" style=3D"border-colla=
+pse:collapse;vertical-align:middle;"> <tr><td valign=3D"middle" style=3D"ve=
+rtical-align:middle;line-height:14px;height:14px;mso-text-raise:-1px;" heig=
+ht=3D"14"> <img src=3D"https://d15k2d11r6t6rl.cloudfront.net/public/users/I=
+ntegrators/669d5713-9b6a-46bb-bd7e-c542cff6dd6a/fb0928316b874a6abbc833892ae=
+b67fa/seIcons/icon_bath.png" alt=3D"Bath" height=3D"12" width=3D"15" style=
+=3D"height:12px;width:15px;display:block;"> </td> <td style=3D"font-family:=
+'Source Sans Pro',Helvetica,sans-serif;font-size:14px;color:#191f2d;line-he=
+ight:1;padding-left:8px;" class=3D"bodyText"> 1 Bath </td></tr> </table> </=
+td> <!--[if !mso]><!--> <!----> <!--<![endif]--> </tr> </table> </td></tr> =
+<!----> <tr> <td style=3D"font-family:'Source Sans Pro',Helvetica,sans-seri=
+f;font-size:12px;font-style:normal;font-weight:normal;line-height:16px;colo=
+r:#62646A;padding-top:15px;" class=3D"bodyText listingBy-long"> Listing by =
+Pear NYC LLC (1100 Bedford Avenue, Brooklyn, NY 11216) </td> </tr> <!----> =
+</table> </td></tr> </table> </th> </tr> </table> </td> </tr> <!-- ------En=
+d listing card------ --> <tr><td height=3D"16" style=3D"height:16px;line-he=
+ight:16px;font-size:16px;" class=3D"spacer32">&nbsp;</td></tr> <!-- ------E=
+nd feature listing box------ --> <!--[if mso]></table></td></tr><![endif]--=
+> </table></td></tr></table></td></tr> <!-- ------Footer------ --> <tr><td>=
+<!--[if mso | IE]><table align=3D"center" border=3D"0" cellpadding=3D"0" ce=
+llspacing=3D"0" class=3D"bbc-94-outlook r-outlook mj-w-outlook" role=3D"pre=
+sentation" style=3D"width:640px;" width=3D"640"><tr><td style=3D"line-heigh=
+t:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]--><div class=
+=3D"bbc-94 r mj-w" style=3D"margin:0 auto;max-width:640px"><table align=3D"=
+center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentati=
+on" style=3D"width:100%"><tbody><tr><td style=3D"direction:ltr;font-size:0p=
+x;padding:0;text-align:center"><!--[if mso | IE]><table role=3D"presentatio=
+n" border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td class=3D"r-outl=
+ook f-outlook mj-s-outlook" width=3D"640px"><table align=3D"center" border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0" class=3D"r-outlook f-outlook mj-=
+s-outlook" role=3D"presentation" style=3D"width:640px;" width=3D"640"><tr><=
+td style=3D"line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><!=
+[endif]--><div class=3D"r f mj-s" style=3D"margin:0 auto;max-width:640px"><=
+table align=3D"center" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" rol=
+e=3D"presentation" style=3D"width:100%"><tbody><tr><td style=3D"direction:l=
+tr;font-size:0px;padding:0;text-align:center"><!--[if mso | IE]><table role=
+=3D"presentation" border=3D"0" cellpadding=3D"0" cellspacing=3D"0"><tr><td =
+class=3D"f-outlook mj-c-outlook nc-outlook" style=3D"vertical-align:top;wid=
+th:640px;"><![endif]--><div class=3D"mj-column-per-100 mj-outlook-group-fix=
+ f mj-c nc" style=3D"font-size:0px;text-align:left;direction:ltr;display:in=
+line-block;vertical-align:top;width:100%"><table border=3D"0" cellpadding=
+=3D"0" cellspacing=3D"0" role=3D"presentation" width=3D"100%"><tbody><tr><t=
+d style=3D"vertical-align:top;padding:0"><table border=3D"0" cellpadding=3D=
+"0" cellspacing=3D"0" role=3D"presentation" style=3D"" width=3D"100%"><tbod=
+y><tr><td align=3D"center" class=3D"a9c-f2 mj-i nf" style=3D"font-size:0px;=
+padding:0;word-break:break-word"><table border=3D"0" cellpadding=3D"0" cell=
+spacing=3D"0" role=3D"presentation" style=3D"border-collapse:collapse;borde=
+r-spacing:0px" class=3D"mj-full-width-mobile"><tbody><tr><td style=3D"width=
+:100%" class=3D"mj-full-width-mobile" width=3D"100%"><a href=3D"https://lin=
+ks.streeteasy.com/u/click=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&_m=3Db04e=
+649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4uFwRPYLfWMy-0Fdd-GTWdzj78mjTS=
+np6dLvI9bqJvRn1ieV70XpM-bDglVJ3PjVtpN_mjmxK9s-4gay7dIHQiFTZ-8h4S-Pbn7aRAtB2=
+XnnktRaT_banmUheZcDbUUqCnW8qtR0mgWntmLfxI8bsnITEEihG9UsK_DwRwwop-NARcNLHoPG=
+8xq7y6tcXj1mF7ZFkFBBfwbJVci2JjAFT2Nio-jO1f1tZN3TTMzjhrO8gaLswKjexgA-Oh3UCtG=
+-QOpqwg2mtwlBI9DK8i72EegmC_j8uHPtheH7s-eu84K5fIdfzSJvgd16QbgJLBWmqD-IhMIDNW=
+YO2wCTcY9XdfT7Sko_1q3Y5_oPv1JAhRnNXnxx4Zpi8bz-LDunsqo90GPQXLu7Xbq88UNCnnAMs=
+7nkWm_XGBMfDCXECcVsIXRVfNSw48H4ADJsmfO6ZvZ9S_VIknHuJ-DXyEwt1k5NZsPVfbWCt4yh=
+SreKZmS83P-9Lrj_pWref908ALuiSg46X7mPXnKOfsS8PphZbvB3Hpbis0XLZ8gjwEAJh7uh0yk=
+CLAfYTXWI43Giqz3-sz-CoADOjiiv5Icc4n46mxjREHwgXhyfn7sVz_yKgEuiuMZz4VlHFZ785V=
+Mp7l35ALUOkjcbL63QBHQ%3D%3D" target=3D"_blank"><img alt=3D"Agent Advantage =
+Membership" src=3D"https://emaillove-assets.b-cdn.net/users/121500488290943=
+5689/assets/df6f9fb3-be04-4002-aa24-665683a55e91.png" style=3D"border:0;dis=
+play:block;outline:0;text-decoration:none;width:100%;font-size:13px;max-wid=
+th:100%;height:auto" width=3D"640" height=3D"auto"></a></td></tr></tbody></=
+table></td></tr></tbody></table></td></tr></tbody></table></div><!--[if mso=
+ | IE]></td></tr></table><![endif]--></td></tr></tbody></table></div><!--[i=
+f mso | IE]></td></tr></table></td></tr></table><![endif]--></td></tr></tbo=
+dy></table></div><!--[if mso | IE]></td></tr></table><![endif]--></td></tr>=
+ <tr><td><tr> <td> <table align=3D"center" cellpadding=3D"0" cellspacing=3D=
+"0" border=3D"0" width=3D"100%" style=3D"border-collapse: collapse;"> <tr> =
+<td style=3D"padding: 0 0px"> <table align=3D"center" cellpadding=3D"0" cel=
+lspacing=3D"0" border=3D"0" width=3D"100%" style=3D"border-collapse:collaps=
+e;background:#FFF8EC;"> <tr> <th class=3D"" width=3D"300" style=3D"padding:=
+20px 20px;width:300px;"> <table width=3D"100%" cellspacing=3D"0" cellpaddin=
+g=3D"0" border=3D"0"> <tr> <td align=3D"left" valign=3D"middle" style=3D"ve=
+rtical-align:middle;padding-left:10px;"> <table width=3D"100%" cellspacing=
+=3D"0" cellpadding=3D"0" border=3D"0"> <tr><td style=3D"font-family:'Source=
+ Sans Pro',Helvetica,sans-serif;font-size: 11px;font-weight:400;line-height=
+:18px;color: #1A1F2C;" class=3D"center"> Keep your StreetEasy account secur=
+e by using a strong, unique password, changing your password regularly, and=
+ being cautious of suspicious emails, messages, or links. <strong>Never sha=
+re your password or one-time access code.</strong> </br> Visit <a href=3D"h=
+ttps://links.streeteasy.com/u/click=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47=
+&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4uFwRPYLfWMy-0Fdd-GT=
+Wdzj78mjTSnqnH1zGEVkn2qOHlbuTLdkUpceTAv4sDrGAIKHJzgAlr8LzVW_72FaAAyJ9nPIQ1E=
+YbTDKySQtz-KUkUxk6Uuo2z1GEfnpVLQU5hNW_VWfzlnHINQruQCpR3MdSSeOSLqmYcZNYduQlT=
+ClKVHcV3vcXxSOTTX7gLYNHxBRl87TAf9jf_5i7FSg75k0q0TEIVy20Zt83y2O0iQ2tMIHJrL6P=
+iWigZ5zlJ6-gj8v-asZIDYaL0_pdBvCN9UVKEIHK2oZowS0btM-7GMRU272i9BLtwx_iYYa-oCf=
+hNoo4Ii57O3byttzGZy5u3CyT3n03gKnv3hVpaYRe7qG7Fqs1oWJ6oihJCFSuZHexKIBIF7lh5l=
+nz2samMPlCL-8LSCVRU80%3D" style=3D"color:#0F77DB; text-decoration:none;" ta=
+rget=3D"_blank">Keeping Your StreetEasy Account Secure: Tips for Agents </a=
+> for more information. </td></tr> </table> </td> </tr> </table> </th> </tr=
+> </table> </td></tr> </table> </td></tr></td></tr> <tr><td><!----> <!---->=
+ <table width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" sty=
+le=3D"border-collapse:collapse;"> <tr> <td align=3D"center" bgcolor=3D"#272=
+d39" valign=3D"top" class=3D"fullWidth" width=3D"640" style=3D"width:640px"=
+> <table align=3D"center" width=3D"100%" border=3D"0" cellpadding=3D"0" cel=
+lspacing=3D"0" style=3D"border-collapse:collapse;max-width:540px;min-width:=
+300px" class=3D"contentContainer"> <!--[if mso]><tr><td bgcolor=3D"#272d39"=
+><table width=3D"540" cellpadding=3D"0" cellspacing=3D"0" align=3D"center" =
+style=3D"border-collapse: collapse;width:540px;"><![endif]--> <tr><td> <tab=
+le border=3D"0" cellpadding=3D"0" cellspacing=3D"0" align=3D"center" width=
+=3D"100%"> <!----> <tr><td height=3D"20" style=3D"font-size:20px;line-heigh=
+t:20px;height:20px;" class=3D"spacer32"></td></tr> <tr><td> <table border=
+=3D"0" cellpadding=3D"0" cellspacing=3D"0" align=3D"center" width=3D"100%" =
+class=3D"colsContainer"> <tr><th align=3D"center" valign=3D"middle" class=
+=3D"colContainer"> <table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" =
+align=3D"center"> <tr><td align=3D"center" style=3D"font-size:16px;line-hei=
+ght:24px;color:#f5f5f5;font-weight:600;vertical-align:middle;font-family:'S=
+ource Sans Pro',Helvetica,sans-serif;vertical-align:middle;" class=3D"text1=
+6"> <!--[if mso]>Get the StreetEasy app<![endif]--> <!--[if !mso]><!-->Get =
+the StreetEasy App<!--<![endif]--> </td></tr> <tr><td height=3D"0" style=3D=
+"font-size:0px;line-height:0px;" class=3D"spacer24"></td></tr> </table> </t=
+h> <th align=3D"center" class=3D"colContainer"> <table width=3D"100%" align=
+=3D"center" cellspacing=3D"0" cellpadding=3D"0" border=3D"0"> <tr><td align=
+=3D"center"> <table border=3D"0" cellpadding=3D"0" cellspacing=3D"0" align=
+=3D"center" width=3D"100%"> <tr><td align=3D"right" style=3D"padding-right:=
+8px"> <a href=3D"https://links.streeteasy.com/u/click=3F_t=3Dd2badf3f98c744=
+9b8c39c3a30ce79f47&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4u=
+FwRPYLfWCO5F1tit-7JLx_8ncYgl0e40ZUAKIFGDv3KRhXwN2_ED8nG-9Q_TZZocJb-FMQK-6Hr=
+WqT1cP5FFsdNYce86caiPa-2iAqCI2J42t-FjWWIdpPrMQtn9929v8B6nOLzYB6Va1sZTVNzVF8=
+Ps234mUfR8B6dkJEfzHDlaCKnLxQn4kBemEHXf0Um4Py42CutbshLZwj2UW21c3Q_z2AXvh-mlR=
+4aqHZYG5P8j_sSvu7ZoN_n7tVjMfULvppwPNW8BA0jdBqiJueA3qPO3BfP_7Iah4mKG7aIAmEjr=
+big-K4Rk5f6yMQ9q4YWnqPb9Dbnu6j20CqQskAKmcSiep5JZo7oajHBStgbuhhqt5D1eLyHhBk1=
+EgM8UCMLWEnpMGmsTImtAHdjNlKRvD-hiSkh8zsJoWrdHWghwDM8EwPFHTaD" target=3D"_bl=
+ank" rel=3D"noopener"> <img src=3D"https://d15k2d11r6t6rl.cloudfront.net/pu=
+blic/users/Integrators/669d5713-9b6a-46bb-bd7e-c542cff6dd6a/d2badf3f98c7449=
+b8c39c3a30ce79f47/Download_on_the_App_Store_Badge_US-UK_blk_092917_1.png" s=
+tyle=3D"width:137px;height:42px;" height=3D"42" width=3D"137"/> </a> </td> =
+<td align=3D"left" style=3D"padding-left:8px;"> <a href=3D"https://links.st=
+reeteasy.com/u/click=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&_m=3Db04e649ce=
+fd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4uFwRPYLfWCO5F1tit-7JLx_8ncYgl0e5kP=
+x8eyd0XDQxAqY292RPuPyiWizjpNUDVq_ZOsNRqZ38etuDuw5RD64xAeOBLUBKaq2hIFxOsqw9C=
+svK8dIT0VvusChvT0y1aO8IaNv8XMGu4HWFOYZ-TP3uuHw-ebkhd-1c-CX7SSfAbvX0htCDM2NL=
+GcvRVjYP4AR0X6cTsT1yqC5Az4o8L9Z7OteJLI0n7cDCz03PovbkOkP9GWs316RAX-_-BL0INu2=
+hWkDAHzDvS59jh2qnhC29jUGTQ058rL-9dtMqjzyB3X-gNXhBCAm2XSK6q3CewWO2Ah5QKWo1fI=
+AH5cFVQGgcyKLmycCxoyvRtPP-qU_Rnr4RYhOdP8G5S4ZYXXSYAsCX7KnTCvIBjP0q_6c5DkCzx=
+5m6abjO6REvs2vEwKseeArO07v4vNogE9Ei2J7JfaTI-jJVWg%3D%3D" target=3D"_blank" =
+rel=3D"noopener"> <img alt=3D"Get it on Google Play" src=3D"https://d15k2d1=
+1r6t6rl.cloudfront.net/public/users/Integrators/669d5713-9b6a-46bb-bd7e-c54=
+2cff6dd6a/d2badf3f98c7449b8c39c3a30ce79f47/google_play.png" style=3D"width:=
+137px;height:42px;" height=3D"42" width=3D"137"/> </a> </td></tr> </table> =
+</td></tr> </table> </th></tr> </table> </td></tr> <tr><td width=3D"100%" s=
+tyle=3D"font-size:20px;line-height:20px;height:20px;border-bottom:1px solid=
+ #515760;" class=3D"spacer32">&nbsp;</td></tr> <!----> <tr><td height=3D"32=
+" style=3D"font-size:32px;line-height:32px;height:32px;" className=3D"space=
+r40"></td></tr> <!----> <tr><td align=3D"center" style=3D"padding-top:20px;=
+"> <table role=3D"presentation" cellspacing=3D"0" cellpadding=3D"0" border=
+=3D"0" align=3D"center" height=3D"100%" class=3D"colsContainer"> <tr><td al=
+ign=3D"center" style=3D"padding: 0 5px;"> <a style=3D"font-family:'Source S=
+ans Pro',Helvetica,sans-serif;font-size:14px;line-height:24px;font-weight:7=
+00;color:#ffffff !important;text-decoration:none;text-transform:uppercase;"=
+ href=3D"https://links.streeteasy.com/a/click=3F_t=3Dd2badf3f98c7449b8c39c3=
+a30ce79f47&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4uFwRPYLfW=
+Fd8ePWYsfli7fBHvsmpUJ0esjgyXtaPehOpaYiLdnzqwvlwmH6nnqUGawYe0Ohfn_AuLuxY7WTG=
+WeD2aF-onFZ7jp8XrAJDO3HKSYtX1eRIqI64TGsel-NyCHi2J68dlv9btcIpcZtt5JYNZFiCnMn=
+ZDDAy3LTZOY75bA_9jrSAiFwaw6Y4vbTCOz3kn5-5DJzJAS1N4_CSkI8GAJ9HVpQE0D4yZO8mZ9=
+oyA7MnapZdQt51bXzPt_mqX8bfdgG_nBAhiefAT7ClM-1Xy_Gap1qwdia5sM8VgtPya28nj8wBJ=
+eo6Wapvj9SmsjaoeddZQFkTZp6elw4AxbTZBsBVFwVZXuQijNp-4eIW-Jr7xW9tz03qkM-00-MQ=
+VdJ0ly54ot84RbOpFGmRhlhwufgGyBSCZKn2JjMPkaYHmgRHNorYpnetgun6Y79DKNI_mOY6iQ%=
+3D%3D"> <!--[if mso]><span><font color=3D"#ffffff">Customer Support</font><=
+/span><![endif]--> <!--[if !mso]><!--> Customer Support <!--<![endif]--> </=
+a> </td> <td align=3D"center" style=3D"padding: 0 5px;"> <a style=3D"font-f=
+amily: 'Source Sans Pro',Helvetica,sans-serif;font-size: 14px; line-height:=
+24px;font-weight:700;color:#ffffff;text-decoration: none;text-transform: up=
+percase;" href=3D"https://links.streeteasy.com/u/click=3F_t=3Dd2badf3f98c74=
+49b8c39c3a30ce79f47&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4=
+uFwRPYLfWMy-0Fdd-GTWdzj78mjTSnrNEMD7MixGAGy9Ar07JfrABlIiifc8ojXqfuSbZOWTcwr=
+nQYJgWwo3m39-OeV-m9Z0AifWXkH44zXW4gtwQHdgcUetKQinJZOLq58zZMtb86MZx2_16xfzts=
+Dwj8Ael2LdRKX33tam_0qSm-QzWt37IIOZhP4PHE3TorulHZjNjkqmz6UDyqgAXFHgX1ci-zzLT=
+SDKOxr2EUdXNuARbWrjI7eEesNt_61X_Bl4CWBrz0SXnm-w_84hoycKK59JHa8evC58D1oN0ZTq=
+l26H77v4Gmu9ywu30ko6kukY2yHL6XvZp2rgl13AKqFFBrwCdytsAZ1VYyuo8U2W-SBDq6tQLxT=
+YNU6xN_M-dH5iRaNt8qaAJcI4OuNKUbsuVJzafe6RZTdsYnVIEp8Rchc5h0bL1vusGhMuoRZlQU=
+8miFYGznJRGt5bwls2wOKS2oDlVUQ%3D"> <!--[if mso]><span><font color=3D"#fffff=
+f">Industry Hub</font></span><![endif]--> <!--[if !mso]><!--> Industry Hub =
+<!--<![endif]--> </a> </td></tr> </table> </td></tr> <!----> <tr> <td align=
+=3D"center" style=3D"padding-top: 20px;"> <!-- START ADDRESS --> <div style=
+=3D"background:#272D39; color: #ffffff;"> <p style=3D"padding: 0; margin: 0=
+; font-family: 'Source Sans Pro', Arial, sans-serif; font-size: 12px; line-=
+height: 18px; color: #ffffff; margin-bottom: 24px;"> <strong>&copy;2026 Str=
+eetEasy<sup style=3D"font-size:66%; vertical-align:text-top; line-height:1;=
+ mso-text-raise:30%;">&reg;</sup></strong><br/> <a name=3D"Address" style=
+=3D"font-family: 'Source Sans Pro', Arial, sans-serif; font-size: 12px; col=
+or: #ffffff;" id=3D"Address"> 1250 Broadway, New York, NY 10001</a> </p> <p=
+ style=3D"padding: 0; margin: 0; font-family: 'Source Sans Pro', Arial, san=
+s-serif; font-size: 12px; line-height: 18px; color: #ffffff; margin-bottom:=
+ 24px;"> This email was sent to <a name=3D"Name" style=3D"color: #ffffff; t=
+ext-decoration: none; cursor: default; font-size: 12px;" id=3D"Name">garlan=
+d@pearnyc.com</a><br/> Can&#x2019;t view this message=3F <a style=3D"color:=
+ #ffffff; text-decoration: underline; font-size: 12px;" href=3D"https://lin=
+ks.streeteasy.com/e/evib=3F_t=3Dd2badf3f98c7449b8c39c3a30ce79f47&_m=3Db04e6=
+49cefd34acf9beb6e1ff8639352&_e=3DFc61zJAnusjXL517YHm3n3AWDcjM51_ZrzuiGUtprs=
+OSoq3xsU68KDMUkuetK_lB">Click Here</a> </p> <!-- END ADDRESS --> <!-- START=
+ LINKS --> <p style=3D"padding: 0; margin: 0; font-family: 'Source Sans Pro=
+', Arial, sans-serif; font-size: 11px; line-height: 12px; font-weight: 700;=
+ color: #ffffff; margin-bottom: 24px;"> <a style=3D"color: #ffffff; text-de=
+coration: underline;" href=3D"https://links.streeteasy.com/u/click=3F_t=3Dd=
+2badf3f98c7449b8c39c3a30ce79f47&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3D=
+L8hVTfBiILz4uFwRPYLfWBUjQpqXN2TY-_y3m1obvEveSdOzWPyzqQ4XNWG6gupNI8YMSIvcKOk=
+8J6fUNCQhb5ZN3tOnp5-AAIbhzBdWF7LfpifxvtyEsBEGCmcyNY-y8t2OOuSrzT3lGfLIrJdrZ6=
+LIbJgdsg7lviJTiiOANynBYvMkjxmO78ukC1qdpheG-ZDtKIp5mP9MDV8qemojxUyK1xBKjgsDt=
+S3MeI1A4Q9ZR98N9EF422nAeI5bCQk0PY3hzHz7VoszgMUpaBKKZvRjF5rW-5I9AtcQhJFr7uJE=
+F0Wb0UM4DnjHuXpKQbXcEPgVDfPbfGNJglSCjFjbNuqcE0vsSrI5KAnLZJri2exkDs_MIVLgAXw=
+hjqS9HqR1a2bKsEQeceoaGA9SPdlf6mxwCXFa74siicYouxJ043KLHIHDDCTZj-V2GmWSSRbZXW=
+_yeOx_Hdw-LbYgCdnOyVNzv8i--JZu_k9BiXWhB_hv9bp3pAl0lU12LOEtvQshBRSuppJWPGL-J=
+uSwyZs_Tg%3D%3D">Notification Settings</a><span>&nbsp;&nbsp;&nbsp;&nbsp;&nb=
+sp;&nbsp; </span><a href=3D"https://links.streeteasy.com/u/click=3F_t=3Dd2b=
+adf3f98c7449b8c39c3a30ce79f47&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DL8=
+hVTfBiILz4uFwRPYLfWHjrunL2dez_Ojp4hx-avan0j-WoxyiuYR2zvKp64QDh2WogvUIwS10V2=
+OcWCN7zavHRhA6iCKlJi1AneXOrlFMVt5CfMHhgWWEwEKA4qVb1XKTV3Zk_Y80cnD-8FBvAdaAy=
+xw4Y5vgIpf4QTk4VPFbAdGy8X3oPHtaLSRABPOOby_Ac1n7FDhAyJrNbaTAf06H4vsPIoZDImNV=
+jGs4VxhRteyi7q-qXpcAU8OD7kFPGTAXV8xz3KprnRbys89r1nHm_-YUK_Bh-OF9HLbaNCa4RUn=
+M1riUEVrp89Os5zieZQTqAIg3JTG1yEbo1VCQqv_3uuOWv7cY1dAu-GmNtOI2PDJdNWeyvFaI0o=
+gWd3NTMT7hewV0d4EQB9ER6eHThOfjmuBzXkYkd2-x88lO3QkKQbkcMZPZ_3M2_aTSqQIrmu5Xv=
+xEI1BQziUhYvqsH8cnSjODIqGHeyUFzEPpLf8Riw_goh4ebwC7QCGkpM_tV8" style=3D"colo=
+r: #ffffff; text-decoration: underline;">Privacy Policy</a> </p> <p style=
+=3D"padding:0px 40px; margin: 0; font-family: 'Source Sans Pro', Arial, san=
+s-serif; font-size: 10px; line-height: 18px; color: #fffffe; margin-bottom:=
+ 0px; font-weight: 100;padding-bottom:px;" class=3D"bodyText"> StreetEasy i=
+s a registered trademark of MFTB Hold Co Inc., and assumed name of Zillow I=
+nc. which has a real estate brokerage license in all 50 states and D.C. See=
+&nbsp;<a href=3D"https://links.streeteasy.com/u/click=3F_t=3Dd2badf3f98c744=
+9b8c39c3a30ce79f47&_m=3Db04e649cefd34acf9beb6e1ff8639352&_e=3DL8hVTfBiILz4u=
+FwRPYLfWJITU6N6abGYkASxEvexcRyt8YsDcrXejQArBnfE8G8Zi5vhqBZSK1Q46hcQy2i22mam=
+HJVHq-DmbyoVuNAufG4Gj1vc3mDCZdm4Yu4qiTa8UwzSEaEZ3d4JoCPyCVKgnAE3P9yHY7zPnfZ=
+h2Z735suHxibFDp3tsMCQT8XL3DaKrk_F4Z4VNdqr-3mv0H5_0-r9MTWX2lBTUjRizSS7zeykoW=
+4N3gxZtu_YQHSBz3cFpBsbJu7z8CzZQtRI_zfnGjllPfyD_XYGspxFJXNdeyE3rliZWEMC61ojS=
+0DFWQQRnY979-2V1mJVkgCmHcPzNhKTbHCZSOgtZw4pfeNNHVfPSK5sEV-ea9J4hj83u-Y-6ZYW=
+tiGz_GIBaK4vaXQ_Gh4UPQAY8PntiVoxKmVZ_dCHT0XjrCZXPyrasLup-f1CMVb9AEgG8haWbPU=
+G1AEJ043r_-jUQw5bCJvHqDZB9gaE8AgV0Jz6QPUlyOe94Ks69JN2t8yi2KmrH2yJE5Bz5A%3D%=
+3D" target=3D"_blank" title=3D"Real Estate Brokerage Licenses" style=3D"tex=
+t-decoration: underline; color:#fffffe;">real=C2=A0estate=C2=A0licenses.</a=
+> </p> <p style=3D"padding:0px 40px; margin: 0; font-family: 'Source Sans P=
+ro', Arial, sans-serif; font-size: 10px; line-height: 18px; color: #fffffe;=
+ margin-bottom: 0px; font-weight: 100;padding-bottom:32px;" class=3D"bodyTe=
+xt"> 3979562 </p> </div> <!-- END LINKS --> </td> </tr> </table> </td></tr>=
+ <!--[if mso]></table></td></tr><![endif]--> </table> </td> </tr> </table><=
+/td></tr> <!-- ------End footer------ --> <!--[if mso]></table></td></tr><!=
+[endif]--> </table></td></tr> </table> <!-- End Wrapper --> =0D=0A<img bord=
+er=3D"0" width=3D"1" height=3D"1" alt=3D"" src=3D"https://post.spmailtechno=
+lo.com/q/7KeB7v_TBHY8Qqo-WruoUA~~/AATWbhA~/P34isKnaCKGn2fUBcdlZQMkMPtcKIBn3=
+Je68cWtC3zHVyUF7jtNL7aJZ_oOUXKzrPXZchFAba1JzN0qLPn3Azw~~">=0D=0A</body> </h=
+tml>
+--_----4fREvgYkjJ+X5RRAQfvdCg===_75/AA-32822-98A8BE96--
+
+
