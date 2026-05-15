@@ -111,19 +111,23 @@ def _mock_strategies() -> PipelineStrategies:
 def test_process_lead_uses_injected_strategies_not_default() -> None:
     """When strategies are passed, build_production_strategies is not called."""
     strats = _mock_strategies()
-    with patch(
-        "autoreplies.pipeline.process_lead.build_production_strategies"
-    ) as mock_build, pytest.raises(NotImplementedError):
+    with (
+        patch("autoreplies.pipeline.process_lead.build_production_strategies") as mock_build,
+        pytest.raises(NotImplementedError),
+    ):
         process_lead("msg-id", "agent@pearnyc.com", strategies=strats)
     mock_build.assert_not_called()
 
 
 def test_process_lead_defaults_to_production_strategies() -> None:
     """When strategies is None, build_production_strategies is called once."""
-    with patch(
-        "autoreplies.pipeline.process_lead.build_production_strategies",
-        return_value=_mock_strategies(),
-    ) as mock_build, pytest.raises(NotImplementedError):
+    with (
+        patch(
+            "autoreplies.pipeline.process_lead.build_production_strategies",
+            return_value=_mock_strategies(),
+        ) as mock_build,
+        pytest.raises(NotImplementedError),
+    ):
         process_lead("msg-id", "agent@pearnyc.com")
     mock_build.assert_called_once()
 

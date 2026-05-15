@@ -37,6 +37,7 @@ def _record(rec_id: str, fields: dict[str, Any]) -> dict[str, Any]:
 
 # ── find_monitored_user_by_primary_email ──────────────────────────────────────
 
+
 def test_find_monitored_user_found(client: AirtableClient) -> None:
     row = _record("recAGENT1", {PROD.users.email: "sam@pearnyc.com"})
     with patch.object(client, "_table", return_value=_mock_table([row])):
@@ -50,6 +51,7 @@ def test_find_monitored_user_not_found(client: AirtableClient) -> None:
 
 
 # ── list_monitored_primary_emails ─────────────────────────────────────────────
+
 
 def test_list_monitored_primary_emails_returns_sorted_distinct(client: AirtableClient) -> None:
     rows = [
@@ -78,6 +80,7 @@ def test_list_monitored_primary_emails_empty(client: AirtableClient) -> None:
 
 # ── list_monitored_autoreply_inboxes ──────────────────────────────────────────
 
+
 def test_list_monitored_autoreply_inboxes_returns_sorted_distinct(client: AirtableClient) -> None:
     rows = [
         _record("recAGENT1", {PROD.users.autoreply_email_agent: "b@pearnyc.com"}),
@@ -96,8 +99,10 @@ def test_list_monitored_autoreply_inboxes_warns_on_blank(
         _record("recAGENT1", {PROD.users.autoreply_email_agent: "a@pearnyc.com"}),
         _record("recAGENT2", {}),  # blank inbox — misconfigured
     ]
-    with patch.object(client, "_table", return_value=_mock_table(rows)), \
-            caplog.at_level(logging.WARNING, logger="autoreplies.services.airtable"):
+    with (
+        patch.object(client, "_table", return_value=_mock_table(rows)),
+        caplog.at_level(logging.WARNING, logger="autoreplies.services.airtable"),
+    ):
         result = client.list_monitored_autoreply_inboxes()
     assert result == ["a@pearnyc.com"]
     assert any("recAGENT2" in record.message for record in caplog.records)
@@ -109,6 +114,7 @@ def test_list_monitored_autoreply_inboxes_empty(client: AirtableClient) -> None:
 
 
 # ── find_existing_user ────────────────────────────────────────────────────────
+
 
 def test_find_user_by_email(client: AirtableClient) -> None:
     row = _record("recUSER1", {PROD.users.email: "prospect@example.com"})
@@ -149,6 +155,7 @@ def test_find_existing_user_excludes_admins(client: AirtableClient) -> None:
 
 # ── match_apartment_by_streeteasy_id ──────────────────────────────────────────
 
+
 def test_match_apartment_streeteasy_found(client: AirtableClient) -> None:
     row = _record("recAPT1", {PROD.apartments.streeteasy: "https://streeteasy.com/rental/1234567"})
     with patch.object(client, "_table", return_value=_mock_table([row])):
@@ -163,21 +170,28 @@ def test_match_apartment_streeteasy_not_found(client: AirtableClient) -> None:
 
 # ── match_apartment_by_address ────────────────────────────────────────────────
 
+
 def test_match_apartment_address_hit(client: AirtableClient) -> None:
-    row = _record("recAPT2", {
-        PROD.apartments.full_address: "123 Main St, New York, NY 10001",
-        PROD.apartments.apartment: "2B",
-    })
+    row = _record(
+        "recAPT2",
+        {
+            PROD.apartments.full_address: "123 Main St, New York, NY 10001",
+            PROD.apartments.apartment: "2B",
+        },
+    )
     with patch.object(client, "_table", return_value=_mock_table([row])):
         result = client.match_apartment_by_address("123 Main St New York NY 10001")
     assert result == row
 
 
 def test_match_apartment_address_below_threshold(client: AirtableClient) -> None:
-    row = _record("recAPT3", {
-        PROD.apartments.full_address: "999 Unrelated Ave, Brooklyn, NY 11201",
-        PROD.apartments.apartment: "1A",
-    })
+    row = _record(
+        "recAPT3",
+        {
+            PROD.apartments.full_address: "999 Unrelated Ave, Brooklyn, NY 11201",
+            PROD.apartments.apartment: "1A",
+        },
+    )
     with patch.object(client, "_table", return_value=_mock_table([row])):
         assert client.match_apartment_by_address("123 Main St New York NY 10001") is None
 
@@ -190,16 +204,20 @@ def test_match_apartment_address_empty_table(client: AirtableClient) -> None:
 def test_match_apartment_address_uses_instance_threshold() -> None:
     """Threshold set at construction is the default used per call."""
     c = AirtableClient(token="fake-token", schema=PROD, address_match_threshold=50)
-    row = _record("recAPT_LOOSE", {
-        PROD.apartments.full_address: "123 Maine Street Brooklyn",
-        PROD.apartments.apartment: "1",
-    })
+    row = _record(
+        "recAPT_LOOSE",
+        {
+            PROD.apartments.full_address: "123 Maine Street Brooklyn",
+            PROD.apartments.apartment: "1",
+        },
+    )
     # WRatio of these two strings is ~70-80; would miss at 92 but hit at 50.
     with patch.object(c, "_table", return_value=_mock_table([row])):
         assert c.match_apartment_by_address("123 Main St") == row
 
 
 # ── find_inquiry_by_gmail_message_id ──────────────────────────────────────────
+
 
 def test_find_inquiry_found(client: AirtableClient) -> None:
     row = _record("recINQ1", {PROD.inquiries.gmail_message_id_autoreply: "msg-abc-123"})
@@ -213,6 +231,7 @@ def test_find_inquiry_not_found(client: AirtableClient) -> None:
 
 
 # ── create_inquiry ─────────────────────────────────────────────────────────────
+
 
 @pytest.fixture()
 def streeteasy_lead() -> ParsedLead:
@@ -246,7 +265,9 @@ def zillow_lead() -> ParsedLead:
     )
 
 
-def test_create_inquiry_streeteasy_full(client: AirtableClient, streeteasy_lead: ParsedLead) -> None:
+def test_create_inquiry_streeteasy_full(
+    client: AirtableClient, streeteasy_lead: ParsedLead
+) -> None:
     inq = PROD.inquiries
     tbl = MagicMock()
     tbl.create.return_value = {"id": "recINQ_NEW"}
@@ -294,6 +315,7 @@ def test_create_inquiry_zillow_no_name_no_phone(
 
 
 # ── Formula escaping (regression — was injection-prone via f-strings) ─────────
+
 
 def test_find_existing_user_escapes_single_quotes(client: AirtableClient) -> None:
     """A single quote in user input must be escaped, not propagated raw."""
@@ -429,12 +451,17 @@ def test_create_draft_uses_test_schema_field_ids(test_client: AirtableClient) ->
 
 # ── find_or_create_inquiry ─────────────────────────────────────────────────────
 
+
 def test_find_or_create_inquiry_returns_existing(
     client: AirtableClient, streeteasy_lead: ParsedLead
 ) -> None:
     existing = _record("recINQ_EXISTING", {PROD.inquiries.gmail_message_id_autoreply: "msg-abc"})
-    with patch.object(client, "find_inquiry_by_gmail_message_id", return_value=existing) as mock_find, \
-         patch.object(client, "create_inquiry") as mock_create:
+    with (
+        patch.object(
+            client, "find_inquiry_by_gmail_message_id", return_value=existing
+        ) as mock_find,
+        patch.object(client, "create_inquiry") as mock_create,
+    ):
         result = client.find_or_create_inquiry(
             gmail_message_id="msg-abc",
             parsed=streeteasy_lead,
@@ -449,8 +476,10 @@ def test_find_or_create_inquiry_returns_existing(
 def test_find_or_create_inquiry_creates_on_miss(
     client: AirtableClient, streeteasy_lead: ParsedLead
 ) -> None:
-    with patch.object(client, "find_inquiry_by_gmail_message_id", return_value=None), \
-         patch.object(client, "create_inquiry", return_value="recINQ_NEW") as mock_create:
+    with (
+        patch.object(client, "find_inquiry_by_gmail_message_id", return_value=None),
+        patch.object(client, "create_inquiry", return_value="recINQ_NEW") as mock_create,
+    ):
         result = client.find_or_create_inquiry(
             gmail_message_id="msg-new",
             parsed=streeteasy_lead,

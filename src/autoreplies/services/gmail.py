@@ -46,19 +46,15 @@ class GmailClient:
 
     def __init__(self, *, mailbox_email: str, credentials_path: str) -> None:
         self._mailbox_email = mailbox_email
-        creds = (
-            service_account.Credentials.from_service_account_file(
-                credentials_path, scopes=_SCOPES
-            ).with_subject(mailbox_email)
-        )
+        creds = service_account.Credentials.from_service_account_file(
+            credentials_path, scopes=_SCOPES
+        ).with_subject(mailbox_email)
         self._service = build("gmail", "v1", credentials=creds)
 
     # ── MessageLister surface ─────────────────────────────────────────────────
     # Conforms to harness.poller.MessageLister Protocol.
 
-    def list_messages(
-        self, *, query: str, max_results: int = 100
-    ) -> list[tuple[str, int]]:
+    def list_messages(self, *, query: str, max_results: int = 100) -> list[tuple[str, int]]:
         """Page through all messages matching query; return (id, internal_date_ms) pairs.
 
         Paginates internally until exhausted. Each message requires a separate
@@ -138,9 +134,7 @@ class GmailClient:
 
     # ── Stubs (Phases 1-2) ────────────────────────────────────────────────────
 
-    def list_history(
-        self, start_history_id: str, label_id: str
-    ) -> list[dict[str, Any]]:
+    def list_history(self, start_history_id: str, label_id: str) -> list[dict[str, Any]]:
         """Return new messageAdded events since start_history_id for label_id."""
         raise NotImplementedError("Phase 1")
 

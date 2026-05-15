@@ -165,9 +165,7 @@ class LLMClient:
 
     # ── private helpers ───────────────────────────────────────────────────────
 
-    def _call_llm(
-        self, *, template_text: str, slots: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _call_llm(self, *, template_text: str, slots: dict[str, Any]) -> dict[str, Any]:
         """Call Anthropic with tool-use forcing. Returns the raw tool input plus latency."""
         if self._client is None:
             raise anthropic.AnthropicError("ANTHROPIC_API_KEY is not set")
@@ -269,9 +267,7 @@ def literal_fill(template_text: str, slots: dict[str, Any]) -> str:
         slot = match.group("slot")
         default = match.group("default")
         raw_value = slots.get(slot)
-        value = (
-            raw_value.strip() if isinstance(raw_value, str) else raw_value
-        )
+        value = raw_value.strip() if isinstance(raw_value, str) else raw_value
         if value:
             return str(value)
         if default is not None:

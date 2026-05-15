@@ -94,9 +94,7 @@ def test_reload_clears_cache(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     """`reload_pear_fallback_template` re-reads the file. Simulate an edit."""
     fake_md = tmp_path / "FALLBACK_TEMPLATE.md"
     fake_md.write_text(
-        "# heading\n\n"
-        "## Template body\n\n"
-        "> Initial body\n",
+        "# heading\n\n## Template body\n\n> Initial body\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(templates, "_FALLBACK_PATH", fake_md)
@@ -105,8 +103,7 @@ def test_reload_clears_cache(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert templates.get_pear_fallback_template() == "Initial body"
 
     fake_md.write_text(
-        "## Template body\n\n"
-        "> Edited body\n",
+        "## Template body\n\n> Edited body\n",
         encoding="utf-8",
     )
     # Without reload, cache still serves the old version.

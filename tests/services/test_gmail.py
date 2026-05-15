@@ -27,8 +27,7 @@ def gmail_client(mock_service: MagicMock) -> GmailClient:
     with (
         patch("autoreplies.services.gmail.build", return_value=mock_service),
         patch(
-            "autoreplies.services.gmail.service_account.Credentials"
-            ".from_service_account_file",
+            "autoreplies.services.gmail.service_account.Credentials.from_service_account_file",
             return_value=MagicMock(),
         ),
     ):
@@ -52,8 +51,7 @@ def test_init_uses_domain_wide_delegation() -> None:
 
     with (
         patch(
-            "autoreplies.services.gmail.service_account.Credentials"
-            ".from_service_account_file",
+            "autoreplies.services.gmail.service_account.Credentials.from_service_account_file",
             return_value=mock_creds,
         ) as mock_from_file,
         patch("autoreplies.services.gmail.build", return_value=mock_service) as mock_build,
@@ -198,9 +196,7 @@ def test_get_message_returns_parsed_message_and_thread_id(
     assert msg.get("From") == "sender@example.com"
 
 
-def test_get_message_uses_raw_format(
-    gmail_client: GmailClient, mock_service: MagicMock
-) -> None:
+def test_get_message_uses_raw_format(gmail_client: GmailClient, mock_service: MagicMock) -> None:
     mock_service.users().messages().get().execute.return_value = {
         "threadId": "t",
         "raw": _make_raw_b64(),

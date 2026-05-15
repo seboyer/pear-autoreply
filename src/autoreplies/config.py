@@ -79,9 +79,7 @@ class Settings(BaseSettings):
     def harness_airtable_base_id(self) -> str:
         """Require the test base ID; raises loudly if not configured."""
         if not self.airtable_test_base_id:
-            raise RuntimeError(
-                "AIRTABLE_TEST_BASE_ID must be set when running in harness mode."
-            )
+            raise RuntimeError("AIRTABLE_TEST_BASE_ID must be set when running in harness mode.")
         return self.airtable_test_base_id
 
 

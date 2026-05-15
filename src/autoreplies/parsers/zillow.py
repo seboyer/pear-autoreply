@@ -75,9 +75,7 @@ def parse(message: Message) -> ParsedLead:
     subject = (message.get("Subject") or "").strip()
     subject_match = SUBJECT_PATTERN.match(subject)
     if not subject_match:
-        raise ParserError(
-            f"Zillow subject does not match expected pattern: {subject!r}"
-        )
+        raise ParserError(f"Zillow subject does not match expected pattern: {subject!r}")
     raw_address = subject_match.group("address").strip()
 
     html = get_body_part(message, "text/html")

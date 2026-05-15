@@ -190,11 +190,11 @@ class AirtableClient:
         inq = self.schema.inquiries
         name = " ".join(part for part in (parsed.first_name, parsed.last_name) if part)
         fields: dict[str, Any] = {
-            inq.method:                     "Web",
-            inq.type_non_website:           parsed.source,
-            inq.name_form:                  name,
-            inq.email_form:                 parsed.email or "",
-            inq.message:                    parsed.message_body or "",
+            inq.method: "Web",
+            inq.type_non_website: parsed.source,
+            inq.name_form: name,
+            inq.email_form: parsed.email or "",
+            inq.message: parsed.message_body or "",
             inq.gmail_message_id_autoreply: gmail_message_id,
         }
         if parsed.phone:
@@ -259,19 +259,19 @@ class AirtableClient:
         """
         d = self.schema.drafts
         fields: dict[str, Any] = {
-            d.inquiry:                   [inquiry_record_id],
-            d.gmail_message_id:          gmail_message_id,
-            d.recipient:                 recipient,
-            d.subject:                   subject,
-            d.body_plaintext:            body_plaintext,
-            d.body_html:                 body_html,
-            d.source:                    source,
-            d.parser_used:               parser_used,
-            d.template_source:           template_source,
-            d.reply_route:               reply_route,
-            d.apartment_match_strategy:  apartment_match_strategy,
-            d.llm_model:                 llm_model,
-            d.notes_warnings:            notes_warnings,
+            d.inquiry: [inquiry_record_id],
+            d.gmail_message_id: gmail_message_id,
+            d.recipient: recipient,
+            d.subject: subject,
+            d.body_plaintext: body_plaintext,
+            d.body_html: body_html,
+            d.source: source,
+            d.parser_used: parser_used,
+            d.template_source: template_source,
+            d.reply_route: reply_route,
+            d.apartment_match_strategy: apartment_match_strategy,
+            d.llm_model: llm_model,
+            d.notes_warnings: notes_warnings,
         }
         if skipped_reason is not None:
             fields[d.skipped_reason] = skipped_reason

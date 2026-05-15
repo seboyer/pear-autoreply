@@ -92,21 +92,23 @@ def to_csv(rows: list[DiffRow]) -> str:
     writer = csv.DictWriter(buf, fieldnames=_CSV_FIELDS, lineterminator="\n")
     writer.writeheader()
     for row in rows:
-        writer.writerow({
-            "gmail_message_id": row.gmail_message_id,
-            "in_prod": row.in_prod,
-            "in_test": row.in_test,
-            "prod_apartment_address": row.prod_apartment_address,
-            "test_apartment_address": row.test_apartment_address,
-            "apartment_agreement": row.apartment_agreement,
-            "prod_user_email": row.prod_user_email,
-            "test_user_email": row.test_user_email,
-            "user_agreement": row.user_agreement,
-            "name_form_match": row.name_form_match,
-            "phone_match": row.phone_match,
-            "message_match": row.message_match,
-            "notes": row.notes,
-        })
+        writer.writerow(
+            {
+                "gmail_message_id": row.gmail_message_id,
+                "in_prod": row.in_prod,
+                "in_test": row.in_test,
+                "prod_apartment_address": row.prod_apartment_address,
+                "test_apartment_address": row.test_apartment_address,
+                "apartment_agreement": row.apartment_agreement,
+                "prod_user_email": row.prod_user_email,
+                "test_user_email": row.test_user_email,
+                "user_agreement": row.user_agreement,
+                "name_form_match": row.name_form_match,
+                "phone_match": row.phone_match,
+                "message_match": row.message_match,
+                "notes": row.notes,
+            }
+        )
     return buf.getvalue()
 
 
@@ -155,6 +157,7 @@ class HarnessDiff:
 
     def compute(self, since_iso: str) -> list[DiffRow]:
         from datetime import datetime
+
         datetime.fromisoformat(since_iso)  # validate
 
         prod_inq = self._prod.schema.inquiries
@@ -192,8 +195,12 @@ class HarnessDiff:
             in_prod = prod_row is not None
             in_test = test_row is not None
 
-            prod_apt = self._resolve_apartment(prod_row, self._prod_apartment_address) if prod_row else ""
-            test_apt = self._resolve_apartment(test_row, self._test_apartment_address) if test_row else ""
+            prod_apt = (
+                self._resolve_apartment(prod_row, self._prod_apartment_address) if prod_row else ""
+            )
+            test_apt = (
+                self._resolve_apartment(test_row, self._test_apartment_address) if test_row else ""
+            )
 
             prod_email = self._resolve_user(prod_row, self._prod_user_email) if prod_row else ""
             test_email = self._resolve_user(test_row, self._test_user_email) if test_row else ""
@@ -216,20 +223,22 @@ class HarnessDiff:
             elif not in_test:
                 notes = "prod_only"
 
-            result.append(DiffRow(
-                gmail_message_id=mid,
-                in_prod=in_prod,
-                in_test=in_test,
-                prod_apartment_address=prod_apt,
-                test_apartment_address=test_apt,
-                apartment_agreement=_compare(prod_apt, test_apt, _norm_text),
-                prod_user_email=prod_email,
-                test_user_email=test_email,
-                user_agreement=_compare(prod_email, test_email, _norm_email),
-                name_form_match=_compare(prod_name, test_name, _norm_text),
-                phone_match=_compare(prod_phone, test_phone, _norm_phone),
-                message_match=_compare(prod_msg, test_msg, _norm_text),
-                notes=notes,
-            ))
+            result.append(
+                DiffRow(
+                    gmail_message_id=mid,
+                    in_prod=in_prod,
+                    in_test=in_test,
+                    prod_apartment_address=prod_apt,
+                    test_apartment_address=test_apt,
+                    apartment_agreement=_compare(prod_apt, test_apt, _norm_text),
+                    prod_user_email=prod_email,
+                    test_user_email=test_email,
+                    user_agreement=_compare(prod_email, test_email, _norm_email),
+                    name_form_match=_compare(prod_name, test_name, _norm_text),
+                    phone_match=_compare(prod_phone, test_phone, _norm_phone),
+                    message_match=_compare(prod_msg, test_msg, _norm_text),
+                    notes=notes,
+                )
+            )
 
         return result

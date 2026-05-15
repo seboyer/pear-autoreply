@@ -24,7 +24,9 @@ from autoreplies.services.llm import LLMClient, TemplateFillError
 FIXTURES_DIR = Path(__file__).parent.parent.parent / "fixtures" / "anonymized"
 
 FILLED_BODY = "Hi there, thanks for your interest in the listing."
-FAKE_TEMPLATE = "Hi {{first_name|there}}, thanks for your interest in {{apartment_address|the listing}}."
+FAKE_TEMPLATE = (
+    "Hi {{first_name|there}}, thanks for your interest in {{apartment_address|the listing}}."
+)
 FAKE_MAILBOX = "agent@pearnyc.com"
 FAKE_MESSAGE_ID = "msg-integration-001"
 
@@ -39,7 +41,10 @@ def _make_airtable(*, apartment_via_streeteasy: bool = True) -> AirtableClient:
     mock = MagicMock(spec=AirtableClient)
     mock.schema = TEST
 
-    fake_apt = {"id": "recAPT_FAKE", "fields": {TEST.apartments.full_address: "267 Clifton Place #1A"}}
+    fake_apt = {
+        "id": "recAPT_FAKE",
+        "fields": {TEST.apartments.full_address: "267 Clifton Place #1A"},
+    }
     if apartment_via_streeteasy:
         mock.match_apartment_by_streeteasy_id.return_value = fake_apt
         mock.match_apartment_by_address.return_value = None
@@ -80,6 +85,7 @@ def _make_gmail(fixture_path: str) -> GmailClient:
 
 # ── golden path: StreetEasy tour ─────────────────────────────────────────────
 
+
 def test_streeteasy_golden_path() -> None:
     """Full pipeline run on a real StreetEasy tour fixture — asserts Drafts row written."""
     mock_airtable = _make_airtable(apartment_via_streeteasy=True)
@@ -115,6 +121,7 @@ def test_streeteasy_golden_path() -> None:
 
 # ── golden path: Zillow ───────────────────────────────────────────────────────
 
+
 def test_zillow_golden_path() -> None:
     """Full pipeline run on a real Zillow fixture — asserts Drafts row written."""
     mock_airtable = _make_airtable(apartment_via_streeteasy=False)
@@ -147,6 +154,7 @@ def test_zillow_golden_path() -> None:
 
 
 # ── skipped route: TemplateFillError ─────────────────────────────────────────
+
 
 def test_streeteasy_skipped_on_template_fill_error() -> None:
     """When LLM fill raises TemplateFillError, route is skipped and Drafts row still written."""

@@ -27,6 +27,7 @@ INQ = PROD.inquiries  # field IDs identical in both bases
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _record(rec_id: str, fields: dict[str, Any]) -> dict[str, Any]:
     return {"id": rec_id, "fields": fields}
 
@@ -100,6 +101,7 @@ def _make_diff(
 
 
 # ── join cases ────────────────────────────────────────────────────────────────
+
 
 def test_both_present_matching() -> None:
     shared_id = "msg-001"
@@ -188,6 +190,7 @@ def test_test_only() -> None:
 
 # ── apartment_agreement all five outcomes ─────────────────────────────────────
 
+
 def test_apartment_agreement_yes() -> None:
     shared_id = "msg-apt-yes"
     addr = "100 Water St, New York, NY 10005"
@@ -198,8 +201,10 @@ def test_apartment_agreement_yes() -> None:
     test_rows = [_inq_row("recT", gmail_message_id=shared_id, apartment_record_id="recAPT_TA")]
 
     diff = _make_diff(
-        prod_inq_rows=prod_rows, test_inq_rows=test_rows,
-        prod_apt_rows=[prod_apt], test_apt_rows=[test_apt],
+        prod_inq_rows=prod_rows,
+        test_inq_rows=test_rows,
+        prod_apt_rows=[prod_apt],
+        test_apt_rows=[test_apt],
     )
     assert diff.compute("2026-05-01")[0].apartment_agreement == "yes"
 
@@ -213,8 +218,10 @@ def test_apartment_agreement_no() -> None:
     test_rows = [_inq_row("recT", gmail_message_id=shared_id, apartment_record_id="recAPT_T")]
 
     diff = _make_diff(
-        prod_inq_rows=prod_rows, test_inq_rows=test_rows,
-        prod_apt_rows=[prod_apt], test_apt_rows=[test_apt],
+        prod_inq_rows=prod_rows,
+        test_inq_rows=test_rows,
+        prod_apt_rows=[prod_apt],
+        test_apt_rows=[test_apt],
     )
     assert diff.compute("2026-05-01")[0].apartment_agreement == "no"
 
@@ -227,7 +234,8 @@ def test_apartment_agreement_prod_only() -> None:
     test_rows = [_inq_row("recT", gmail_message_id=shared_id)]
 
     diff = _make_diff(
-        prod_inq_rows=prod_rows, test_inq_rows=test_rows,
+        prod_inq_rows=prod_rows,
+        test_inq_rows=test_rows,
         prod_apt_rows=[prod_apt],
     )
     assert diff.compute("2026-05-01")[0].apartment_agreement == "prod_only"
@@ -241,7 +249,8 @@ def test_apartment_agreement_test_only() -> None:
     test_rows = [_inq_row("recT", gmail_message_id=shared_id, apartment_record_id="recAPT_T")]
 
     diff = _make_diff(
-        prod_inq_rows=prod_rows, test_inq_rows=test_rows,
+        prod_inq_rows=prod_rows,
+        test_inq_rows=test_rows,
         test_apt_rows=[test_apt],
     )
     assert diff.compute("2026-05-01")[0].apartment_agreement == "test_only"
@@ -258,12 +267,16 @@ def test_apartment_agreement_neither() -> None:
 
 # ── phone normalization ───────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("raw", [
-    "(212) 555-1234",
-    "212.555.1234",
-    "+1-212-555-1234",
-    "2125551234",
-])
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "(212) 555-1234",
+        "212.555.1234",
+        "+1-212-555-1234",
+        "2125551234",
+    ],
+)
 def test_phone_normalization_equal(raw: str) -> None:
     assert _norm_phone(raw) == _norm_phone("2125551234")
 
@@ -279,6 +292,7 @@ def test_phone_normalization_none() -> None:
 
 # ── name normalization ────────────────────────────────────────────────────────
 
+
 def test_name_normalization_whitespace_and_case() -> None:
     assert _norm_text("  Jane   Smith  ") == _norm_text("jane smith")
     assert _norm_text("JANE SMITH") == _norm_text("jane smith")
@@ -289,6 +303,7 @@ def test_name_normalization_none() -> None:
 
 
 # ── CSV shape ─────────────────────────────────────────────────────────────────
+
 
 def test_to_csv_header_only_on_empty() -> None:
     csv_text = to_csv([])
@@ -326,6 +341,7 @@ def test_to_csv_shape() -> None:
 
 
 # ── _cmd_diff integration ─────────────────────────────────────────────────────
+
 
 def test_cmd_diff_writes_csv_to_file(tmp_path: pathlib.Path) -> None:
     from autoreplies.harness.runner import _cmd_diff
