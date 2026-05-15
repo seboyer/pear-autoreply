@@ -20,7 +20,7 @@ class SupabaseClient:
     def upsert_inquiry(
         self,
         *,
-        id: str,                     # noqa: A002 — column name is `id`
+        id: str,
         gmail_message_id: str,
         user_id: str | None,
         apartment_id: str | None,

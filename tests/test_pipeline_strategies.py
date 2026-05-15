@@ -8,8 +8,9 @@ Verifies:
 - Phase A/B/C bodies still raise NotImplementedError regardless of strategy.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from autoreplies.pipeline.process_lead import process_lead
 from autoreplies.pipeline.strategies import (
@@ -20,7 +21,6 @@ from autoreplies.pipeline.strategies import (
     SendResult,
     build_production_strategies,
 )
-
 
 # ---------------------------------------------------------------------------
 # build_production_strategies
@@ -113,9 +113,8 @@ def test_process_lead_uses_injected_strategies_not_default() -> None:
     strats = _mock_strategies()
     with patch(
         "autoreplies.pipeline.process_lead.build_production_strategies"
-    ) as mock_build:
-        with pytest.raises(NotImplementedError):
-            process_lead("msg-id", "agent@pearnyc.com", strategies=strats)
+    ) as mock_build, pytest.raises(NotImplementedError):
+        process_lead("msg-id", "agent@pearnyc.com", strategies=strats)
     mock_build.assert_not_called()
 
 
@@ -124,9 +123,8 @@ def test_process_lead_defaults_to_production_strategies() -> None:
     with patch(
         "autoreplies.pipeline.process_lead.build_production_strategies",
         return_value=_mock_strategies(),
-    ) as mock_build:
-        with pytest.raises(NotImplementedError):
-            process_lead("msg-id", "agent@pearnyc.com")
+    ) as mock_build, pytest.raises(NotImplementedError):
+        process_lead("msg-id", "agent@pearnyc.com")
     mock_build.assert_called_once()
 
 

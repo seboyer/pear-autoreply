@@ -264,6 +264,7 @@ def emit_module(bases: dict[str, tuple[str, list[TableMeta]]]) -> str:
         "",
         "from dataclasses import dataclass",
         "",
+        "",
     ]
 
     # Canonical shape: union of tables/fields across all bases (keyed by py_ident).
