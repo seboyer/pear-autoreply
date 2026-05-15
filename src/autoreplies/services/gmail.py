@@ -136,7 +136,7 @@ class GmailClient:
         msg = email_lib.message_from_bytes(raw)
         return msg, thread_id
 
-    # ── Stubs (Phases 1–2) ────────────────────────────────────────────────────
+    # ── Stubs (Phases 1-2) ────────────────────────────────────────────────────
 
     def list_history(
         self, start_history_id: str, label_id: str

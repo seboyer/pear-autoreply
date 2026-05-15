@@ -59,7 +59,7 @@ async def pubsub_inbox(request: Request) -> None:
 
     try:
         envelope = PubSubEnvelope.model_validate_json(body)
-    except Exception as exc:  # noqa: BLE001 — opaque parsing failures
+    except Exception as exc:  # opaque parsing failures
         logger.warning("pubsub: malformed envelope: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -72,7 +72,7 @@ async def pubsub_inbox(request: Request) -> None:
 
     try:
         decoded = json.loads(base64.b64decode(envelope.message.data))
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("pubsub: cannot decode message.data: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
