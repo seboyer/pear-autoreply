@@ -53,7 +53,7 @@ class AirtableClient:
         self.token = token
         self.schema = schema
         self.address_match_threshold = address_match_threshold
-        self._api = Api(token)
+        self._api = Api(token, use_field_ids=True)
 
     def _table(self, table_id: str) -> Any:
         return self._api.table(self.schema.base_id, table_id)
