@@ -61,11 +61,13 @@ class TableSpec:
 CURATED: dict[str, TableSpec] = {
     "Users": TableSpec(
         fields=[
-            "Email",              # filter Type=Agent for agent lookup; prospect→user match; Slack display
-            "Type",               # "Agent" vs other
-            "Name",               # Slack display: "Agent: Jane Doe"
-            "Phone",              # prospect→user match
-            "Autoreply (Agent)",  # per-agent reply template (PROD, synced — used post-cutover)
+            "Email",                     # primary inbox — prod lookup; prospect→user match; Slack display
+            "Type",                      # "Agent" / "Admin" / other
+            "Name",                      # Slack display: "Agent: Jane Doe"
+            "Phone",                     # prospect→user match
+            "Autoreply (Agent)",         # per-agent reply template (PROD, synced — used post-cutover)
+            "Autoreply Email (Agent)",   # legacy per-user inbox — the harness polls this
+            "Autoreply Enabled (Agent)", # checkbox: source of truth for "in scope" rows (prod + harness)
         ],
         test_only_fields=[
             ("Record ID", "source_record_id"),  # synced prod RECORD_ID() — used by H5 diff translator

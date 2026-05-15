@@ -13,7 +13,7 @@ from autoreplies.harness.poller import (
     MailboxCache,
     PollerConfig,
     ShutdownFlag,
-    discover_agent_mailboxes,
+    discover_monitored_mailboxes,
     poll_once,
     run_forever,
 )
@@ -50,62 +50,62 @@ def test_lead_sender_query_matches_plan() -> None:
     )
 
 
-# ── discover_agent_mailboxes ──────────────────────────────────────────────────
+# ── discover_monitored_mailboxes ──────────────────────────────────────────────
 
 
-def test_discover_agent_mailboxes_no_cache_calls_airtable(airtable: AirtableClient) -> None:
-    airtable.list_agent_emails.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
-    assert discover_agent_mailboxes(airtable) == ["a@pearnyc.com", "b@pearnyc.com"]
-    airtable.list_agent_emails.assert_called_once()
+def test_discover_monitored_mailboxes_no_cache_calls_airtable(airtable: AirtableClient) -> None:
+    airtable.list_monitored_autoreply_inboxes.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
+    assert discover_monitored_mailboxes(airtable) == ["a@pearnyc.com", "b@pearnyc.com"]
+    airtable.list_monitored_autoreply_inboxes.assert_called_once()
 
 
 def test_mailbox_cache_caches_within_ttl(airtable: AirtableClient) -> None:
-    airtable.list_agent_emails.side_effect = [
+    airtable.list_monitored_autoreply_inboxes.side_effect = [
         ["a@pearnyc.com"],
         ["a@pearnyc.com", "b@pearnyc.com"],
     ]
     clock = [0.0]
     cache = MailboxCache(ttl_seconds=3600, now=lambda: clock[0])
 
-    assert discover_agent_mailboxes(airtable, cache=cache) == ["a@pearnyc.com"]
+    assert discover_monitored_mailboxes(airtable, cache=cache) == ["a@pearnyc.com"]
     clock[0] = 100.0  # still well inside TTL
-    assert discover_agent_mailboxes(airtable, cache=cache) == ["a@pearnyc.com"]
-    assert airtable.list_agent_emails.call_count == 1
+    assert discover_monitored_mailboxes(airtable, cache=cache) == ["a@pearnyc.com"]
+    assert airtable.list_monitored_autoreply_inboxes.call_count == 1
 
 
 def test_mailbox_cache_refreshes_after_ttl(airtable: AirtableClient) -> None:
-    airtable.list_agent_emails.side_effect = [
+    airtable.list_monitored_autoreply_inboxes.side_effect = [
         ["a@pearnyc.com"],
         ["a@pearnyc.com", "b@pearnyc.com"],
     ]
     clock = [0.0]
     cache = MailboxCache(ttl_seconds=10, now=lambda: clock[0])
 
-    assert discover_agent_mailboxes(airtable, cache=cache) == ["a@pearnyc.com"]
+    assert discover_monitored_mailboxes(airtable, cache=cache) == ["a@pearnyc.com"]
     clock[0] = 10.0  # at TTL boundary — refresh
-    assert discover_agent_mailboxes(airtable, cache=cache) == [
+    assert discover_monitored_mailboxes(airtable, cache=cache) == [
         "a@pearnyc.com",
         "b@pearnyc.com",
     ]
-    assert airtable.list_agent_emails.call_count == 2
+    assert airtable.list_monitored_autoreply_inboxes.call_count == 2
 
 
 def test_mailbox_cache_invalidate_forces_refresh(airtable: AirtableClient) -> None:
-    airtable.list_agent_emails.side_effect = [
+    airtable.list_monitored_autoreply_inboxes.side_effect = [
         ["a@pearnyc.com"],
         ["c@pearnyc.com"],
     ]
     cache = MailboxCache(ttl_seconds=3600)
 
-    discover_agent_mailboxes(airtable, cache=cache)
+    discover_monitored_mailboxes(airtable, cache=cache)
     cache.invalidate()
-    assert discover_agent_mailboxes(airtable, cache=cache) == ["c@pearnyc.com"]
-    assert airtable.list_agent_emails.call_count == 2
+    assert discover_monitored_mailboxes(airtable, cache=cache) == ["c@pearnyc.com"]
+    assert airtable.list_monitored_autoreply_inboxes.call_count == 2
 
 
 def test_mailbox_cache_get_returns_a_copy(airtable: AirtableClient) -> None:
     """Callers mutating the returned list must not poison the cache."""
-    airtable.list_agent_emails.return_value = ["a@pearnyc.com"]
+    airtable.list_monitored_autoreply_inboxes.return_value = ["a@pearnyc.com"]
     cache = MailboxCache(ttl_seconds=3600)
     first = cache.get(airtable)
     first.append("rogue@pearnyc.com")
@@ -305,7 +305,7 @@ def _raise_runtime(*_args: Any) -> None:
 def test_run_forever_iterates_each_mailbox_and_exits_on_shutdown(
     state: HarnessState, airtable: AirtableClient
 ) -> None:
-    airtable.list_agent_emails.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
+    airtable.list_monitored_autoreply_inboxes.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
     gmail = _gmail_returning([("msg-1", 1_700_000_001_000)])
 
     dispatched: list[tuple[str, str]] = []
@@ -338,7 +338,7 @@ def test_run_forever_iterates_each_mailbox_and_exits_on_shutdown(
 def test_run_forever_stops_when_shutdown_set_mid_iteration(
     state: HarnessState, airtable: AirtableClient
 ) -> None:
-    airtable.list_agent_emails.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
+    airtable.list_monitored_autoreply_inboxes.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
     gmail = _gmail_returning([])
 
     shutdown = ShutdownFlag()
@@ -372,7 +372,7 @@ def test_run_forever_stops_when_shutdown_set_mid_iteration(
 def test_run_forever_continues_after_per_mailbox_exception(
     state: HarnessState, airtable: AirtableClient
 ) -> None:
-    airtable.list_agent_emails.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
+    airtable.list_monitored_autoreply_inboxes.return_value = ["a@pearnyc.com", "b@pearnyc.com"]
     gmail_good = _gmail_returning([])
 
     def gmail_factory(mailbox: str) -> Any:
@@ -404,7 +404,7 @@ def test_run_forever_continues_after_per_mailbox_exception(
 def test_run_forever_handles_airtable_discovery_failure(
     state: HarnessState, airtable: AirtableClient
 ) -> None:
-    airtable.list_agent_emails.side_effect = RuntimeError("airtable down")
+    airtable.list_monitored_autoreply_inboxes.side_effect = RuntimeError("airtable down")
 
     config = PollerConfig(
         interval_seconds=0,

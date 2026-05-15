@@ -125,7 +125,7 @@ for mailbox in agent_mailboxes:
 ```
 
 - **Scopes:** identical to production (`gmail.modify`). The same service account with domain-wide delegation works — no new GCP setup. The harness does not need `gmail.settings.basic` because it never creates filters or reads signatures (signatures are not needed for the draft surface).
-- **Discovery of mailboxes:** read `Users` table in TEST base, filter `Type = "Agent"`, project `Email`. Natively-synced Users from prod give us the right list with no manual maintenance.
+- **Discovery of mailboxes:** read `Users` table, filter `Autoreply Enabled (Agent) = TRUE`, project `Autoreply Email (Agent)` (the legacy per-user inbox column — distinct from the primary `Email`). Natively-synced Users from prod give us the right list with no manual maintenance. Rows with the checkbox set but the inbox field blank are skipped with a warning.
 - **Bootstrap:** on first run for a mailbox, set `last_seen = now - 60s` (don't backfill — that's a separate subcommand).
 - **No history-id expiry handling needed.** `messages.list` is timestamp-based, so the harness can resume cleanly after an arbitrary downtime — it'll just process whatever's accumulated since `last_seen_ms`. There's no 7-day cliff like `history.list` has.
 - **Why not the PLAN.md ingestion path?** Production uses `Pear/Leads` filter+label+watch+Pub/Sub for sub-30s time-to-reply at scale. The harness has no latency budget and validates the parser/matcher/LLM/Airtable layer, not the Gmail filter layer. Skipping the filter+label setup means Sam doesn't need to touch each agent's inbox (or run a per-mailbox filter-install script) just to start validation.

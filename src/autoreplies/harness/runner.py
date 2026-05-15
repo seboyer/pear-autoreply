@@ -71,7 +71,7 @@ def _cmd_backfill(args: argparse.Namespace) -> int:
     since_unix = int(since_dt.timestamp())
     query = f"{LEAD_SENDER_QUERY} after:{since_unix}"
 
-    mailboxes = [args.mailbox] if args.mailbox else airtable.list_agent_emails()
+    mailboxes = [args.mailbox] if args.mailbox else airtable.list_monitored_autoreply_inboxes()
 
     total = 0
     for mailbox in mailboxes:

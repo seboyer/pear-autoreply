@@ -88,7 +88,11 @@ class TableSpec:
 
 CURATED: dict[str, TableSpec] = {
     "Users": TableSpec(
-        fields=["Email", "Type", "Name", "Phone", "Autoreply (Agent)"],
+        fields=[
+            "Email", "Type", "Name", "Phone", "Autoreply (Agent)",
+            "Autoreply Email (Agent)",   # legacy per-user inbox — the harness polls this
+            "Autoreply Enabled (Agent)", # checkbox: source of truth for "in scope" rows (prod + harness)
+        ],
         test_only_fields=[("Record ID", "source_record_id")],
     ),
     "Apartments": TableSpec(
@@ -173,7 +177,7 @@ harness/
 - Use `sqlite3` stdlib. Write-ahead-log mode (`PRAGMA journal_mode=WAL`). `CREATE TABLE IF NOT EXISTS` on init.
 
 **`poller.py`:**
-- `discover_agent_mailboxes(airtable_client) -> list[str]`: read TEST base Users table, `Type = "Agent"`, project `Email`. Cache for the worker lifetime; refresh on `SIGHUP` or every 6 hours.
+- `discover_monitored_mailboxes(airtable_client) -> list[str]`: read Users table, filter `Autoreply Enabled (Agent) = TRUE`, project `Autoreply Email (Agent)` (the legacy per-user inbox column). Skips rows where the inbox field is blank (warns). Cache for the worker lifetime; refresh on `SIGHUP` or every 6 hours.
 - `LEAD_SENDER_QUERY = 'from:(noreply@email.streeteasy.com OR rentalclientservices@zillowrentals.com)'` — module constant. Sender allowlist mirrors PLAN.md § 1.
 - `poll_once(mailbox, gmail_client, state)`:
   - On first call (`get_last_seen(mailbox)` is None), set `last_seen = current_time_ms - settings.harness_bootstrap_lookback_seconds * 1000` (default 60s). Don't backfill — that's a separate subcommand.

@@ -8,6 +8,7 @@ Supabase row's primary key, plus user_id / apartment_id, are all Airtable IDs.
 This module is the issuer of those IDs.
 """
 
+import logging
 from datetime import datetime
 from typing import Any, Literal
 
@@ -29,6 +30,8 @@ from rapidfuzz import process as fuzz_process
 
 from autoreplies.parsers.base import ParsedLead
 from autoreplies.services.airtable_schema import PearTrackerSchema
+
+logger = logging.getLogger(__name__)
 
 
 def created_after(since_iso: str) -> Formula:
@@ -57,21 +60,21 @@ class AirtableClient:
 
     # --- Lookups ---
 
-    def find_agent_by_primary_email(self, email: str) -> dict[str, Any] | None:
-        """Look up an agent (Users.Type=Agent) by their primary Email field.
+    def find_monitored_user_by_primary_email(self, email: str) -> dict[str, Any] | None:
+        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by their primary Email field.
 
         Email here is the recipient mailbox the lead landed at — e.g.
         firstname@pearnyc.com.
         """
         u = self.schema.users
-        formula = AND(EQ(Field(u.type), "Agent"), EQ(Field(u.email), email))
+        formula = AND(EQ(Field(u.autoreply_enabled_agent), 1), EQ(Field(u.email), email))
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
 
-    def list_agent_emails(self) -> list[str]:
-        """Return all distinct, non-empty Users.Email where Type=Agent, sorted."""
+    def list_monitored_primary_emails(self) -> list[str]:
+        """Return distinct, non-empty primary Emails for monitored users (Autoreply Enabled = TRUE)."""
         u = self.schema.users
-        formula = EQ(Field(u.type), "Agent")
+        formula = EQ(Field(u.autoreply_enabled_agent), 1)
         rows = self._table(u.id).all(formula=formula, fields=[u.email])
         emails: set[str] = set()
         for row in rows:
@@ -80,11 +83,34 @@ class AirtableClient:
                 emails.add(email)
         return sorted(emails)
 
+    def list_monitored_autoreply_inboxes(self) -> list[str]:
+        """Return distinct, non-empty Autoreply Email (Agent) values for monitored users.
+
+        Rows where Autoreply Enabled (Agent) is checked but the inbox field is blank
+        are skipped with a WARNING — they are misconfigured and would cause missed leads.
+        """
+        u = self.schema.users
+        formula = EQ(Field(u.autoreply_enabled_agent), 1)
+        rows = self._table(u.id).all(formula=formula, fields=[u.autoreply_email_agent])
+        inboxes: set[str] = set()
+        for row in rows:
+            inbox = row.get("fields", {}).get(u.autoreply_email_agent)
+            if inbox:
+                inboxes.add(inbox)
+            else:
+                logger.warning(
+                    "list_monitored_autoreply_inboxes: user row %s has Autoreply Enabled "
+                    "but no Autoreply Email (Agent) — skipped",
+                    row.get("id", "<unknown>"),
+                )
+        return sorted(inboxes)
+
     def find_existing_user(
         self, *, email: str | None = None, phone: str | None = None
     ) -> dict[str, Any] | None:
-        """Match an existing non-agent User by email or phone.
+        """Match an existing non-staff User by email or phone.
 
+        Excludes Agents and Admins — staff rows are never returned as prospect matches.
         Per PLAN.md we only *match* — never create — users from leads.
         Returns None on no match.
         """
@@ -97,7 +123,7 @@ class AirtableClient:
         if phone:
             or_parts.append(EQ(Field(u.phone), phone))
         or_clause: Formula = OR(*or_parts) if len(or_parts) > 1 else or_parts[0]
-        formula = AND(NE(Field(u.type), "Agent"), or_clause)
+        formula = AND(NE(Field(u.type), "Agent"), NE(Field(u.type), "Admin"), or_clause)
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
 

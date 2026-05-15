@@ -156,7 +156,7 @@ def _phase_a_create_airtable(
     user_record_id = user_record["id"] if user_record else None
 
     # 5. Load agent record for the mailbox.
-    agent_record = airtable.find_agent_by_primary_email(state.mailbox_email)
+    agent_record = airtable.find_monitored_user_by_primary_email(state.mailbox_email)
     if agent_record is None:
         logger.warning("_phase_a: no agent record found for mailbox=%s", state.mailbox_email)
 

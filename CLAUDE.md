@@ -25,7 +25,7 @@ Never reach into production wiring with feature flags, monkey-patches, or "if mo
 - **`Inquiries.Method = "Web"`** (NOT `"Email"`). The field describes the prospect's contact channel (the public rental platform), not the email-vs-form mechanic.
 - **`Inquiries.Agent` is a lookup** through the linked Apartment — never written. When apartment matching fails, the Agent lookup is null on the analytics row; live agent attribution lives on the Slack notification.
 - **Zillow leads may not have `first_name` or `phone` — don't gate logic on either.** The parser extracts both from the HTML body when present (the current Zillow format includes them on most leads, contrary to PLAN.md § 3's older empirical claim — confirmed empirically across Aug 2024–Apr 2026). Downstream code must still treat them as nullable: the template's `{{first_name|there}}` fallback handles the salutation; phone is nullable in Slack and Airtable.
-- **Never create a user from a lead.** Only match existing non-agent Users by email or phone. On miss, leave the `User` link empty.
+- **Never create a user from a lead.** Only match existing non-staff Users (`Type` neither `Agent` nor `Admin`) by email or phone. On miss, leave the `User` link empty.
 - **`ParsedLead.parser_used`** holds source-named values: `"streeteasy"` / `"zillow"` / `"llm_fallback"`. The harness Drafts table single-select uses `regex` / `llm_fallback`; mapping happens in `harness/` only — production keeps the richer taxonomy.
 - **Logging:** call `autoreplies.logging_config.configure_logging(level)` from new entrypoints. Don't call `logging.basicConfig` directly.
 

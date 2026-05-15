@@ -129,7 +129,7 @@ class MailboxCache:
 
     def get(self, airtable: AirtableClient) -> list[str]:
         if self._cached is None or (self._now() - self._fetched_at) >= self._ttl:
-            self._cached = airtable.list_agent_emails()
+            self._cached = airtable.list_monitored_autoreply_inboxes()
             self._fetched_at = self._now()
         return list(self._cached)
 
@@ -138,14 +138,18 @@ class MailboxCache:
         self._fetched_at = 0.0
 
 
-def discover_agent_mailboxes(
+def discover_monitored_mailboxes(
     airtable: AirtableClient,
     *,
     cache: MailboxCache | None = None,
 ) -> list[str]:
-    """Resolve the current agent mailbox list, honoring `cache` if provided."""
+    """Resolve the current monitored mailbox list.
+
+    Returns legacy autoreply inboxes for users with Autoreply Enabled (Agent) = TRUE.
+    Honors `cache` if provided.
+    """
     if cache is None:
-        return airtable.list_agent_emails()
+        return airtable.list_monitored_autoreply_inboxes()
     return cache.get(airtable)
 
 
@@ -278,9 +282,9 @@ def run_forever(
         iteration += 1
 
         try:
-            mailboxes = discover_agent_mailboxes(airtable, cache=mailbox_cache)
+            mailboxes = discover_monitored_mailboxes(airtable, cache=mailbox_cache)
         except Exception:
-            logger.exception("run_forever: agent mailbox discovery failed; retrying after interval")
+            logger.exception("run_forever: monitored mailbox discovery failed; retrying after interval")
             mailboxes = []
 
         for mailbox in mailboxes:

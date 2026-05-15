@@ -60,7 +60,7 @@ def _mock_airtable(
                 TEST.users.autoreply_test_template: "",  # use fallback template
             },
         }
-    at.find_agent_by_primary_email.return_value = agent_record
+    at.find_monitored_user_by_primary_email.return_value = agent_record
 
     # Apartment matching
     at.match_apartment_by_streeteasy_id.return_value = apartment_record

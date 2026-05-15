@@ -136,7 +136,7 @@ def process_lead(message_id, mailbox_email):
 
     if not state.airtable_record_id:
         msg = gmail.get_message(mailbox_email, message_id)
-        agent = airtable.find_agent_by_primary_email(mailbox_email)
+        agent = airtable.find_monitored_user_by_primary_email(mailbox_email)
         if not agent: alert_slack_and_quarantine(...); return
 
         parsed = parse_lead_email(msg)
@@ -257,14 +257,14 @@ The decision is logged on the inquiry record (`reply_route = thread | direct | s
 ### 5. Airtable client
 
 - **Schema management.** All Airtable tables and fields are referenced by *immutable IDs* (`tbl…`, `fld…`), never by display name. The curated set of IDs lives in `src/autoreplies/services/airtable_schema.py`, generated from the Airtable metadata API by `scripts/generate_airtable_schema.py`. The CURATED dict at the top of that script is the project's contract — a field is in the schema module iff it's named there. To add a field, edit CURATED, regenerate, and plumb it through. Never edit `airtable_schema.py` by hand. Only base IDs live in `.env` / `Settings`; everything else (table IDs, field IDs, view IDs) lives in the schema module.
-- Look up agent: `Users` table, filter `Type = "Agent"` AND `Email = <recipient mailbox>` (the agent's primary `firstname@pearnyc.com`). Cache per-agent record for the worker lifetime.
+- Look up agent: `Users` table, filter `Autoreply Enabled (Agent) = TRUE` AND `Email = <recipient mailbox>` (the user's primary `firstname@pearnyc.com`). Cache per-agent record for the worker lifetime.
 - Match apartment (analytics-only, non-blocking). The strategy is source-dependent because — confirmed empirically — StreetEasy and Zillow listing identifiers are *not* linked in either email. Pear posts only to StreetEasy and Zillow syndicates from there, but Zillow's emails carry only opaque redirect codes (`zillow.com/r/<alphanumeric>`), never a StreetEasy listing ID. So:
   1. **StreetEasy leads — URL-first.** Extract the StreetEasy numeric listing ID from `parsed.listing_url` (matches `streeteasy.com/rental/<id>`), then find `Apartments` where the `Streeteasy` URL field contains that same ID. Highest-confidence match.
   2. **StreetEasy leads — address fallback.** If no listing-ID match, fall through to the address-fuzzy-match path below.
   3. **Zillow leads — address-only.** Zillow URLs cannot be reverse-mapped to a StreetEasy listing, but Zillow emails *do* include the full structured address with **unit number + borough** (e.g. `170 Prospect Pl #3B, Brooklyn`). Normalize and fuzzy-match (rapidfuzz `WRatio >= 92`) against `Apartments.Full Address`. The unit + borough makes this more accurate than a bare street-name match — multi-unit buildings stop being ambiguous.
   4. **Address normalization** (shared by both sources): lowercase, strip whitespace, expand/canonicalize street suffixes (St → Street, Ave → Avenue, Pl → Place), normalize unit prefixes (`#3B`, `Apt 3B`, `Unit 3B` → `3B`), expand borough abbreviations (BK → Brooklyn).
   5. No match → `apartment_id = null`, `match_confidence = none`. The reply still sends; only the analytics row is sparse.
-- **Match existing user only — never create.** `Users` table, filter `Type != "Agent"` AND (`Email = parsed.email` OR `Phone = parsed.phone`). On hit, link the inquiry to that user. On miss, leave the `User` field empty (the inquiry still gets created — the prospect just isn't yet a user record). Sam confirmed this rule: lead inquiries are not authoritative enough to mint user records.
+- **Match existing user only — never create.** `Users` table, filter `Type != "Agent"` AND `Type != "Admin"` AND (`Email = parsed.email` OR `Phone = parsed.phone`). On hit, link the inquiry to that user. On miss, leave the `User` field empty (the inquiry still gets created — the prospect just isn't yet a user record). Sam confirmed this rule: lead inquiries are not authoritative enough to mint user records.
 - Create `Inquiries` row: `Name (Form)`, `Email (Form)`, `Phone`, `Message`, link `Apartment` (if matched), link `User` (if matched), `Method = "Web"`, `Type (Non Website) = "StreetEasy"` or `"Zillow"`. `Date Created` auto. **Returned record ID is the canonical join key for everything downstream.**
   - `Method` is `"Web"` (not `"Email"`) — the field describes the prospect's contact channel (the public rental platform), not how the lead reached us.
   - `Agent` on Inquiries is a **lookup field** through the linked `Apartment`, not a writable link. Don't pass it to `create_inquiry`. When apartment matching fails, the Agent lookup is null on the analytics row — that's accepted; live agent attribution lives on the Slack notification.
@@ -443,6 +443,7 @@ All resolved as of 2026-04-25:
 | Slack agent identification | Show name + email in the message body; don't `@`-mention. Feed is for admin visibility, not agent pings. |
 | Admin endpoint auth | HTTP bearer token with constant-time compare. Rate-limited at Caddy. No third-party service. |
 | StreetEasy ~4% no-first-name leads | Use the template's `{{first_name|there}}` fallback. No LLM extraction — cleaner and Hi-there-style salutations read fine. |
+| Monitored set | Users with `Autoreply Enabled (Agent)` checked (spans some Agents and Admins) | Single Airtable source of truth; allows per-user opt-in without overloading `Type` |
 
 ---
 

@@ -3,6 +3,7 @@
 All HTTP is mocked via unittest.mock. Tests do not hit Airtable.
 """
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -34,45 +35,77 @@ def _record(rec_id: str, fields: dict[str, Any]) -> dict[str, Any]:
     return {"id": rec_id, "fields": fields}
 
 
-# ── find_agent_by_primary_email ───────────────────────────────────────────────
+# ── find_monitored_user_by_primary_email ──────────────────────────────────────
 
-def test_find_agent_found(client: AirtableClient) -> None:
+def test_find_monitored_user_found(client: AirtableClient) -> None:
     row = _record("recAGENT1", {PROD.users.email: "sam@pearnyc.com"})
     with patch.object(client, "_table", return_value=_mock_table([row])):
-        result = client.find_agent_by_primary_email("sam@pearnyc.com")
+        result = client.find_monitored_user_by_primary_email("sam@pearnyc.com")
     assert result == row
 
 
-def test_find_agent_not_found(client: AirtableClient) -> None:
+def test_find_monitored_user_not_found(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert client.find_agent_by_primary_email("nobody@pearnyc.com") is None
+        assert client.find_monitored_user_by_primary_email("nobody@pearnyc.com") is None
 
 
-# ── list_agent_emails ─────────────────────────────────────────────────────────
+# ── list_monitored_primary_emails ─────────────────────────────────────────────
 
-def test_list_agent_emails_returns_sorted_distinct(client: AirtableClient) -> None:
+def test_list_monitored_primary_emails_returns_sorted_distinct(client: AirtableClient) -> None:
     rows = [
         _record("recAGENT1", {PROD.users.email: "b@pearnyc.com"}),
         _record("recAGENT2", {PROD.users.email: "a@pearnyc.com"}),
         _record("recAGENT3", {PROD.users.email: "a@pearnyc.com"}),  # dup
     ]
     with patch.object(client, "_table", return_value=_mock_table(rows)):
-        assert client.list_agent_emails() == ["a@pearnyc.com", "b@pearnyc.com"]
+        assert client.list_monitored_primary_emails() == ["a@pearnyc.com", "b@pearnyc.com"]
 
 
-def test_list_agent_emails_filters_empty(client: AirtableClient) -> None:
+def test_list_monitored_primary_emails_filters_empty(client: AirtableClient) -> None:
     rows = [
         _record("recAGENT1", {PROD.users.email: "a@pearnyc.com"}),
         _record("recAGENT2", {}),
         _record("recAGENT3", {PROD.users.email: ""}),
     ]
     with patch.object(client, "_table", return_value=_mock_table(rows)):
-        assert client.list_agent_emails() == ["a@pearnyc.com"]
+        assert client.list_monitored_primary_emails() == ["a@pearnyc.com"]
 
 
-def test_list_agent_emails_empty(client: AirtableClient) -> None:
+def test_list_monitored_primary_emails_empty(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert client.list_agent_emails() == []
+        assert client.list_monitored_primary_emails() == []
+
+
+# ── list_monitored_autoreply_inboxes ──────────────────────────────────────────
+
+def test_list_monitored_autoreply_inboxes_returns_sorted_distinct(client: AirtableClient) -> None:
+    rows = [
+        _record("recAGENT1", {PROD.users.autoreply_email_agent: "b@pearnyc.com"}),
+        _record("recAGENT2", {PROD.users.autoreply_email_agent: "a@pearnyc.com"}),
+        _record("recAGENT3", {PROD.users.autoreply_email_agent: "a@pearnyc.com"}),  # dup
+    ]
+    with patch.object(client, "_table", return_value=_mock_table(rows)):
+        assert client.list_monitored_autoreply_inboxes() == ["a@pearnyc.com", "b@pearnyc.com"]
+
+
+def test_list_monitored_autoreply_inboxes_warns_on_blank(
+    client: AirtableClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A row with Autoreply Enabled but no Autoreply Email (Agent) is skipped with WARNING."""
+    rows = [
+        _record("recAGENT1", {PROD.users.autoreply_email_agent: "a@pearnyc.com"}),
+        _record("recAGENT2", {}),  # blank inbox — misconfigured
+    ]
+    with patch.object(client, "_table", return_value=_mock_table(rows)), \
+            caplog.at_level(logging.WARNING, logger="autoreplies.services.airtable"):
+        result = client.list_monitored_autoreply_inboxes()
+    assert result == ["a@pearnyc.com"]
+    assert any("recAGENT2" in record.message for record in caplog.records)
+
+
+def test_list_monitored_autoreply_inboxes_empty(client: AirtableClient) -> None:
+    with patch.object(client, "_table", return_value=_mock_table([])):
+        assert client.list_monitored_autoreply_inboxes() == []
 
 
 # ── find_existing_user ────────────────────────────────────────────────────────
@@ -98,6 +131,20 @@ def test_find_user_no_args_returns_none(client: AirtableClient) -> None:
 def test_find_user_not_found(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
         assert client.find_existing_user(email="ghost@example.com") is None
+
+
+def test_find_existing_user_excludes_admins(client: AirtableClient) -> None:
+    """Admin rows must never be returned as prospect matches."""
+    # The formula excludes Admins, so Airtable would return no rows; we model
+    # that by having the mock return empty — the important thing is the formula
+    # sent to Airtable contains NE(Type, "Admin").
+    tbl = MagicMock()
+    tbl.all.return_value = []
+    with patch.object(client, "_table", return_value=tbl):
+        result = client.find_existing_user(email="admin@pearnyc.com")
+    assert result is None
+    formula_str = str(tbl.all.call_args.kwargs["formula"])
+    assert "Admin" in formula_str
 
 
 # ── match_apartment_by_streeteasy_id ──────────────────────────────────────────
