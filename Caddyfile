@@ -2,6 +2,7 @@
 # - Auto-provisions Let's Encrypt TLS for the public hostname.
 # - Reverse-proxies all routes to the internal `web` container on :8000.
 # - Rate-limits /admin/* to blunt brute-force on the bearer token.
+#   Requires the caddy-ratelimit plugin (built via Dockerfile.caddy).
 # - /pubsub/inbox and /healthz get no app-level rate limit (Pub/Sub bursts;
 #   monitoring needs unimpeded access). Pub/Sub auth is JWT-verified inside
 #   the FastAPI app, not at this layer.
@@ -21,13 +22,13 @@
 	}
 
 	# Rate-limit admin endpoints. Token-bucket: 30 req/min/IP.
-	# Caddy's built-in limiter; no plugin needed.
 	@admin path /admin/*
 	rate_limit @admin {
-		zone admin_zone
-		key {client_ip}
-		events 30
-		window 1m
+		zone admin_zone {
+			key   {remote_host}
+			events 30
+			window 1m
+		}
 	}
 
 	reverse_proxy web:8000 {

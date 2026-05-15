@@ -90,7 +90,9 @@ services:
       - harness_state:/var/lib/pear-autoreply
 
   caddy:
-    image: caddy:2-alpine
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
     restart: unless-stopped
     ports:
       - "80:80"
