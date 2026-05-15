@@ -106,11 +106,14 @@ class HarnessStats:
             if lat is not None:
                 latencies.append(float(lat))
 
-        if latencies:
+        if len(latencies) >= 2:
             qs = statistics.quantiles(latencies, n=20, method="exclusive")
             # n=20 → 19 quantiles; index 9 = 50th percentile, index 18 = 95th
             p50: float | None = qs[9]
             p95: float | None = qs[18]
+        elif len(latencies) == 1:
+            p50 = latencies[0]
+            p95 = latencies[0]
         else:
             p50 = None
             p95 = None
