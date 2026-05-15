@@ -41,6 +41,7 @@ def _draft_parser_used(parser_used: str) -> Literal["regex", "llm_fallback"]:
 
 # ── DraftSend ─────────────────────────────────────────────────────────────────
 
+
 class DraftSend:
     """Harness send strategy: writes a Drafts row instead of sending via Gmail."""
 
@@ -93,6 +94,7 @@ class DraftSend:
 
 # ── NoopSlack ─────────────────────────────────────────────────────────────────
 
+
 class NoopSlack:
     """Harness Slack strategy: does nothing."""
 
@@ -119,6 +121,7 @@ class NoopSlack:
 
 # ── NoopSupabase ──────────────────────────────────────────────────────────────
 
+
 class NoopSupabase:
     """Harness Supabase strategy: does nothing."""
 
@@ -127,6 +130,7 @@ class NoopSupabase:
 
 
 # ── Factories ─────────────────────────────────────────────────────────────────
+
 
 def build_harness_airtable_client() -> AirtableClient:
     """Construct an AirtableClient pointed at the test base."""

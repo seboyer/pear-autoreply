@@ -27,16 +27,16 @@ class ParsedLead:
     # Prospect identity (Zillow has no first_name or phone)
     first_name: str | None
     last_name: str | None
-    email: str | None              # prospect email (typically from Reply-To)
+    email: str | None  # prospect email (typically from Reply-To)
     phone: str | None
     # Listing info
     apartment_address: str | None  # raw, pre-normalization
     listing_url: str | None
-    listing_id: str | None         # for StreetEasy only — Zillow URLs are opaque redirects
+    listing_id: str | None  # for StreetEasy only — Zillow URLs are opaque redirects
     # Body
     message_body: str | None
     # Provenance
-    parser_used: str               # "streeteasy" | "zillow" | "llm_fallback"
+    parser_used: str  # "streeteasy" | "zillow" | "llm_fallback"
 
 
 SENDER_TO_SOURCE: dict[str, Source] = {
@@ -72,6 +72,7 @@ def parse(message: Message) -> ParsedLead:
 
 # ── Shared helpers ────────────────────────────────────────────────────────────
 
+
 def get_body_part(message: Message, content_type: str) -> str | None:
     """Return the decoded body of the first part with `content_type`, or None.
 
@@ -103,7 +104,7 @@ def html_to_text(html: str) -> str:
     for tag in soup(["style", "script"]):
         tag.decompose()
     text = soup.get_text(separator=" ")
-    text = text.replace(chr(0xa0), " ")  # NBSP -> regular space
+    text = text.replace(chr(0xA0), " ")  # NBSP -> regular space
     return re.sub(r"[ \t]+", " ", text)
 
 

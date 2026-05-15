@@ -15,6 +15,7 @@ from autoreplies.services.airtable_schema import TEST
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
+
 def _record(fields: dict[str, Any]) -> dict[str, Any]:
     return {"id": "recXXX", "fields": fields}
 
@@ -51,6 +52,7 @@ def _make_airtable(rows: list[dict[str, Any]]) -> AirtableClient:
 
 
 # ── count assertions ──────────────────────────────────────────────────────────
+
 
 def test_counts_by_source() -> None:
     rows = [
@@ -113,6 +115,7 @@ def test_counts_by_reply_route() -> None:
 
 # ── latency percentiles ───────────────────────────────────────────────────────
 
+
 def test_latency_percentiles_known_list() -> None:
     # [100, 200, ..., 2000] = 20 values
     latencies = list(range(100, 2100, 100))
@@ -134,6 +137,7 @@ def test_latency_percentiles_single_value() -> None:
 
 
 # ── edge cases ────────────────────────────────────────────────────────────────
+
 
 def test_empty_result_no_crash() -> None:
     report = HarnessStats(_make_airtable([])).compute("2026-05-01")
@@ -164,6 +168,7 @@ def test_skipped_pct_calculation() -> None:
 
 # ── _cmd_stats end-to-end ─────────────────────────────────────────────────────
 
+
 def test_cmd_stats_exits_0_and_prints_sections(capsys: pytest.CaptureFixture[str]) -> None:
     from autoreplies.harness.runner import _cmd_stats
 
@@ -177,7 +182,9 @@ def test_cmd_stats_exits_0_and_prints_sections(capsys: pytest.CaptureFixture[str
 
     # _cmd_stats does a local `from autoreplies.harness.pipeline import ...`
     # so we patch the source in the pipeline module.
-    with patch("autoreplies.harness.pipeline.build_harness_airtable_client", return_value=mock_client):
+    with patch(
+        "autoreplies.harness.pipeline.build_harness_airtable_client", return_value=mock_client
+    ):
         result = _cmd_stats(args)
 
     assert result == 0

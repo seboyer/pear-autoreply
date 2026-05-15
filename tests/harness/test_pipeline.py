@@ -21,6 +21,7 @@ from autoreplies.services.airtable_schema import (
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture()
 def mock_airtable() -> AirtableClient:
     client = MagicMock(spec=AirtableClient)
@@ -76,17 +77,22 @@ def _send_kwargs(**overrides: Any) -> dict[str, Any]:
 
 # ── parser_used mapping ───────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("parser_used,expected", [
-    ("streeteasy", "regex"),
-    ("zillow", "regex"),
-    ("llm_fallback", "llm_fallback"),
-    ("unknown", "llm_fallback"),  # safe default
-])
+
+@pytest.mark.parametrize(
+    "parser_used,expected",
+    [
+        ("streeteasy", "regex"),
+        ("zillow", "regex"),
+        ("llm_fallback", "llm_fallback"),
+        ("unknown", "llm_fallback"),  # safe default
+    ],
+)
 def test_draft_parser_used_mapping(parser_used: str, expected: str) -> None:
     assert _draft_parser_used(parser_used) == expected
 
 
 # ── DraftSend ─────────────────────────────────────────────────────────────────
+
 
 def test_draft_send_returns_send_result(
     draft_send: DraftSend, mock_airtable: AirtableClient
@@ -109,7 +115,7 @@ def test_draft_send_calls_create_draft(
     assert call_kwargs["body_plaintext"] == "Hi Jane…"
     assert call_kwargs["body_html"] == "<p>Hi Jane…</p>"
     assert call_kwargs["source"] == "StreetEasy"
-    assert call_kwargs["parser_used"] == "regex"      # streeteasy → regex mapping
+    assert call_kwargs["parser_used"] == "regex"  # streeteasy → regex mapping
     assert call_kwargs["template_source"] == "agent"
     assert call_kwargs["reply_route"] == "thread"
     assert call_kwargs["apartment_match_strategy"] == "streeteasy_id"
@@ -129,20 +135,21 @@ def test_draft_send_zillow_parser_maps_to_regex(
     assert call_kwargs["parser_used"] == "regex"
 
 
-def test_draft_send_skipped_route(
-    draft_send: DraftSend, mock_airtable: AirtableClient
-) -> None:
-    draft_send.send_reply(**_send_kwargs(
-        reply_route="skipped",
-        skipped_reason="no Reply-To and parsed.email is None",
-        to="",
-    ))
+def test_draft_send_skipped_route(draft_send: DraftSend, mock_airtable: AirtableClient) -> None:
+    draft_send.send_reply(
+        **_send_kwargs(
+            reply_route="skipped",
+            skipped_reason="no Reply-To and parsed.email is None",
+            to="",
+        )
+    )
     call_kwargs = mock_airtable.create_draft.call_args.kwargs
     assert call_kwargs["reply_route"] == "skipped"
     assert call_kwargs["skipped_reason"] == "no Reply-To and parsed.email is None"
 
 
 # ── NoopSlack ─────────────────────────────────────────────────────────────────
+
 
 def test_noop_slack_post_lead_returns_empty_string() -> None:
     slack = NoopSlack()
@@ -168,12 +175,14 @@ def test_noop_slack_post_alert_returns_empty_string() -> None:
 
 # ── NoopSupabase ──────────────────────────────────────────────────────────────
 
+
 def test_noop_supabase_returns_empty_dict() -> None:
     result = NoopSupabase().upsert_inquiry(id="recINQ1", gmail_message_id="msg-x")
     assert result == {}
 
 
 # ── build_harness_strategies ──────────────────────────────────────────────────
+
 
 def test_build_harness_strategies_returns_pipeline_strategies(
     mock_airtable: AirtableClient,

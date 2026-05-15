@@ -34,10 +34,7 @@ def test_detect_source_streeteasy() -> None:
 
 
 def test_detect_source_zillow() -> None:
-    msg = _msg(
-        "From: Zillow Group Rentals <rentalclientservices@zillowrentals.com>\r\n"
-        "Subject: x"
-    )
+    msg = _msg("From: Zillow Group Rentals <rentalclientservices@zillowrentals.com>\r\nSubject: x")
     assert detect_source(msg) == "Zillow"
 
 
@@ -63,18 +60,21 @@ def test_parse_unknown_source_raises() -> None:
 # ── split_name ────────────────────────────────────────────────────────────────
 
 
-@pytest.mark.parametrize("full,expected", [
-    ("Katie Shepherd", ("Katie", "Shepherd")),
-    ("Kyra G. Cobb", ("Kyra", "G. Cobb")),
-    ("Ms. Gray", (None, "Gray")),
-    ("Mr. John Doe", ("John", "Doe")),
-    ("Mx Avery Smith", ("Avery", "Smith")),
-    ("Dr. Patel", (None, "Patel")),
-    ("Madonna", (None, "Madonna")),
-    ("", (None, None)),
-    ("   ", (None, None)),
-    (None, (None, None)),
-])
+@pytest.mark.parametrize(
+    "full,expected",
+    [
+        ("Katie Shepherd", ("Katie", "Shepherd")),
+        ("Kyra G. Cobb", ("Kyra", "G. Cobb")),
+        ("Ms. Gray", (None, "Gray")),
+        ("Mr. John Doe", ("John", "Doe")),
+        ("Mx Avery Smith", ("Avery", "Smith")),
+        ("Dr. Patel", (None, "Patel")),
+        ("Madonna", (None, "Madonna")),
+        ("", (None, None)),
+        ("   ", (None, None)),
+        (None, (None, None)),
+    ],
+)
 def test_split_name(full: str | None, expected: tuple[str | None, str | None]) -> None:
     assert split_name(full) == expected
 
@@ -88,9 +88,7 @@ def test_extract_reply_to_email_bare_address() -> None:
 
 
 def test_extract_reply_to_email_with_display_name() -> None:
-    msg = _msg(
-        "From: x@y.com\r\nReply-To: Jane Doe <jane@example.com>\r\nSubject: x"
-    )
+    msg = _msg("From: x@y.com\r\nReply-To: Jane Doe <jane@example.com>\r\nSubject: x")
     assert extract_reply_to_email(msg) == "jane@example.com"
 
 

@@ -32,9 +32,7 @@ from autoreplies.services.airtable import AirtableClient
 
 logger = logging.getLogger(__name__)
 
-LEAD_SENDER_QUERY = (
-    "from:(noreply@email.streeteasy.com OR rentalclientservices@zillowrentals.com)"
-)
+LEAD_SENDER_QUERY = "from:(noreply@email.streeteasy.com OR rentalclientservices@zillowrentals.com)"
 
 
 # ── Collaborator protocols ────────────────────────────────────────────────────
@@ -48,9 +46,7 @@ class MessageLister(Protocol):
     the query. Each tuple is `(gmail_message_id, internal_date_unix_ms)`.
     """
 
-    def list_messages(
-        self, *, query: str, max_results: int = 100
-    ) -> list[tuple[str, int]]: ...
+    def list_messages(self, *, query: str, max_results: int = 100) -> list[tuple[str, int]]: ...
 
 
 DispatchFn = Callable[[str, str], None]
@@ -98,6 +94,7 @@ def install_signal_handlers(
     signal.signal(signal.SIGINT, _shutdown_handler)
 
     if mailbox_cache is not None and hasattr(signal, "SIGHUP"):
+
         def _sighup_handler(signum: int, _frame: Any) -> None:
             logger.info("Received SIGHUP; invalidating mailbox cache.")
             mailbox_cache.invalidate()
@@ -284,7 +281,9 @@ def run_forever(
         try:
             mailboxes = discover_monitored_mailboxes(airtable, cache=mailbox_cache)
         except Exception:
-            logger.exception("run_forever: monitored mailbox discovery failed; retrying after interval")
+            logger.exception(
+                "run_forever: monitored mailbox discovery failed; retrying after interval"
+            )
             mailboxes = []
 
         for mailbox in mailboxes:

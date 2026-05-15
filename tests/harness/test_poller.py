@@ -244,11 +244,13 @@ def test_poll_once_failed_dispatch_marks_with_error(state: HarnessState) -> None
 
 def test_poll_once_advances_cursor_to_max_internal_date(state: HarnessState) -> None:
     state.set_last_seen("a@pearnyc.com", 1_700_000_000_000)
-    gmail = _gmail_returning([
-        ("msg-1", 1_700_000_001_000),
-        ("msg-2", 1_700_000_005_000),
-        ("msg-3", 1_700_000_003_000),
-    ])
+    gmail = _gmail_returning(
+        [
+            ("msg-1", 1_700_000_001_000),
+            ("msg-2", 1_700_000_005_000),
+            ("msg-3", 1_700_000_003_000),
+        ]
+    )
 
     poll_once(
         mailbox="a@pearnyc.com",

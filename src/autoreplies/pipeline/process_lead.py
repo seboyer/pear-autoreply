@@ -48,7 +48,7 @@ class JobState:
     message_id: str
     mailbox_email: str
     airtable_record_id: str | None = None
-    parsed_snapshot: dict[str, Any] | None = None     # cached parsed lead
+    parsed_snapshot: dict[str, Any] | None = None  # cached parsed lead
     reply_sent_message_id: str | None = None
     supabase_done: bool = False
     slack_done: bool = False
@@ -110,8 +110,9 @@ def process_lead(
 
         state.fully_done = True
         _save_state(state)
-        logger.info("process_lead: done message_id=%s record_id=%s",
-                    message_id, state.airtable_record_id)
+        logger.info(
+            "process_lead: done message_id=%s record_id=%s", message_id, state.airtable_record_id
+        )
 
     except Exception as exc:
         state.last_error = repr(exc)
@@ -191,9 +192,7 @@ def _phase_a_create_airtable(
         logger.warning("_phase_a: template fill failed for %s: %s", state.message_id, exc)
 
     # 8. Resolve reply destination.
-    dest = resolve_reply_destination(
-        message=message, parsed=parsed, thread_id=thread_id or None
-    )
+    dest = resolve_reply_destination(message=message, parsed=parsed, thread_id=thread_id or None)
 
     # TemplateFillError overrides route to skipped.
     if fill_skipped_reason:
@@ -266,14 +265,16 @@ def _phase_a_create_airtable(
         "apartment_match_confidence": apartment_match_confidence,
         "message_excerpt": (parsed.message_body or "")[:200] if parsed.message_body else None,
         "gmail_thread_url": (
-            f"https://mail.google.com/mail/u/0/#all/{dest.thread_id}"
-            if dest.thread_id else ""
+            f"https://mail.google.com/mail/u/0/#all/{dest.thread_id}" if dest.thread_id else ""
         ),
     }
 
     logger.info(
         "_phase_a: done message_id=%s inquiry_id=%s route=%s parser=%s",
-        state.message_id, inquiry_id, dest.route, parsed.parser_used,
+        state.message_id,
+        inquiry_id,
+        dest.route,
+        parsed.parser_used,
     )
 
 

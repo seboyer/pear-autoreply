@@ -15,7 +15,7 @@ class SlackClient:
     def post_lead(
         self,
         *,
-        source: str,                          # "StreetEasy" | "Zillow"
+        source: str,  # "StreetEasy" | "Zillow"
         agent_name: str,
         agent_email: str,
         prospect_name: str | None,

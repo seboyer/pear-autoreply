@@ -33,9 +33,7 @@ from .base import (
     split_name,
 )
 
-SUBJECT_PATTERN = re.compile(
-    r"^(?P<address>.+?)\s+StreetEasy Inquiry From\s+(?P<name>.+)$"
-)
+SUBJECT_PATTERN = re.compile(r"^(?P<address>.+?)\s+StreetEasy Inquiry From\s+(?P<name>.+)$")
 
 LISTING_URL_PATTERN = re.compile(
     r"https?://(?:www\.)?streeteasy\.com/rental/(?P<id>\d+)",
@@ -66,9 +64,7 @@ def parse(message: Message) -> ParsedLead:
     subject = (message.get("Subject") or "").strip()
     subject_match = SUBJECT_PATTERN.match(subject)
     if not subject_match:
-        raise ParserError(
-            f"StreetEasy subject does not match expected pattern: {subject!r}"
-        )
+        raise ParserError(f"StreetEasy subject does not match expected pattern: {subject!r}")
 
     raw_address = subject_match.group("address").strip()
     raw_name = subject_match.group("name").strip()
@@ -82,6 +78,7 @@ def parse(message: Message) -> ParsedLead:
         html = get_body_part(message, "text/html") or ""
         if html:
             from .base import html_to_text
+
             body = html_to_text(html)
 
     email_addr = extract_reply_to_email(message)

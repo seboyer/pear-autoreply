@@ -40,9 +40,7 @@ class StatsReport:
 
         _section("Overview")
         _row("Total drafts", self.total)
-        skipped_pct = (
-            f"{self.skipped_pct:.1f}%" if self.skipped_pct is not None else "—"
-        )
+        skipped_pct = f"{self.skipped_pct:.1f}%" if self.skipped_pct is not None else "—"
         _row("Skipped %", skipped_pct)
 
         _section("By Source")

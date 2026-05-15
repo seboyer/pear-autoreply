@@ -36,8 +36,7 @@ def main() -> int:
     signal.signal(signal.SIGTERM, _handle_signal)
     signal.signal(signal.SIGINT, _handle_signal)
 
-    log.info("scheduler starting (env=%s, interval=%ds)",
-             settings.app_env, LOOP_INTERVAL_SECONDS)
+    log.info("scheduler starting (env=%s, interval=%ds)", settings.app_env, LOOP_INTERVAL_SECONDS)
 
     while not stop["flag"]:
         try:

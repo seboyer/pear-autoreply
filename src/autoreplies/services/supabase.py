@@ -31,11 +31,11 @@ class SupabaseClient:
         email: str | None,
         phone: str | None,
         message: str | None,
-        type_platform: str,           # "StreetEasy" or "Zillow"
-        method: str = "Web",          # PLAN.md § 6 — describes the prospect's contact channel
+        type_platform: str,  # "StreetEasy" or "Zillow"
+        method: str = "Web",  # PLAN.md § 6 — describes the prospect's contact channel
         date_created: str | None = None,
-        sales: bool = False,          # rental-platform leads are always sales=False
-        **extra: Any,                 # forward-compat for fields added later
+        sales: bool = False,  # rental-platform leads are always sales=False
+        **extra: Any,  # forward-compat for fields added later
     ) -> dict[str, Any]:
         """Upsert a row in the `inquiries` table.
 

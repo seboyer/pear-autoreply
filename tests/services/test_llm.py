@@ -20,12 +20,9 @@ from autoreplies.services.llm import (
 )
 
 TEMPLATE = (
-    "Hi {{first_name|there}},\n\n"
-    "Thanks for your interest in {{apartment_address|the listing}}!\n"
+    "Hi {{first_name|there}},\n\nThanks for your interest in {{apartment_address|the listing}}!\n"
 )
-GOOD_FILLED = (
-    "Hi Katie,\n\nThanks for your interest in 267 Clifton Pl #1A!\n"
-)
+GOOD_FILLED = "Hi Katie,\n\nThanks for your interest in 267 Clifton Pl #1A!\n"
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────
@@ -33,7 +30,9 @@ GOOD_FILLED = (
 
 def _tool_use_block(filled_body: str) -> Any:
     """Build a stand-in for the anthropic tool_use content block."""
-    return SimpleNamespace(type="tool_use", name="fill_template", input={"filled_body": filled_body})
+    return SimpleNamespace(
+        type="tool_use", name="fill_template", input={"filled_body": filled_body}
+    )
 
 
 def _mock_response(filled_body: str) -> Any:
@@ -210,7 +209,9 @@ def test_fill_template_falls_back_when_no_api_key() -> None:
 
 def test_post_check_passes_for_clean_fill(client: LLMClient) -> None:
     # Method is private but worth exercising in isolation.
-    reference = literal_fill(TEMPLATE, {"first_name": "Katie", "apartment_address": "267 Clifton Pl #1A"})
+    reference = literal_fill(
+        TEMPLATE, {"first_name": "Katie", "apartment_address": "267 Clifton Pl #1A"}
+    )
     client._post_check(template_text=TEMPLATE, reference_body=reference, filled_body=GOOD_FILLED)
 
 
@@ -233,6 +234,8 @@ def test_post_check_rejects_introduced_url(client: LLMClient) -> None:
 
 
 def test_post_check_rejects_length_drift(client: LLMClient) -> None:
-    reference = literal_fill(TEMPLATE, {"first_name": "Katie", "apartment_address": "267 Clifton Pl"})
+    reference = literal_fill(
+        TEMPLATE, {"first_name": "Katie", "apartment_address": "267 Clifton Pl"}
+    )
     with pytest.raises(_PostCheckFailed, match="length"):
         client._post_check(template_text=TEMPLATE, reference_body=reference, filled_body="Hi")

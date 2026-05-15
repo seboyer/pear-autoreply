@@ -233,6 +233,7 @@ def test_skipped_route_when_no_email() -> None:
     del msg["Reply-To"]
     # Patch the parser to return a lead with email=None.
     from autoreplies.parsers.base import ParsedLead
+
     mock_parsed = ParsedLead(
         source="StreetEasy",
         first_name="Grace",

@@ -14,12 +14,14 @@ def state(tmp_path: Path) -> HarnessState:
 
 # ── WAL mode ──────────────────────────────────────────────────────────────────
 
+
 def test_wal_mode_enabled(state: HarnessState) -> None:
     row = state._conn.execute("PRAGMA journal_mode").fetchone()
     assert row[0] == "wal"
 
 
 # ── mailbox cursor ────────────────────────────────────────────────────────────
+
 
 def test_get_last_seen_missing(state: HarnessState) -> None:
     assert state.get_last_seen("agent@pearnyc.com") is None
@@ -44,6 +46,7 @@ def test_multiple_mailboxes_independent(state: HarnessState) -> None:
 
 
 # ── message dedup ─────────────────────────────────────────────────────────────
+
 
 def test_was_processed_false_initially(state: HarnessState) -> None:
     assert state.was_processed("msg-abc") is False

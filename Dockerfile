@@ -18,7 +18,7 @@ WORKDIR /app
 # ---- deps stage: install runtime deps only ----
 FROM base AS deps
 
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 COPY src ./src
 
 RUN uv venv /opt/venv \
