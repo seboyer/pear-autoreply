@@ -13,11 +13,7 @@ def get_airtable_client() -> AirtableClient:
     """Construct an AirtableClient wired to the active base schema."""
     settings: Settings = get_settings()
     schema = get_schema(settings.active_airtable_base_id)
-    return AirtableClient(
-        token=settings.airtable_token,
-        schema=schema,
-        address_match_threshold=settings.apartment_fuzzy_match_threshold,
-    )
+    return AirtableClient(token=settings.airtable_token, schema=schema)
 
 
 def require_admin_token(authorization: str | None = Header(default=None)) -> None:

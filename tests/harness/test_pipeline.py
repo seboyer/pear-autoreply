@@ -62,6 +62,7 @@ def _send_kwargs(**overrides: Any) -> dict[str, Any]:
         parsed=_make_parsed(),
         inquiry_record_id="recINQ_42",
         gmail_message_id="msg-original-123",
+        mailbox_email="agent@pearnyc.com",
         reply_route="thread",
         skipped_reason=None,
         apartment_match_strategy="streeteasy_id",
@@ -123,6 +124,7 @@ def test_draft_send_calls_create_draft(
     assert call_kwargs["llm_model"] == "claude-haiku-4-5-20251001"
     assert call_kwargs["llm_latency_ms"] == 450
     assert call_kwargs["skipped_reason"] is None
+    assert call_kwargs["sender"] == "agent@pearnyc.com"
 
 
 def test_draft_send_zillow_parser_maps_to_regex(
@@ -146,6 +148,14 @@ def test_draft_send_skipped_route(draft_send: DraftSend, mock_airtable: Airtable
     call_kwargs = mock_airtable.create_draft.call_args.kwargs
     assert call_kwargs["reply_route"] == "skipped"
     assert call_kwargs["skipped_reason"] == "no Reply-To and parsed.email is None"
+
+
+def test_draft_send_mailbox_email_forwarded_as_sender(
+    draft_send: DraftSend, mock_airtable: AirtableClient
+) -> None:
+    draft_send.send_reply(**_send_kwargs(mailbox_email="fleisherautoreply@pearnyc.com"))
+    call_kwargs = mock_airtable.create_draft.call_args.kwargs
+    assert call_kwargs["sender"] == "fleisherautoreply@pearnyc.com"
 
 
 # ── NoopSlack ─────────────────────────────────────────────────────────────────
