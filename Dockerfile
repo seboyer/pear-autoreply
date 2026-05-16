@@ -42,6 +42,7 @@ RUN groupadd --system app && useradd --system --gid app --create-home app
 COPY --from=deps /opt/venv /opt/venv
 COPY --chown=app:app src ./src
 COPY --chown=app:app pyproject.toml ./
+COPY --chown=app:app FALLBACK_TEMPLATE.md ./
 
 USER app
 
