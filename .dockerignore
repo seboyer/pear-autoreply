@@ -15,7 +15,6 @@ htmlcov
 
 # Don't ship the planning artefacts or training data into the image
 PLAN.md
-FALLBACK_TEMPLATE.md
 *.mbox
 fixtures/
 legacy/
