@@ -60,9 +60,6 @@ class Settings(BaseSettings):
     send_jitter_min_seconds: int = 120
     send_jitter_max_seconds: int = 300
 
-    # Apartment matching
-    apartment_fuzzy_match_threshold: int = 92
-
     # Harness
     harness_poll_interval_seconds: int = 60
     harness_bootstrap_lookback_seconds: int = 60

@@ -157,7 +157,7 @@ def _phase_a_create_airtable(
     user_record_id = user_record["id"] if user_record else None
 
     # 5. Load agent record for the mailbox.
-    agent_record = airtable.find_monitored_user_by_primary_email(state.mailbox_email)
+    agent_record = airtable.find_monitored_user_by_autoreply_email(state.mailbox_email)
     if agent_record is None:
         logger.warning("_phase_a: no agent record found for mailbox=%s", state.mailbox_email)
 
@@ -237,6 +237,7 @@ def _phase_a_create_airtable(
         parsed=parsed,
         inquiry_record_id=inquiry_id,
         gmail_message_id=state.message_id,
+        mailbox_email=state.mailbox_email,
         reply_route=dest.route,
         skipped_reason=dest.skipped_reason,
         apartment_match_strategy=apartment_match_strategy,
@@ -323,7 +324,7 @@ def _match_apartment_for_lead(
     """Return (apartment_record, match_strategy, confidence).
 
     Strategy priority: streeteasy_id (deterministic, confidence=100) → address
-    fuzzy match (confidence=None, threshold from client settings) → none.
+    structured match (exact house_no + fuzzy street + exact unit, confidence=street_score) → none.
     """
     if parsed.listing_id:
         record = airtable.match_apartment_by_streeteasy_id(parsed.listing_id)
@@ -331,9 +332,10 @@ def _match_apartment_for_lead(
             return record, "streeteasy_id", 100
 
     if parsed.apartment_address:
-        record = airtable.match_apartment_by_address(parsed.apartment_address)
-        if record:
-            return record, "address", None
+        result = airtable.match_apartment_by_address(parsed.apartment_address)
+        if result:
+            record, score = result
+            return record, "address", score
 
     return None, "none", None
 

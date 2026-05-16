@@ -124,6 +124,7 @@ CURATED: dict[str, TableSpec] = {
             "Would Send At",
             "Notes / Warnings",
             "Gmail Message ID",
+            "Sender",
         ],
         bases=("TEST",),
     ),
@@ -420,6 +421,24 @@ def main() -> int:
             file=sys.stderr,
         )
         return 2
+
+    # Refuse to silently drop a base that's already present in the on-disk module.
+    # The generator rebuilds the file from scratch; if a base's env var is unset,
+    # its entire schema would vanish without this guard — the failure mode that
+    # bit us when adding Drafts.Sender (the schema temporarily lost PROD because
+    # AIRTABLE_BASE_ID was empty locally).
+    if args.out.exists():
+        existing = args.out.read_text()
+        for base in BASE_ENV_KEYS:
+            if f"\n{base} = PearTrackerSchema(" in existing and base not in targets:
+                print(
+                    f"ERROR: existing schema has {base} but its env var "
+                    f"({BASE_ENV_KEYS[base].upper()}) is empty. Either set it in .env "
+                    f"to regenerate {base}, or delete the {base} block from "
+                    f"{args.out.relative_to(PROJECT_ROOT)} first if {base} is intentionally retired.",
+                    file=sys.stderr,
+                )
+                return 2
 
     bases: dict[str, tuple[str, list[TableMeta]]] = {}
     all_warnings: list[str] = []

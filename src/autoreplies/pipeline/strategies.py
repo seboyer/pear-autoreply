@@ -47,6 +47,7 @@ class SendStrategy(Protocol):
         # LiveSend may use these for logging; DraftSend writes them to the Drafts row.
         inquiry_record_id: str,
         gmail_message_id: str,
+        mailbox_email: str,
         reply_route: Literal["thread", "direct", "skipped"],
         skipped_reason: str | None,
         apartment_match_strategy: Literal["streeteasy_id", "address", "none"],
@@ -120,6 +121,7 @@ class LiveSend:
         parsed: ParsedLead,
         inquiry_record_id: str,
         gmail_message_id: str,
+        mailbox_email: str,
         reply_route: Literal["thread", "direct", "skipped"],
         skipped_reason: str | None,
         apartment_match_strategy: Literal["streeteasy_id", "address", "none"],

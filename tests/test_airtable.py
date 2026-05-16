@@ -35,19 +35,32 @@ def _record(rec_id: str, fields: dict[str, Any]) -> dict[str, Any]:
     return {"id": rec_id, "fields": fields}
 
 
-# ── find_monitored_user_by_primary_email ──────────────────────────────────────
+# ── find_monitored_user_by_autoreply_email ────────────────────────────────────
 
 
 def test_find_monitored_user_found(client: AirtableClient) -> None:
-    row = _record("recAGENT1", {PROD.users.email: "sam@pearnyc.com"})
+    row = _record("recAGENT1", {PROD.users.autoreply_email_agent: "sam@pearnyc.com"})
     with patch.object(client, "_table", return_value=_mock_table([row])):
-        result = client.find_monitored_user_by_primary_email("sam@pearnyc.com")
+        result = client.find_monitored_user_by_autoreply_email("sam@pearnyc.com")
     assert result == row
 
 
 def test_find_monitored_user_not_found(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert client.find_monitored_user_by_primary_email("nobody@pearnyc.com") is None
+        assert client.find_monitored_user_by_autoreply_email("nobody@pearnyc.com") is None
+
+
+def test_find_monitored_user_uses_autoreply_email_field(client: AirtableClient) -> None:
+    """Formula must filter on autoreply_email_agent, not the primary email field."""
+    tbl = MagicMock()
+    tbl.all.return_value = []
+    with patch.object(client, "_table", return_value=tbl):
+        client.find_monitored_user_by_autoreply_email("sam@pearnyc.com")
+    formula_str = str(tbl.all.call_args.kwargs["formula"])
+    # Must reference autoreply_email_agent field ID
+    assert PROD.users.autoreply_email_agent in formula_str
+    # Must NOT reference the primary email field
+    assert PROD.users.email not in formula_str
 
 
 # ── list_monitored_primary_emails ─────────────────────────────────────────────
@@ -141,9 +154,6 @@ def test_find_user_not_found(client: AirtableClient) -> None:
 
 def test_find_existing_user_excludes_admins(client: AirtableClient) -> None:
     """Admin rows must never be returned as prospect matches."""
-    # The formula excludes Admins, so Airtable would return no rows; we model
-    # that by having the mock return empty — the important thing is the formula
-    # sent to Airtable contains NE(Type, "Admin").
     tbl = MagicMock()
     tbl.all.return_value = []
     with patch.object(client, "_table", return_value=tbl):
@@ -171,49 +181,86 @@ def test_match_apartment_streeteasy_not_found(client: AirtableClient) -> None:
 # ── match_apartment_by_address ────────────────────────────────────────────────
 
 
-def test_match_apartment_address_hit(client: AirtableClient) -> None:
-    row = _record(
-        "recAPT2",
-        {
-            PROD.apartments.full_address: "123 Main St, New York, NY 10001",
-            PROD.apartments.apartment: "2B",
-        },
-    )
-    with patch.object(client, "_table", return_value=_mock_table([row])):
-        result = client.match_apartment_by_address("123 Main St New York NY 10001")
-    assert result == row
+def _apt_row(rec_id: str, full_address: str) -> dict[str, Any]:
+    return _record(rec_id, {PROD.apartments.full_address: full_address})
 
 
-def test_match_apartment_address_below_threshold(client: AirtableClient) -> None:
-    row = _record(
-        "recAPT3",
-        {
-            PROD.apartments.full_address: "999 Unrelated Ave, Brooklyn, NY 11201",
-            PROD.apartments.apartment: "1A",
-        },
-    )
+@pytest.mark.parametrize(
+    "parsed_address,stored_address,should_match",
+    [
+        # Canonical: abbreviation expansion both sides → exact match
+        ("353 Flatbush Avenue #4R", "353 Flatbush Ave 4R, Brooklyn, NY, 11238", True),
+        # Mac→Mc canonicalization
+        ("96 Macdonough St #2", "96 Mcdonough St 2, Brooklyn, NY, 11233", True),
+        # Queens hyphen collapse on stored side
+        ("2106 Linden St #3E", "21-06 Linden St 3E, Brooklyn, NY, 11385", True),
+        # Fuzzy street (typo "Bergan" vs "Bergen") — should score ≥ 88
+        ("1965 Bergan Street #1B", "1965 Bergen St 1B, Brooklyn, NY, 11233", True),
+        # Unit mismatch — exact unit comparison fails
+        ("162 Covert St #2L", "162 Covert St 2A, Brooklyn, NY, 11221", False),
+        ("162 Covert St #2L", "162 Covert St 2B, Brooklyn, NY, 11221", False),
+        # House number mismatch
+        ("354 Flatbush Avenue #4R", "353 Flatbush Ave 4R, Brooklyn, NY, 11238", False),
+        # Completely different address
+        ("123 Main St #1A", "999 Unrelated Ave 5B, Brooklyn, NY, 11201", False),
+    ],
+)
+def test_match_apartment_address_parametrized(
+    client: AirtableClient,
+    parsed_address: str,
+    stored_address: str,
+    should_match: bool,
+) -> None:
+    row = _apt_row("recAPTx", stored_address)
     with patch.object(client, "_table", return_value=_mock_table([row])):
-        assert client.match_apartment_by_address("123 Main St New York NY 10001") is None
+        result = client.match_apartment_by_address(parsed_address)
+    if should_match:
+        assert result is not None
+        record, score = result
+        assert record == row
+        assert isinstance(score, int)
+        assert score >= 88
+    else:
+        assert result is None
 
 
 def test_match_apartment_address_empty_table(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert client.match_apartment_by_address("123 Main St") is None
+        assert client.match_apartment_by_address("123 Main St #1A") is None
 
 
-def test_match_apartment_address_uses_instance_threshold() -> None:
-    """Threshold set at construction is the default used per call."""
-    c = AirtableClient(token="fake-token", schema=PROD, address_match_threshold=50)
-    row = _record(
-        "recAPT_LOOSE",
-        {
-            PROD.apartments.full_address: "123 Maine Street Brooklyn",
-            PROD.apartments.apartment: "1",
-        },
-    )
-    # WRatio of these two strings is ~70-80; would miss at 92 but hit at 50.
-    with patch.object(c, "_table", return_value=_mock_table([row])):
-        assert c.match_apartment_by_address("123 Main St") == row
+def test_match_apartment_address_returns_best_of_multiple_candidates(
+    client: AirtableClient,
+) -> None:
+    """When multiple rows share the same house + unit, the highest-scoring street wins."""
+    rows = [
+        _apt_row("recAPT_CLOSE", "353 Flatbush Ave 4R, Brooklyn, NY, 11238"),
+        _apt_row("recAPT_FAR", "353 Flatbush Court 4R, Brooklyn, NY, 11238"),
+    ]
+    with patch.object(client, "_table", return_value=_mock_table(rows)):
+        result = client.match_apartment_by_address("353 Flatbush Avenue #4R")
+    assert result is not None
+    record, _score = result
+    assert record["id"] == "recAPT_CLOSE"
+
+
+def test_match_apartment_address_unparseable_returns_none(client: AirtableClient) -> None:
+    """Addresses that don't split (no house number or no unit) return None immediately."""
+    with patch.object(client, "_table", return_value=_mock_table([])) as mock_tbl:
+        result = client.match_apartment_by_address("just some words without structure")
+    assert result is None
+    # Airtable should not be queried when the address can't be parsed
+    mock_tbl.all.assert_not_called()
+
+
+def test_match_apartment_address_caches_splits(client: AirtableClient) -> None:
+    """Second call reuses cached splits instead of re-normalizing stored rows."""
+    row = _apt_row("recAPT_CACHE", "100 Main St 2A, Brooklyn, NY, 11201")
+    with patch.object(client, "_table", return_value=_mock_table([row])):
+        client.match_apartment_by_address("100 Main Street #2A")
+        client.match_apartment_by_address("100 Main Street #2A")
+    # Cache should have been populated after first call
+    assert "recAPT_CACHE" in client._apt_split_cache
 
 
 # ── find_inquiry_by_gmail_message_id ──────────────────────────────────────────
@@ -362,6 +409,7 @@ def _draft_kwargs(**overrides: Any) -> dict[str, Any]:
         reply_route="thread",
         apartment_match_strategy="streeteasy_id",
         llm_model="claude-haiku-4-5-20251001",
+        sender="agent@pearnyc.com",
         notes_warnings="",
     )
     defaults.update(overrides)
@@ -395,6 +443,7 @@ def test_create_draft_full_streeteasy(test_client: AirtableClient) -> None:
     assert fields[d.llm_model] == "claude-haiku-4-5-20251001"
     assert fields[d.llm_latency_ms] == 823
     assert fields[d.would_send_at] == _SEND_AT.isoformat()
+    assert fields[d.sender] == "agent@pearnyc.com"
     # skipped_reason absent when not provided
     assert d.skipped_reason not in fields
 
@@ -449,6 +498,16 @@ def test_create_draft_uses_test_schema_field_ids(test_client: AirtableClient) ->
     # Every key should start with 'fld' (Airtable field ID format)
     for key in fields:
         assert key.startswith("fld"), f"Unexpected key in draft fields: {key!r}"
+
+
+def test_create_draft_sender_field_id_is_correct(test_client: AirtableClient) -> None:
+    """The sender field in the payload must use the known TEST field ID."""
+    tbl = MagicMock()
+    tbl.create.return_value = {"id": "recDRAFT_5"}
+    with patch.object(test_client, "_table", return_value=tbl):
+        test_client.create_draft(**_draft_kwargs(sender="fleisherautoreply@pearnyc.com"))
+    fields = tbl.create.call_args[0][0]
+    assert fields["fldYaTBUGIT10r9dj"] == "fleisherautoreply@pearnyc.com"
 
 
 # ── find_or_create_inquiry ─────────────────────────────────────────────────────

@@ -61,6 +61,7 @@ class DraftSend:
         parsed: ParsedLead,
         inquiry_record_id: str,
         gmail_message_id: str,
+        mailbox_email: str,
         reply_route: Literal["thread", "direct", "skipped"],
         skipped_reason: str | None,
         apartment_match_strategy: Literal["streeteasy_id", "address", "none"],
@@ -83,6 +84,7 @@ class DraftSend:
             reply_route=reply_route,
             apartment_match_strategy=apartment_match_strategy,
             llm_model=llm_model,
+            sender=mailbox_email,
             notes_warnings=notes,
             skipped_reason=skipped_reason,
             apartment_match_confidence=apartment_match_confidence,
@@ -136,11 +138,7 @@ def build_harness_airtable_client() -> AirtableClient:
     """Construct an AirtableClient pointed at the test base."""
     settings = get_settings()
     schema = get_schema(settings.harness_airtable_base_id)
-    return AirtableClient(
-        token=settings.airtable_token,
-        schema=schema,
-        address_match_threshold=settings.apartment_fuzzy_match_threshold,
-    )
+    return AirtableClient(token=settings.airtable_token, schema=schema)
 
 
 def build_production_airtable_client_readonly() -> AirtableClient:
@@ -150,11 +148,7 @@ def build_production_airtable_client_readonly() -> AirtableClient:
     """
     settings = get_settings()
     schema = get_schema(settings.airtable_base_id)
-    return AirtableClient(
-        token=settings.airtable_token,
-        schema=schema,
-        address_match_threshold=settings.apartment_fuzzy_match_threshold,
-    )
+    return AirtableClient(token=settings.airtable_token, schema=schema)
 
 
 def build_harness_strategies(airtable: AirtableClient) -> PipelineStrategies:

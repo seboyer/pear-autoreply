@@ -26,9 +26,9 @@ from pyairtable.formulas import (
     Formula,
 )
 from rapidfuzz import fuzz
-from rapidfuzz import process as fuzz_process
 
 from autoreplies.parsers.base import ParsedLead
+from autoreplies.services.address import normalize_address, split_address
 from autoreplies.services.airtable_schema import PearTrackerSchema
 
 logger = logging.getLogger(__name__)
@@ -48,26 +48,30 @@ class AirtableClient:
         self,
         token: str,
         schema: PearTrackerSchema,
-        address_match_threshold: int = 92,
     ) -> None:
         self.token = token
         self.schema = schema
-        self.address_match_threshold = address_match_threshold
         self._api = Api(token, use_field_ids=True)
+        # Per-instance cache of normalized apartment splits (record_id → split result).
+        # Populated on first match_apartment_by_address call; never invalidated
+        # (the harness is short-lived per lead, so stale data is not a concern).
+        self._apt_split_cache: dict[str, tuple[str, str, str] | None] = {}
 
     def _table(self, table_id: str) -> Any:
         return self._api.table(self.schema.base_id, table_id)
 
     # --- Lookups ---
 
-    def find_monitored_user_by_primary_email(self, email: str) -> dict[str, Any] | None:
-        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by their primary Email field.
-
-        Email here is the recipient mailbox the lead landed at — e.g.
-        firstname@pearnyc.com.
+    def find_monitored_user_by_autoreply_email(self, email: str) -> dict[str, Any] | None:
+        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by their
+        Autoreply Email (Agent) — i.e. the @pearnyc.com autoreply mailbox the
+        poller is reading from, which is what process_lead receives as state.mailbox_email.
         """
         u = self.schema.users
-        formula = AND(EQ(Field(u.autoreply_enabled_agent), 1), EQ(Field(u.email), email))
+        formula = AND(
+            EQ(Field(u.autoreply_enabled_agent), 1),
+            EQ(Field(u.autoreply_email_agent), email),
+        )
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
 
@@ -127,6 +131,13 @@ class AirtableClient:
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
 
+    # StreetEasy URL match ceiling on TEST (1254 apts as of 2026-05-16):
+    #   13 apartments have /rental/<id> URLs (matchable via this strategy)
+    #   531 apartments have /building/<slug>/<unit> URLs (unreachable: inbound emails
+    #        only carry /rental/<id> URLs — confirmed against fixtures/anonymized/streeteasy/*.eml)
+    #   708 apartments have no streeteasy URL at all
+    # So this strategy hits at most ~1% of apartments; the address matcher
+    # (match_apartment_by_address) is the primary path.
     def match_apartment_by_streeteasy_id(self, listing_id: str) -> dict[str, Any] | None:
         """StreetEasy URL-based match: find Apartments where Streeteasy URL contains the ID."""
         a = self.schema.apartments
@@ -134,30 +145,46 @@ class AirtableClient:
         rows = self._table(a.id).all(formula=formula)
         return rows[0] if rows else None
 
-    def match_apartment_by_address(
-        self, normalized_address: str, threshold: int | None = None
-    ) -> dict[str, Any] | None:
-        """Address-fuzzy match against Apartments.Full Address (rapidfuzz WRatio).
+    def match_apartment_by_address(self, address: str) -> tuple[dict[str, Any], int] | None:
+        """Structured match: exact house_no + fuzzy street (token_set_ratio ≥ 88) + exact unit.
 
-        `threshold` overrides the instance default (set from
-        `settings.apartment_fuzzy_match_threshold`).
+        Both sides are normalized via normalize_address/split_address before comparison.
+        Returns (record, street_score) on match, None on no match. The score becomes
+        apartment_match_confidence on the Drafts row.
+
+        The internal street-similarity floor of 88 is a code-level constant — not
+        user-tunable. The FailSafe column captures raw parsed addresses for no-match audits.
         """
-        effective_threshold = threshold if threshold is not None else self.address_match_threshold
+        _STREET_THRESHOLD = 88
+        parsed = split_address(normalize_address(address))
+        if parsed is None:
+            return None
+        p_house, p_street, p_unit = parsed
+
         a = self.schema.apartments
         rows = self._table(a.id).all(fields=[a.full_address, a.apartment])
-        if not rows:
+
+        # Build candidate list — apartments that share exact house number and unit.
+        candidates: list[tuple[dict[str, Any], str]] = []
+        for r in rows:
+            rec_id = r["id"]
+            if rec_id not in self._apt_split_cache:
+                raw = r["fields"].get(a.full_address) or ""
+                self._apt_split_cache[rec_id] = split_address(normalize_address(raw))
+            c = self._apt_split_cache[rec_id]
+            if c and c[0] == p_house and c[2] == p_unit:
+                candidates.append((r, c[1]))
+
+        if not candidates:
             return None
-        choices = {r["id"]: (r["fields"].get(a.full_address) or "") for r in rows}
-        result = fuzz_process.extractOne(
-            normalized_address,
-            choices,
-            scorer=fuzz.WRatio,
-            score_cutoff=effective_threshold,
-        )
-        if result is None:
+
+        scored = [
+            (r, int(fuzz.token_set_ratio(p_street, c_street))) for r, c_street in candidates
+        ]
+        best_row, best_score = max(scored, key=lambda t: t[1])
+        if best_score < _STREET_THRESHOLD:
             return None
-        _match_str, _score, record_id = result
-        return next(r for r in rows if r["id"] == record_id)
+        return best_row, best_score
 
     def find_inquiry_by_gmail_message_id(self, message_id: str) -> dict[str, Any] | None:
         """Durable backstop for idempotency: look up an Inquiry by Gmail Message ID (Autoreply)."""
@@ -247,6 +274,7 @@ class AirtableClient:
         reply_route: Literal["thread", "direct", "skipped"],
         apartment_match_strategy: Literal["streeteasy_id", "address", "none"],
         llm_model: str,
+        sender: str,
         notes_warnings: str = "",
         skipped_reason: str | None = None,
         apartment_match_confidence: int | None = None,
@@ -273,6 +301,7 @@ class AirtableClient:
             d.reply_route: reply_route,
             d.apartment_match_strategy: apartment_match_strategy,
             d.llm_model: llm_model,
+            d.sender: sender,
             d.notes_warnings: notes_warnings,
         }
         if skipped_reason is not None:

@@ -57,6 +57,7 @@ def test_live_send_raises_not_implemented() -> None:
             parsed=MagicMock(),
             inquiry_record_id="recINQ1",
             gmail_message_id="msg-123",
+            mailbox_email="agent@pearnyc.com",
             reply_route="thread",
             skipped_reason=None,
             apartment_match_strategy="streeteasy_id",
