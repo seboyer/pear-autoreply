@@ -3,7 +3,7 @@
 ## Two products live in this repo
 
 1. **Production autoreply pipeline** — source of truth: [PLAN.md](./PLAN.md). Ingests StreetEasy/Zillow lead emails via Gmail Pub/Sub, auto-replies with a template-filled message, writes Airtable + Supabase + Slack. Currently Phase 0 scaffolding — most service modules raise `NotImplementedError` and will be filled in Phases 1–5 per PLAN.md.
-2. **Testing harness** — source of truth: [TESTING_HARNESS_PLAN.md](./TESTING_HARNESS_PLAN.md) (plan) and [HARNESS_BUILD_BRIEF.md](./HARNESS_BUILD_BRIEF.md) (build instructions). A side-car that polls the same Gmail mailboxes, runs the same parsers/matchers/template logic, and materializes every would-have-sent reply as a row in a test Airtable base instead of sending. Validates production before cutover. Not yet built — see the brief for the build order.
+2. **Testing harness** — source of truth: [TESTING_HARNESS_PLAN.md](./TESTING_HARNESS_PLAN.md) (plan) and [HARNESS_BUILD_BRIEF.md](./HARNESS_BUILD_BRIEF.md) (build instructions). A side-car that polls the same Gmail mailboxes, runs the same parsers/matchers/template logic, and materializes every would-have-sent reply as a row in a test Airtable base instead of sending. Validates production before cutover. **Built and deployed** — running as the `harness-poller` container alongside the main stack.
 
 Treat the documents as the contracts. Don't relitigate decisions baked into them; surface a question if something seems wrong.
 
@@ -39,6 +39,8 @@ Never reach into production wiring with feature flags, monkey-patches, or "if mo
 | Run tests | `make test` (full suite incl. distinctness). |
 | Lint / typecheck | `make lint`, `make typecheck`. |
 | Regenerate schema | `python scripts/generate_airtable_schema.py [--base TEST]` (TEST flag added in harness H2). |
+| Deploy to prod | SSH to 161.35.13.81 as root. `cd /opt/pear-autoreplies/app && git pull && docker compose up -d`. To rebuild a single service (e.g. after app code changes): `docker compose build web && docker compose up -d web`. After Caddy config changes: `docker compose build caddy && docker compose up -d caddy`. |
+| Force harness mailbox refresh | Harness caches the monitored-mailbox list for 6 hours. After enabling a new inbox in Airtable: `docker compose kill -s HUP harness-poller` on the droplet. |
 
 ## Stack reminders
 
@@ -48,6 +50,11 @@ Never reach into production wiring with feature flags, monkey-patches, or "if mo
 - `uv` for env + installs (`make install`).
 - Tests in `tests/`, pytest config in `pyproject.toml`.
 - Venv lives at `venv/` (not `.venv/`) — the Makefile pins `UV_PROJECT_ENVIRONMENT=venv` because this repo lives under iCloud-synced `~/Documents`, where dot-prefixed dirs get `UF_HIDDEN` and CPython skips hidden `.pth` files. Direct `uv run` invocations need `export UV_PROJECT_ENVIRONMENT=venv` in the shell; see README "macOS + iCloud note" and [uv#16977](https://github.com/astral-sh/uv/issues/16977).
+- **`AirtableClient` uses `use_field_ids=True`.** pyairtable returns field names as keys by default; we pass `use_field_ids=True` so response dicts are keyed by field ID. All `row["fields"]` lookups use field IDs (from `schema.*`), never display names.
+- **Caddy runs from a custom image** (`Dockerfile.caddy`), not stock `caddy:2-alpine`. The image bundles the `caddy-ratelimit` plugin via `xcaddy`. The `rate_limit` directive in the Caddyfile requires this — it is NOT a built-in Caddy directive.
+- **`FALLBACK_TEMPLATE.md` is runtime data, not a planning artefact.** `services/templates.py` loads it from the project root at request time. Two places have to agree: the runtime stage of `Dockerfile` must `COPY FALLBACK_TEMPLATE.md ./`, and `.dockerignore` must NOT exclude it. (Bucketing it under "planning artefacts" alongside `PLAN.md` produces a silent `FileNotFoundError` on every lead, since the fallback path is hit any time the agent's per-user template is empty.)
+- **Harness dedup is sticky on failure.** `poller.py` writes failed dispatches to `processed_messages` with an `error` payload, and `was_processed()` returns true for any row. Fixing a bug that broke dispatch does NOT replay the failures — to recover, `DELETE FROM processed_messages WHERE error LIKE '%<class>%'` and roll the affected `mailbox_state` cursors back to before each batch's earliest failure. SQLite lives in the `harness_state` volume; `harness_bootstrap_lookback_seconds` defaults to 60s, so just clearing the cursor won't reach historical messages.
+- **Production:** DigitalOcean droplet at 161.35.13.81, SSH as root. App at `/opt/pear-autoreplies/app`. DNS for `autoreplies.pearnyc.com` is managed in Google Domains (not Google Cloud DNS — the `ns-cloud-a*.googledomains.com` nameservers are Google Domains' built-in DNS, a separate product). First-deploy gotcha: `chown 999:999 /var/lib/docker/volumes/app_harness_state/_data` (the `app` system user inside the container is uid 999; the volume dir defaults to root-owned).
 
 ## When in doubt
 

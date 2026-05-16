@@ -286,6 +286,7 @@ def test_create_inquiry_streeteasy_full(
     assert fields[inq.email_form] == "jane@example.com"
     assert fields[inq.phone] == "212-555-9999"
     assert fields[inq.apartment] == ["recAPT99"]
+    assert fields[inq.apartment_failsafe] == "123 Main St"
     assert fields[inq.user] == ["recUSER99"]
     assert fields[inq.gmail_message_id_autoreply] == "msg-xyz"
     # Agent must NOT be set — it is a lookup through Apartment
@@ -311,6 +312,7 @@ def test_create_inquiry_zillow_no_name_no_phone(
     assert fields[inq.name_form] == ""
     assert inq.phone not in fields
     assert inq.apartment not in fields
+    assert fields[inq.apartment_failsafe] == "456 Broadway"
     assert inq.user not in fields
 
 
