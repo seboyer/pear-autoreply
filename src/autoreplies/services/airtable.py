@@ -178,9 +178,7 @@ class AirtableClient:
         if not candidates:
             return None
 
-        scored = [
-            (r, int(fuzz.token_set_ratio(p_street, c_street))) for r, c_street in candidates
-        ]
+        scored = [(r, int(fuzz.token_set_ratio(p_street, c_street))) for r, c_street in candidates]
         best_row, best_score = max(scored, key=lambda t: t[1])
         if best_score < _STREET_THRESHOLD:
             return None

@@ -124,7 +124,27 @@ PROD = PearTrackerSchema(
         gmail_message_id_autoreply="fldhH7AoxujABU92O",
     ),
     # WARNING: table 'Drafts' not present in this base
-    drafts=DraftsTable(id="MISSING", inquiry="MISSING", recipient="MISSING", subject="MISSING", body_plaintext="MISSING", body_html="MISSING", source="MISSING", parser_used="MISSING", template_source="MISSING", reply_route="MISSING", skipped_reason="MISSING", apartment_match_strategy="MISSING", apartment_match_confidence="MISSING", llm_model="MISSING", llm_latency_ms="MISSING", would_send_at="MISSING", notes_warnings="MISSING", gmail_message_id="MISSING", sender="MISSING"),
+    drafts=DraftsTable(
+        id="MISSING",
+        inquiry="MISSING",
+        recipient="MISSING",
+        subject="MISSING",
+        body_plaintext="MISSING",
+        body_html="MISSING",
+        source="MISSING",
+        parser_used="MISSING",
+        template_source="MISSING",
+        reply_route="MISSING",
+        skipped_reason="MISSING",
+        apartment_match_strategy="MISSING",
+        apartment_match_confidence="MISSING",
+        llm_model="MISSING",
+        llm_latency_ms="MISSING",
+        would_send_at="MISSING",
+        notes_warnings="MISSING",
+        gmail_message_id="MISSING",
+        sender="MISSING",
+    ),
 )
 
 TEST = PearTrackerSchema(

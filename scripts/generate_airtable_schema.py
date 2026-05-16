@@ -20,6 +20,7 @@ import argparse
 import datetime as dt
 import keyword
 import re
+import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -61,16 +62,19 @@ class TableSpec:
 CURATED: dict[str, TableSpec] = {
     "Users": TableSpec(
         fields=[
-            "Email",                     # primary inbox — prod lookup; prospect→user match; Slack display
-            "Type",                      # "Agent" / "Admin" / other
-            "Name",                      # Slack display: "Agent: Jane Doe"
-            "Phone",                     # prospect→user match
-            "Autoreply (Agent)",         # per-agent reply template (PROD, synced — used post-cutover)
-            "Autoreply Email (Agent)",   # legacy per-user inbox — the harness polls this
-            "Autoreply Enabled (Agent)", # checkbox: source of truth for "in scope" rows (prod + harness)
+            "Email",  # primary inbox — prod lookup; prospect→user match; Slack display
+            "Type",  # "Agent" / "Admin" / other
+            "Name",  # Slack display: "Agent: Jane Doe"
+            "Phone",  # prospect→user match
+            "Autoreply (Agent)",  # per-agent reply template (PROD, synced — used post-cutover)
+            "Autoreply Email (Agent)",  # legacy per-user inbox — the harness polls this
+            "Autoreply Enabled (Agent)",  # checkbox: source of truth for "in scope" rows (prod + harness)
         ],
         test_only_fields=[
-            ("Record ID", "source_record_id"),  # synced prod RECORD_ID() — used by H5 diff translator
+            (
+                "Record ID",
+                "source_record_id",
+            ),  # synced prod RECORD_ID() — used by H5 diff translator
             # New editable per-agent template field on TEST. Zapier still owns
             # `Autoreply (Agent)` on PROD; at cutover, sales will copy the
             # contents of this field into the production one and we'll wire
@@ -80,9 +84,9 @@ CURATED: dict[str, TableSpec] = {
     ),
     "Apartments": TableSpec(
         fields=[
-            "Streeteasy",    # URL-based listing-ID match
+            "Streeteasy",  # URL-based listing-ID match
             "Full Address",  # rapidfuzz address match
-            "Apartment",     # Slack display label
+            "Apartment",  # Slack display label
         ],
         test_only_fields=[
             ("Record", "source_record_id"),  # synced prod RECORD_ID() — used by H5 diff translator
@@ -92,15 +96,15 @@ CURATED: dict[str, TableSpec] = {
         fields=[
             # NB: `Agent` on Inquiries is a *lookup* through the linked Apartment,
             # not a directly-writable link field. Don't add it here.
-            "Name (Form)",                   # write — prospect's name
-            "Email (Form)",                  # write — prospect's email
-            "Phone",                         # write — prospect's phone (null for Zillow)
-            "Message",                       # write — prospect's free-text
-            "Apartment",                     # write — link if matched
-            "Apartment (FailSafe)",          # write — raw parsed address (always, for audit)
-            "User",                          # write — link if existing user matched
-            "Method",                        # write — constant "Web"
-            "Type (Non Website)",            # write — "StreetEasy" or "Zillow"
+            "Name (Form)",  # write — prospect's name
+            "Email (Form)",  # write — prospect's email
+            "Phone",  # write — prospect's phone (null for Zillow)
+            "Message",  # write — prospect's free-text
+            "Apartment",  # write — link if matched
+            "Apartment (FailSafe)",  # write — raw parsed address (always, for audit)
+            "User",  # write — link if existing user matched
+            "Method",  # write — constant "Web"
+            "Type (Non Website)",  # write — "StreetEasy" or "Zillow"
             "Gmail Message ID (Autoreply)",  # write + idempotency lookup
         ],
     ),
@@ -465,6 +469,22 @@ def main() -> int:
     else:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(module_text)
+        # Run ruff format so the emitted module matches repo style — otherwise the
+        # `ruff format --check` CI step trips on long lines (e.g. PROD's Drafts
+        # placeholder, which we splat one-arg-per-line at write time).
+        try:
+            subprocess.run(
+                ["ruff", "format", str(args.out)],
+                check=True,
+                cwd=PROJECT_ROOT,
+                stdout=subprocess.DEVNULL,
+            )
+        except (FileNotFoundError, subprocess.CalledProcessError) as exc:
+            print(
+                f"WARN: ruff format on {args.out.relative_to(PROJECT_ROOT)} failed: {exc}. "
+                "Run `ruff format` manually before committing.",
+                file=sys.stderr,
+            )
         print(f"Wrote {args.out.relative_to(PROJECT_ROOT)}", file=sys.stderr)
 
     return 0

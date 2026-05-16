@@ -64,7 +64,9 @@ def _mock_airtable(
 
     # Apartment matching
     at.match_apartment_by_streeteasy_id.return_value = apartment_record
-    at.match_apartment_by_address.return_value = (apartment_record, 95) if apartment_record else None
+    at.match_apartment_by_address.return_value = (
+        (apartment_record, 95) if apartment_record else None
+    )
 
     # User matching
     at.find_existing_user.return_value = None
