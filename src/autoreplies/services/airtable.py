@@ -201,6 +201,8 @@ class AirtableClient:
             fields[inq.phone] = parsed.phone
         if apartment_record_id:
             fields[inq.apartment] = [apartment_record_id]
+        if parsed.apartment_address:
+            fields[inq.apartment_failsafe] = parsed.apartment_address
         if user_record_id:
             fields[inq.user] = [user_record_id]
         # Agent is a lookup through Apartment — never written directly.

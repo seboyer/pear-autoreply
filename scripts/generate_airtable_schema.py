@@ -97,6 +97,7 @@ CURATED: dict[str, TableSpec] = {
             "Phone",                         # write — prospect's phone (null for Zillow)
             "Message",                       # write — prospect's free-text
             "Apartment",                     # write — link if matched
+            "Apartment (FailSafe)",          # write — raw parsed address (always, for audit)
             "User",                          # write — link if existing user matched
             "Method",                        # write — constant "Web"
             "Type (Non Website)",            # write — "StreetEasy" or "Zillow"
