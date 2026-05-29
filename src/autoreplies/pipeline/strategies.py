@@ -4,26 +4,26 @@ Defines three Protocol types — SendStrategy, SlackStrategy, SupabaseStrategy �
 that process_lead calls at each phase boundary. Production wires Live*
 implementations; the harness (src/autoreplies/harness/) wires DraftSend/Noop*
 without this module needing to know about them.
-
-Live* classes are thin wrappers that raise NotImplementedError until the
-corresponding PLAN.md phases are implemented. They exist now so the production
-wiring is in place when those phases land — no further refactoring required.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any, Literal, Protocol
 
+from autoreplies.config import get_settings
 from autoreplies.parsers.base import ParsedLead
+from autoreplies.utils.humanization import compute_send_at
+from autoreplies.workers.send_job import send_reply_job
 
 
 @dataclass
 class SendResult:
     """Return value from SendStrategy.send_reply.
 
-    sent_id is the Gmail message-id (LiveSend) or Airtable draft record ID
-    (DraftSend). None when the send was skipped.
+    sent_id is the RQ job-id (LiveSend) or Airtable draft record ID (DraftSend).
+    None when the send was skipped.
     """
 
     sent_id: str | None
@@ -43,8 +43,6 @@ class SendStrategy(Protocol):
         thread_id: str | None,
         agent: dict[str, Any],
         parsed: ParsedLead,
-        # Context carried from Phase A orchestration.
-        # LiveSend may use these for logging; DraftSend writes them to the Drafts row.
         inquiry_record_id: str,
         gmail_message_id: str,
         reply_route: Literal["thread", "direct", "skipped"],
@@ -97,15 +95,15 @@ class PipelineStrategies:
 
 # ---------------------------------------------------------------------------
 # Production implementations (Live*)
-#
-# All raise NotImplementedError until PLAN.md Phases 2-3 are implemented.
-# GmailClient/SlackClient/SupabaseClient are constructed at call time in those
-# phases — not held as constructor args here, since GmailClient is per-mailbox.
 # ---------------------------------------------------------------------------
 
 
 class LiveSend:
-    """Production send: calls GmailClient.send_reply (Phase 2)."""
+    """Production send: enqueues a delayed RQ job via compute_send_at."""
+
+    def __init__(self, queue: Any) -> None:
+        """queue: an rq.Queue instance connected to Redis."""
+        self._queue = queue
 
     def send_reply(
         self,
@@ -129,11 +127,51 @@ class LiveSend:
         llm_latency_ms: int | None,
         notes: str,
     ) -> SendResult:
-        raise NotImplementedError("Phase 2")
+        if reply_route == "skipped":
+            return SendResult(sent_id=None)
+
+        settings = get_settings()
+        send_at = compute_send_at(
+            datetime.now(tz=UTC),
+            tz_name=settings.humanization_timezone,
+            working_hours=(
+                settings.humanization_working_hours_start,
+                settings.humanization_working_hours_end,
+            ),
+            within_jitter_seconds=(
+                settings.humanization_within_jitter_min_sec,
+                settings.humanization_within_jitter_max_sec,
+            ),
+            out_of_hours_jitter_seconds=(
+                settings.humanization_out_jitter_min_sec,
+                settings.humanization_out_jitter_max_sec,
+            ),
+        )
+
+        # _mailbox_email is injected by process_lead._phase_a so we can build GmailClient.
+        mailbox_email = agent.get("_mailbox_email", "") or ""
+
+        job = self._queue.enqueue_at(
+            send_at,
+            send_reply_job,
+            mailbox_email=mailbox_email,
+            inquiry_record_id=inquiry_record_id,
+            to=to,
+            subject=subject,
+            plaintext_body=plaintext_body,
+            html_body=html_body,
+            in_reply_to_message_id=in_reply_to_message_id,
+            thread_id=thread_id,
+        )
+        return SendResult(sent_id=job.id)
 
 
 class LiveSlack:
-    """Production Slack: calls SlackClient.post_lead / post_alert (Phase 3)."""
+    """Production Slack: posts Block Kit lead notifications."""
+
+    def __init__(self, client: Any) -> None:
+        """client: a services.slack.SlackClient instance."""
+        self._client = client
 
     def post_lead(
         self,
@@ -150,26 +188,39 @@ class LiveSlack:
         airtable_record_id: str,
         gmail_thread_url: str,
     ) -> str:
-        raise NotImplementedError("Phase 3")
+        return self._client.post_lead(
+            source=source,
+            agent_name=agent_name,
+            agent_email=agent_email,
+            prospect_name=prospect_name,
+            prospect_email=prospect_email,
+            prospect_phone=prospect_phone,
+            apartment_address=apartment_address,
+            apartment_match_confidence=apartment_match_confidence,
+            message_excerpt=message_excerpt,
+            airtable_record_id=airtable_record_id,
+            gmail_thread_url=gmail_thread_url,
+        )
 
     def post_alert(self, *, summary: str, details: dict[str, Any]) -> str:
-        raise NotImplementedError("Phase 3")
+        return self._client.post_alert(summary=summary, details=details)
 
 
 class LiveSupabase:
-    """Production Supabase: calls SupabaseClient.upsert_inquiry (Phase 3)."""
+    """Production Supabase: upserts inquiry rows."""
+
+    def __init__(self, client: Any) -> None:
+        """client: a services.supabase.SupabaseClient instance."""
+        self._client = client
 
     def upsert_inquiry(self, *, id: str, **fields: Any) -> dict[str, Any]:
-        raise NotImplementedError("Phase 3")
+        return self._client.upsert_inquiry(id=id, **fields)
 
 
-def build_production_strategies() -> PipelineStrategies:
-    """Construct the production strategy bundle.
-
-    Live* stubs all raise NotImplementedError until PLAN.md Phases 2-3 are built.
-    """
+def build_production_strategies(*, queue: Any, slack_client: Any, supabase_client: Any) -> PipelineStrategies:
+    """Construct the production strategy bundle with real client instances."""
     return PipelineStrategies(
-        send=LiveSend(),
-        slack=LiveSlack(),
-        supabase=LiveSupabase(),
+        send=LiveSend(queue=queue),
+        slack=LiveSlack(client=slack_client),
+        supabase=LiveSupabase(client=supabase_client),
     )

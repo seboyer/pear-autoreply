@@ -268,27 +268,26 @@ def test_skipped_route_when_no_email() -> None:
     assert kwargs["skipped_reason"] is not None
 
 
-# ── Production strategies still raise ────────────────────────────────────────
+# ── Production strategies (Live*) delegate correctly ─────────────────────────
 
 
-def test_production_livesend_still_raises() -> None:
-    """The production strategy path must still raise NotImplementedError (Phase 2)."""
-    from autoreplies.pipeline.strategies import build_production_strategies
+def test_production_strategies_wire_live_types() -> None:
+    """build_production_strategies returns a PipelineStrategies with Live* instances."""
+    from unittest.mock import MagicMock
 
-    fixture = "streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"
-    gmail = _mock_gmail(fixture)
-    airtable = _mock_airtable()
-    llm = _mock_llm()
+    from autoreplies.pipeline.strategies import (
+        LiveSend,
+        LiveSlack,
+        LiveSupabase,
+        build_production_strategies,
+    )
 
-    with pytest.raises(NotImplementedError):
-        process_lead(
-            "gmail-msg-prod",
-            "garland@pearnyc.com",
-            strategies=build_production_strategies(),
-            gmail=gmail,
-            airtable=airtable,
-            llm=llm,
-        )
+    result = build_production_strategies(
+        queue=MagicMock(), slack_client=MagicMock(), supabase_client=MagicMock()
+    )
+    assert isinstance(result.send, LiveSend)
+    assert isinstance(result.slack, LiveSlack)
+    assert isinstance(result.supabase, LiveSupabase)
 
 
 # ── No services → raises NotImplementedError ─────────────────────────────────

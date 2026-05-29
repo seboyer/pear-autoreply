@@ -33,6 +33,25 @@ from autoreplies.pipeline.strategies import PipelineStrategies, build_production
 from autoreplies.services.llm import TemplateFillError
 from autoreplies.services.templates import get_template_for_agent
 
+
+def _build_default_strategies() -> PipelineStrategies:
+    """Build Live* strategies from settings. Called when no strategies injected."""
+    from redis import Redis
+    from rq import Queue
+
+    from autoreplies.config import get_settings
+    from autoreplies.services.slack import SlackClient as _SlackClient
+    from autoreplies.services.supabase import SupabaseClient as _SupabaseClient
+
+    settings = get_settings()
+    redis = Redis.from_url(settings.redis_url)
+    queue = Queue("default", connection=redis)
+    slack = _SlackClient(bot_token=settings.slack_bot_token, channel=settings.slack_channel)
+    supabase = _SupabaseClient(
+        url=settings.supabase_url, service_role_key=settings.supabase_service_role_key
+    )
+    return build_production_strategies(queue=queue, slack_client=slack, supabase_client=supabase)
+
 if TYPE_CHECKING:
     from autoreplies.services.airtable import AirtableClient
     from autoreplies.services.gmail import GmailClient
@@ -80,7 +99,7 @@ def process_lead(
     service construction from settings/deps.
     """
     if strategies is None:
-        strategies = build_production_strategies()
+        strategies = _build_default_strategies()
 
     state = _load_state(message_id, mailbox_email)
     if state.fully_done:
@@ -225,15 +244,18 @@ def _phase_a_create_airtable(
     )
 
     # 11. Call send strategy. DraftSend writes the Drafts row linked to inquiry_id.
-    #     LiveSend (Phase 2) sends the Gmail reply; it raises NotImplementedError until then.
+    #     LiveSend (Phase 2) sends the Gmail reply via a scheduled RQ job.
+    #     _mailbox_email is injected so LiveSend can build GmailClient; harmless for DraftSend.
+    send_agent = dict(agent_record or {})
+    send_agent["_mailbox_email"] = state.mailbox_email
     send_result = strategies.send.send_reply(
         to=dest.recipient or "",
         subject=reply_subject,
         plaintext_body=filled_body,
-        html_body=filled_body,  # harness: same body for both parts; Phase 2 handles HTML+sig
+        html_body=filled_body,  # Phase 2 caller adds HTML signature if needed
         in_reply_to_message_id=dest.in_reply_to_message_id,
         thread_id=dest.thread_id,
-        agent=agent_record or {},
+        agent=send_agent,
         parsed=parsed,
         inquiry_record_id=inquiry_id,
         gmail_message_id=state.message_id,
@@ -254,6 +276,7 @@ def _phase_a_create_airtable(
 
     agent_fields = (agent_record.get("fields") or {}) if agent_record else {}
     prospect_parts = [p for p in (parsed.first_name, parsed.last_name) if p]
+    name_form = " ".join(p for p in (parsed.first_name, parsed.last_name) if p)
     state.extra = {
         "source": parsed.source,
         "agent_name": agent_fields.get(schema.users.name, ""),
@@ -267,6 +290,13 @@ def _phase_a_create_airtable(
         "gmail_thread_url": (
             f"https://mail.google.com/mail/u/0/#all/{dest.thread_id}" if dest.thread_id else ""
         ),
+        # Fields needed for Supabase upsert (Phase 3).
+        "apartment_record_id": apartment_record_id,
+        "user_record_id": user_record_id,
+        "name_form": name_form or None,
+        "email_form": parsed.email,
+        "message": parsed.message_body,
+        "type_platform": parsed.source,
     }
 
     logger.info(
@@ -279,16 +309,21 @@ def _phase_a_create_airtable(
 
 
 def _phase_b_write_supabase(state: JobState, strategies: PipelineStrategies) -> None:
-    """Upsert into Supabase using the Airtable record ID as primary key.
-
-    NoopSupabase returns {} immediately. LiveSupabase (Phase 3) writes the full row.
-    """
+    """Upsert into Supabase using the Airtable record ID as primary key."""
+    extra = state.extra
     strategies.supabase.upsert_inquiry(
         id=state.airtable_record_id or "",
-        source=state.extra.get("source", ""),
-        prospect_email=state.extra.get("prospect_email"),
-        prospect_phone=state.extra.get("prospect_phone"),
-        apartment_address=state.extra.get("apartment_address"),
+        gmail_message_id=state.message_id,
+        user_id=extra.get("user_record_id"),
+        apartment_id=extra.get("apartment_record_id"),
+        apartment_failsafe=extra.get("apartment_address"),
+        name_form=extra.get("name_form"),
+        email_form=extra.get("email_form"),
+        name=extra.get("prospect_name"),
+        email=extra.get("prospect_email"),
+        phone=extra.get("prospect_phone"),
+        message=extra.get("message"),
+        type_platform=extra.get("type_platform", ""),
     )
 
 

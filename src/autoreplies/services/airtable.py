@@ -232,6 +232,33 @@ class AirtableClient:
             user_record_id=user_record_id,
         )
 
+    def update_inquiry_autoreply_body(
+        self,
+        inquiry_record_id: str,
+        plaintext_body: str,
+        gmail_message_id: str,
+    ) -> None:
+        """Write the sent reply body and Gmail message-id back to the Inquiries row.
+
+        Called by send_reply_job after a successful Gmail send. Writes both
+        `reply_autoreply` (plaintext body for human review) and
+        `gmail_message_id_autoreply` (message-id for Gmail cross-reference)
+        in a single PATCH.
+        """
+        inq = self.schema.inquiries
+        if inq.reply_autoreply == "MISSING":
+            logger.warning(
+                "update_inquiry_autoreply_body: reply_autoreply field is MISSING in schema "
+                "(TEST base?); skipping body write for record %s",
+                inquiry_record_id,
+            )
+            return
+        fields: dict[str, Any] = {
+            inq.reply_autoreply: plaintext_body,
+            inq.gmail_message_id_autoreply: gmail_message_id,
+        }
+        self._table(inq.id).update(inquiry_record_id, fields)
+
     def create_draft(
         self,
         *,

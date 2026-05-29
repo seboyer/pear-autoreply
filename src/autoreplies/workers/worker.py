@@ -24,7 +24,7 @@ def main() -> int:
     worker = Worker([queue], connection=redis)
 
     log.info("worker starting (env=%s, queue=%s)", settings.app_env, queue.name)
-    worker.work(with_scheduler=False, logging_level=settings.log_level)
+    worker.work(with_scheduler=True, logging_level=settings.log_level)
     return 0
 
 

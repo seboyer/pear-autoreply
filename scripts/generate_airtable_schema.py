@@ -102,6 +102,7 @@ CURATED: dict[str, TableSpec] = {
             "Method",                        # write — constant "Web"
             "Type (Non Website)",            # write — "StreetEasy" or "Zillow"
             "Gmail Message ID (Autoreply)",  # write + idempotency lookup
+            "Reply (Autoreply)",             # write after send — plaintext body for audit
         ],
     ),
     "Drafts": TableSpec(
