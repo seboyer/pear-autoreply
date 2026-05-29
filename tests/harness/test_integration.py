@@ -50,13 +50,18 @@ def _make_airtable(*, apartment_via_streeteasy: bool = True) -> AirtableClient:
         mock.match_apartment_by_address.return_value = None
     else:
         mock.match_apartment_by_streeteasy_id.return_value = None
-        mock.match_apartment_by_address.return_value = fake_apt
+        # Structured matcher returns (record, score) per match_apartment_by_address contract.
+        mock.match_apartment_by_address.return_value = (fake_apt, 95)
 
     mock.find_existing_user.return_value = None
-    mock.find_monitored_user_by_primary_email.return_value = {
+    fake_agent = {
         "id": "recAGENT_FAKE",
         "fields": {TEST.users.autoreply_test_template: FAKE_TEMPLATE},
     }
+    # Both lookup variants return the same fake agent so the test is independent
+    # of which agent_lookup_by the caller passes to process_lead.
+    mock.find_monitored_user_by_primary_email.return_value = fake_agent
+    mock.find_monitored_user_by_autoreply_email.return_value = fake_agent
     mock.find_or_create_inquiry.return_value = "recINQ_FAKE"
     mock.create_draft.return_value = "recDRAFT_FAKE"
     return mock

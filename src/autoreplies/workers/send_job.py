@@ -52,7 +52,6 @@ def send_reply_job(
     airtable = AirtableClient(
         token=settings.airtable_token,
         schema=get_schema(settings.active_airtable_base_id),
-        address_match_threshold=settings.apartment_fuzzy_match_threshold,
     )
     airtable.update_inquiry_autoreply_body(
         inquiry_record_id=inquiry_record_id,

@@ -331,7 +331,6 @@ def main() -> int:
     airtable = AirtableClient(
         token=settings.airtable_token,
         schema=schema,
-        address_match_threshold=settings.apartment_fuzzy_match_threshold,
     )
 
     from autoreplies.services.llm import LLMClient
@@ -353,6 +352,7 @@ def main() -> int:
             gmail=gmail,
             airtable=airtable,
             llm=llm,
+            agent_lookup_by="primary",
         )
 
     state = PollerState(settings.poller_state_path)

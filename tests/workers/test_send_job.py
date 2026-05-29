@@ -23,7 +23,6 @@ def test_send_reply_job_calls_gmail_and_airtable() -> None:
     mock_settings.google_application_credentials = "/etc/sa.json"
     mock_settings.airtable_token = "pat-token"
     mock_settings.active_airtable_base_id = "appwPKlnV6YtbIjWz"
-    mock_settings.apartment_fuzzy_match_threshold = 92
 
     with (
         patch("autoreplies.workers.send_job.get_settings", return_value=mock_settings),

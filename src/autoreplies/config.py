@@ -69,9 +69,6 @@ class Settings(BaseSettings):
     humanization_out_jitter_min_sec: int = 0
     humanization_out_jitter_max_sec: int = 3600
 
-    # Apartment matching
-    apartment_fuzzy_match_threshold: int = 92
-
     # Harness (kept — harness-poller still running during migration window)
     harness_poll_interval_seconds: int = 60
     harness_bootstrap_lookback_seconds: int = 60

@@ -125,6 +125,7 @@ CURATED: dict[str, TableSpec] = {
             "Would Send At",
             "Notes / Warnings",
             "Gmail Message ID",
+            "Sender",
         ],
         bases=("TEST",),
     ),

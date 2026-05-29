@@ -85,6 +85,7 @@ def process_lead(
     gmail: GmailClient | None = None,
     airtable: AirtableClient | None = None,
     llm: LLMClient | None = None,
+    agent_lookup_by: Literal["primary", "autoreply"] = "primary",
 ) -> None:
     """Drive a single lead message through the full pipeline.
 
@@ -97,6 +98,11 @@ def process_lead(
     `gmail`, `airtable`, `llm` are passed by the harness factory. When None,
     the phase bodies raise NotImplementedError until Phase 1 wires production
     service construction from settings/deps.
+
+    `agent_lookup_by` selects which Users field the agent-lookup keys off:
+    "primary" (production poller — Users.Email) or "autoreply" (harness poller —
+    Users.Autoreply Email (Agent)). Production callers may rely on the default;
+    the harness passes "autoreply" explicitly from build_harness_pipeline.
     """
     if strategies is None:
         strategies = _build_default_strategies()
@@ -112,7 +118,14 @@ def process_lead(
     try:
         # Phase A — pre-Airtable: parse, reply, then Airtable insert.
         if not state.airtable_record_id:
-            _phase_a_create_airtable(state, strategies, gmail=gmail, airtable=airtable, llm=llm)
+            _phase_a_create_airtable(
+                state,
+                strategies,
+                gmail=gmail,
+                airtable=airtable,
+                llm=llm,
+                agent_lookup_by=agent_lookup_by,
+            )
             _save_state(state)
 
         # Phase B — Supabase upsert (idempotent on Airtable record ID).
@@ -150,6 +163,7 @@ def _phase_a_create_airtable(
     gmail: GmailClient | None,
     airtable: AirtableClient | None,
     llm: LLMClient | None,
+    agent_lookup_by: Literal["primary", "autoreply"],
 ) -> None:
     """Fetch the email, parse, generate + send the auto-reply, write Airtable.
 
@@ -175,8 +189,14 @@ def _phase_a_create_airtable(
     user_record = airtable.find_existing_user(email=parsed.email, phone=parsed.phone)
     user_record_id = user_record["id"] if user_record else None
 
-    # 5. Load agent record for the mailbox.
-    agent_record = airtable.find_monitored_user_by_primary_email(state.mailbox_email)
+    # 5. Load agent record for the mailbox. The lookup field depends on which
+    #    poller drove us in: production polls primary Email; harness polls
+    #    Autoreply Email (Agent). The shared call site is parameterized so the
+    #    still-running harness keeps attributing agents correctly during cutover.
+    if agent_lookup_by == "autoreply":
+        agent_record = airtable.find_monitored_user_by_autoreply_email(state.mailbox_email)
+    else:
+        agent_record = airtable.find_monitored_user_by_primary_email(state.mailbox_email)
     if agent_record is None:
         logger.warning("_phase_a: no agent record found for mailbox=%s", state.mailbox_email)
 
@@ -244,10 +264,7 @@ def _phase_a_create_airtable(
     )
 
     # 11. Call send strategy. DraftSend writes the Drafts row linked to inquiry_id.
-    #     LiveSend (Phase 2) sends the Gmail reply via a scheduled RQ job.
-    #     _mailbox_email is injected so LiveSend can build GmailClient; harmless for DraftSend.
-    send_agent = dict(agent_record or {})
-    send_agent["_mailbox_email"] = state.mailbox_email
+    #     LiveSend builds a GmailClient inside a scheduled RQ job using mailbox_email.
     send_result = strategies.send.send_reply(
         to=dest.recipient or "",
         subject=reply_subject,
@@ -255,10 +272,11 @@ def _phase_a_create_airtable(
         html_body=filled_body,  # Phase 2 caller adds HTML signature if needed
         in_reply_to_message_id=dest.in_reply_to_message_id,
         thread_id=dest.thread_id,
-        agent=send_agent,
+        agent=agent_record or {},
         parsed=parsed,
         inquiry_record_id=inquiry_id,
         gmail_message_id=state.message_id,
+        mailbox_email=state.mailbox_email,
         reply_route=dest.route,
         skipped_reason=dest.skipped_reason,
         apartment_match_strategy=apartment_match_strategy,
@@ -358,7 +376,7 @@ def _match_apartment_for_lead(
     """Return (apartment_record, match_strategy, confidence).
 
     Strategy priority: streeteasy_id (deterministic, confidence=100) → address
-    fuzzy match (confidence=None, threshold from client settings) → none.
+    structured match (exact house_no + fuzzy street + exact unit, confidence=street_score) → none.
     """
     if parsed.listing_id:
         record = airtable.match_apartment_by_streeteasy_id(parsed.listing_id)
@@ -366,9 +384,10 @@ def _match_apartment_for_lead(
             return record, "streeteasy_id", 100
 
     if parsed.apartment_address:
-        record = airtable.match_apartment_by_address(parsed.apartment_address)
-        if record:
-            return record, "address", None
+        result = airtable.match_apartment_by_address(parsed.apartment_address)
+        if result:
+            record, score = result
+            return record, "address", score
 
     return None, "none", None
 

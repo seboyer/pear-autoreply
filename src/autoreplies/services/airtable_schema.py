@@ -76,6 +76,7 @@ class DraftsTable:
     would_send_at: str  # fld…  — Would Send At
     notes_warnings: str  # fld…  — Notes / Warnings
     gmail_message_id: str  # fld…  — Gmail Message ID
+    sender: str  # fld…  — Sender
 
 
 @dataclass(frozen=True)
@@ -125,7 +126,7 @@ PROD = PearTrackerSchema(
         reply_autoreply="fldPWEoSUpf3VSuwA",
     ),
     # WARNING: table 'Drafts' not present in this base
-    drafts=DraftsTable(id="MISSING", inquiry="MISSING", recipient="MISSING", subject="MISSING", body_plaintext="MISSING", body_html="MISSING", source="MISSING", parser_used="MISSING", template_source="MISSING", reply_route="MISSING", skipped_reason="MISSING", apartment_match_strategy="MISSING", apartment_match_confidence="MISSING", llm_model="MISSING", llm_latency_ms="MISSING", would_send_at="MISSING", notes_warnings="MISSING", gmail_message_id="MISSING"),
+    drafts=DraftsTable(id="MISSING", inquiry="MISSING", recipient="MISSING", subject="MISSING", body_plaintext="MISSING", body_html="MISSING", source="MISSING", parser_used="MISSING", template_source="MISSING", reply_route="MISSING", skipped_reason="MISSING", apartment_match_strategy="MISSING", apartment_match_confidence="MISSING", llm_model="MISSING", llm_latency_ms="MISSING", would_send_at="MISSING", notes_warnings="MISSING", gmail_message_id="MISSING", sender="MISSING"),
 )
 
 TEST = PearTrackerSchema(
@@ -182,6 +183,7 @@ TEST = PearTrackerSchema(
         would_send_at="fldHxYMp0om865D1g",
         notes_warnings="fldRsySy91rdRGZYW",
         gmail_message_id="fldjiCVfm2qD5r2hs",
+        sender="fldYaTBUGIT10r9dj",
     ),
 )
 

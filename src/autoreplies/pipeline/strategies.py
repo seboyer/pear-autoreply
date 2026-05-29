@@ -43,8 +43,12 @@ class SendStrategy(Protocol):
         thread_id: str | None,
         agent: dict[str, Any],
         parsed: ParsedLead,
+        # Context carried from Phase A orchestration.
+        # LiveSend uses mailbox_email to build the GmailClient inside the RQ job;
+        # DraftSend writes it to the Drafts row's Sender field.
         inquiry_record_id: str,
         gmail_message_id: str,
+        mailbox_email: str,
         reply_route: Literal["thread", "direct", "skipped"],
         skipped_reason: str | None,
         apartment_match_strategy: Literal["streeteasy_id", "address", "none"],
@@ -118,6 +122,7 @@ class LiveSend:
         parsed: ParsedLead,
         inquiry_record_id: str,
         gmail_message_id: str,
+        mailbox_email: str,
         reply_route: Literal["thread", "direct", "skipped"],
         skipped_reason: str | None,
         apartment_match_strategy: Literal["streeteasy_id", "address", "none"],
@@ -147,9 +152,6 @@ class LiveSend:
                 settings.humanization_out_jitter_max_sec,
             ),
         )
-
-        # _mailbox_email is injected by process_lead._phase_a so we can build GmailClient.
-        mailbox_email = agent.get("_mailbox_email", "") or ""
 
         job = self._queue.enqueue_at(
             send_at,

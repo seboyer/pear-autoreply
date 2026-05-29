@@ -62,6 +62,7 @@ def _send_kwargs(**overrides: Any) -> dict[str, Any]:
         parsed=_make_parsed(),
         inquiry_record_id="recINQ_42",
         gmail_message_id="msg-original-123",
+        mailbox_email="garland@pearnyc.com",
         reply_route="thread",
         skipped_reason=None,
         apartment_match_strategy="streeteasy_id",
@@ -123,6 +124,7 @@ def test_draft_send_calls_create_draft(
     assert call_kwargs["llm_model"] == "claude-haiku-4-5-20251001"
     assert call_kwargs["llm_latency_ms"] == 450
     assert call_kwargs["skipped_reason"] is None
+    assert call_kwargs["sender"] == "garland@pearnyc.com"
 
 
 def test_draft_send_zillow_parser_maps_to_regex(

@@ -16,7 +16,6 @@ def get_airtable_client() -> AirtableClient:
     return AirtableClient(
         token=settings.airtable_token,
         schema=schema,
-        address_match_threshold=settings.apartment_fuzzy_match_threshold,
     )
 
 
