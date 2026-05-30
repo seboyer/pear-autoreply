@@ -104,7 +104,7 @@ class MailboxCache:
 
     def get(self, airtable: Any) -> list[str]:
         if self._cached is None or (self._now() - self._fetched_at) >= self._ttl:
-            self._cached = airtable.list_monitored_primary_emails()
+            self._cached = airtable.list_monitored_leads_emails()
             self._fetched_at = self._now()
         return list(self._cached)
 
@@ -120,7 +120,7 @@ def discover_monitored_mailboxes(
 ) -> list[str]:
     """Resolve the current monitored primary-email list."""
     if cache is None:
-        return airtable.list_monitored_primary_emails()
+        return airtable.list_monitored_leads_emails()
     return cache.get(airtable)
 
 
@@ -352,7 +352,7 @@ def main() -> int:
             gmail=gmail,
             airtable=airtable,
             llm=llm,
-            agent_lookup_by="primary",
+            agent_lookup_by="leads",
         )
 
     state = PollerState(settings.poller_state_path)

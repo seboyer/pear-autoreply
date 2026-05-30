@@ -62,14 +62,25 @@ class AirtableClient:
 
     # --- Lookups ---
 
-    def find_monitored_user_by_primary_email(self, email: str) -> dict[str, Any] | None:
-        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by their primary Email field.
+    def find_monitored_user_by_leads_email(self, email: str) -> dict[str, Any] | None:
+        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by their Leads Email.
 
-        Email here is the recipient mailbox the lead landed at — e.g.
-        firstname@pearnyc.com. Used by the production poller.
+        Leads Email is the mailbox the production poller monitors — for most
+        agents the same as their primary Email, for some (e.g. shared assistant
+        inboxes) deliberately different. Only present on the PROD schema; calling
+        this on a schema where leads_email is MISSING raises a clear error.
         """
         u = self.schema.users
-        formula = AND(EQ(Field(u.autoreply_enabled_agent), 1), EQ(Field(u.email), email))
+        if u.leads_email == "MISSING":
+            raise RuntimeError(
+                "find_monitored_user_by_leads_email called on a schema where "
+                "leads_email is MISSING (e.g. the TEST base). The harness should "
+                "use find_monitored_user_by_autoreply_email instead."
+            )
+        formula = AND(
+            EQ(Field(u.autoreply_enabled_agent), 1),
+            EQ(Field(u.leads_email), email),
+        )
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
 
@@ -77,7 +88,7 @@ class AirtableClient:
         """Look up a monitored user by their Autoreply Email (Agent) — the legacy
         per-user mailbox the harness still polls during the migration window.
 
-        Production lookups go through find_monitored_user_by_primary_email instead;
+        Production lookups go through find_monitored_user_by_leads_email instead;
         process_lead picks between the two via the `agent_lookup_by` parameter.
         """
         u = self.schema.users
@@ -88,16 +99,34 @@ class AirtableClient:
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
 
-    def list_monitored_primary_emails(self) -> list[str]:
-        """Return distinct, non-empty primary Emails for monitored users (Autoreply Enabled = TRUE)."""
+    def list_monitored_leads_emails(self) -> list[str]:
+        """Return distinct, non-empty Leads Email values for monitored users.
+
+        Used by the production poller for mailbox discovery. Rows where Autoreply
+        Enabled (Agent) is checked but Leads Email is blank are skipped with a
+        WARNING — they are misconfigured and would cause missed leads. Raises on
+        TEST schema where the field is MISSING.
+        """
         u = self.schema.users
+        if u.leads_email == "MISSING":
+            raise RuntimeError(
+                "list_monitored_leads_emails called on a schema where "
+                "leads_email is MISSING (e.g. the TEST base). The harness should "
+                "use list_monitored_autoreply_inboxes instead."
+            )
         formula = EQ(Field(u.autoreply_enabled_agent), 1)
-        rows = self._table(u.id).all(formula=formula, fields=[u.email])
+        rows = self._table(u.id).all(formula=formula, fields=[u.leads_email])
         emails: set[str] = set()
         for row in rows:
-            email = row.get("fields", {}).get(u.email)
+            email = row.get("fields", {}).get(u.leads_email)
             if email:
                 emails.add(email)
+            else:
+                logger.warning(
+                    "list_monitored_leads_emails: user row %s has Autoreply Enabled "
+                    "but no Leads Email — skipped",
+                    row.get("id", "<unknown>"),
+                )
         return sorted(emails)
 
     def list_monitored_autoreply_inboxes(self) -> list[str]:

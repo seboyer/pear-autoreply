@@ -85,7 +85,7 @@ def process_lead(
     gmail: GmailClient | None = None,
     airtable: AirtableClient | None = None,
     llm: LLMClient | None = None,
-    agent_lookup_by: Literal["primary", "autoreply"] = "primary",
+    agent_lookup_by: Literal["leads", "autoreply"] = "leads",
 ) -> None:
     """Drive a single lead message through the full pipeline.
 
@@ -100,7 +100,7 @@ def process_lead(
     service construction from settings/deps.
 
     `agent_lookup_by` selects which Users field the agent-lookup keys off:
-    "primary" (production poller — Users.Email) or "autoreply" (harness poller —
+    "leads" (production poller — Users.Leads Email) or "autoreply" (harness poller —
     Users.Autoreply Email (Agent)). Production callers may rely on the default;
     the harness passes "autoreply" explicitly from build_harness_pipeline.
     """
@@ -163,7 +163,7 @@ def _phase_a_create_airtable(
     gmail: GmailClient | None,
     airtable: AirtableClient | None,
     llm: LLMClient | None,
-    agent_lookup_by: Literal["primary", "autoreply"],
+    agent_lookup_by: Literal["leads", "autoreply"],
 ) -> None:
     """Fetch the email, parse, generate + send the auto-reply, write Airtable.
 
@@ -190,13 +190,13 @@ def _phase_a_create_airtable(
     user_record_id = user_record["id"] if user_record else None
 
     # 5. Load agent record for the mailbox. The lookup field depends on which
-    #    poller drove us in: production polls primary Email; harness polls
+    #    poller drove us in: production polls Users.Leads Email; harness polls
     #    Autoreply Email (Agent). The shared call site is parameterized so the
     #    still-running harness keeps attributing agents correctly during cutover.
     if agent_lookup_by == "autoreply":
         agent_record = airtable.find_monitored_user_by_autoreply_email(state.mailbox_email)
     else:
-        agent_record = airtable.find_monitored_user_by_primary_email(state.mailbox_email)
+        agent_record = airtable.find_monitored_user_by_leads_email(state.mailbox_email)
     if agent_record is None:
         logger.warning("_phase_a: no agent record found for mailbox=%s", state.mailbox_email)
 

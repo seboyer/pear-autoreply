@@ -62,7 +62,7 @@ def _mock_airtable(
         }
     # Both lookup variants return the same agent so this mock works regardless
     # of which agent_lookup_by the caller passes to process_lead.
-    at.find_monitored_user_by_primary_email.return_value = agent_record
+    at.find_monitored_user_by_leads_email.return_value = agent_record
     at.find_monitored_user_by_autoreply_email.return_value = agent_record
 
     # Apartment matching. The structured matcher returns (record, score); the

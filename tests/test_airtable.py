@@ -35,19 +35,19 @@ def _record(rec_id: str, fields: dict[str, Any]) -> dict[str, Any]:
     return {"id": rec_id, "fields": fields}
 
 
-# ── find_monitored_user_by_primary_email ──────────────────────────────────────
+# ── find_monitored_user_by_leads_email ────────────────────────────────────────
 
 
 def test_find_monitored_user_found(client: AirtableClient) -> None:
-    row = _record("recAGENT1", {PROD.users.email: "sam@pearnyc.com"})
+    row = _record("recAGENT1", {PROD.users.leads_email: "sam@pearnyc.com"})
     with patch.object(client, "_table", return_value=_mock_table([row])):
-        result = client.find_monitored_user_by_primary_email("sam@pearnyc.com")
+        result = client.find_monitored_user_by_leads_email("sam@pearnyc.com")
     assert result == row
 
 
 def test_find_monitored_user_not_found(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert client.find_monitored_user_by_primary_email("nobody@pearnyc.com") is None
+        assert client.find_monitored_user_by_leads_email("nobody@pearnyc.com") is None
 
 
 # ── find_monitored_user_by_autoreply_email ────────────────────────────────────
@@ -73,32 +73,43 @@ def test_find_monitored_user_by_autoreply_email_not_found(client: AirtableClient
         )
 
 
-# ── list_monitored_primary_emails ─────────────────────────────────────────────
+# ── list_monitored_leads_emails ───────────────────────────────────────────────
 
 
-def test_list_monitored_primary_emails_returns_sorted_distinct(client: AirtableClient) -> None:
+def test_list_monitored_leads_emails_returns_sorted_distinct(client: AirtableClient) -> None:
     rows = [
-        _record("recAGENT1", {PROD.users.email: "b@pearnyc.com"}),
-        _record("recAGENT2", {PROD.users.email: "a@pearnyc.com"}),
-        _record("recAGENT3", {PROD.users.email: "a@pearnyc.com"}),  # dup
+        _record("recAGENT1", {PROD.users.leads_email: "b@pearnyc.com"}),
+        _record("recAGENT2", {PROD.users.leads_email: "a@pearnyc.com"}),
+        _record("recAGENT3", {PROD.users.leads_email: "a@pearnyc.com"}),  # dup
     ]
     with patch.object(client, "_table", return_value=_mock_table(rows)):
-        assert client.list_monitored_primary_emails() == ["a@pearnyc.com", "b@pearnyc.com"]
+        assert client.list_monitored_leads_emails() == ["a@pearnyc.com", "b@pearnyc.com"]
 
 
-def test_list_monitored_primary_emails_filters_empty(client: AirtableClient) -> None:
+def test_list_monitored_leads_emails_filters_empty(client: AirtableClient) -> None:
     rows = [
-        _record("recAGENT1", {PROD.users.email: "a@pearnyc.com"}),
+        _record("recAGENT1", {PROD.users.leads_email: "a@pearnyc.com"}),
         _record("recAGENT2", {}),
-        _record("recAGENT3", {PROD.users.email: ""}),
+        _record("recAGENT3", {PROD.users.leads_email: ""}),
     ]
     with patch.object(client, "_table", return_value=_mock_table(rows)):
-        assert client.list_monitored_primary_emails() == ["a@pearnyc.com"]
+        assert client.list_monitored_leads_emails() == ["a@pearnyc.com"]
 
 
-def test_list_monitored_primary_emails_empty(client: AirtableClient) -> None:
+def test_list_monitored_leads_emails_empty(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert client.list_monitored_primary_emails() == []
+        assert client.list_monitored_leads_emails() == []
+
+
+def test_leads_email_methods_reject_test_schema() -> None:
+    """The TEST base has no Leads Email field; the methods must raise rather
+    than silently issue a malformed Airtable query."""
+    from autoreplies.services.airtable_schema import TEST
+    c = AirtableClient(token="fake-token", schema=TEST)
+    with pytest.raises(RuntimeError, match="leads_email is MISSING"):
+        c.find_monitored_user_by_leads_email("any@pearnyc.com")
+    with pytest.raises(RuntimeError, match="leads_email is MISSING"):
+        c.list_monitored_leads_emails()
 
 
 # ── list_monitored_autoreply_inboxes ──────────────────────────────────────────

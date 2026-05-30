@@ -60,7 +60,7 @@ def _make_airtable(*, apartment_via_streeteasy: bool = True) -> AirtableClient:
     }
     # Both lookup variants return the same fake agent so the test is independent
     # of which agent_lookup_by the caller passes to process_lead.
-    mock.find_monitored_user_by_primary_email.return_value = fake_agent
+    mock.find_monitored_user_by_leads_email.return_value = fake_agent
     mock.find_monitored_user_by_autoreply_email.return_value = fake_agent
     mock.find_or_create_inquiry.return_value = "recINQ_FAKE"
     mock.create_draft.return_value = "recDRAFT_FAKE"

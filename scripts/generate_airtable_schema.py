@@ -61,12 +61,16 @@ class TableSpec:
 CURATED: dict[str, TableSpec] = {
     "Users": TableSpec(
         fields=[
-            "Email",                     # primary inbox — prod lookup; prospect→user match; Slack display
+            "Email",                     # primary inbox — prospect→user match; Slack display
+            "Leads Email",               # mailbox the production poller monitors (PROD only).
+                                         # For most agents this is the same value as Email; for some
+                                         # (e.g. Richard's shared assistant inbox) it diverges.
+                                         # The agent-driven cutover is StreetEasy/Zillow → this value.
             "Type",                      # "Agent" / "Admin" / other
             "Name",                      # Slack display: "Agent: Jane Doe"
             "Phone",                     # prospect→user match
             "Autoreply (Agent)",         # per-agent reply template (PROD, synced — used post-cutover)
-            "Autoreply Email (Agent)",   # legacy per-user inbox — the harness polls this
+            "Autoreply Email (Agent)",   # legacy per-user inbox — the harness polls this; deleted post-cutover
             "Autoreply Enabled (Agent)", # checkbox: source of truth for "in scope" rows (prod + harness)
         ],
         test_only_fields=[

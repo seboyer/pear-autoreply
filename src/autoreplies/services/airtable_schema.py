@@ -15,6 +15,7 @@ class UsersTable:
 
     id: str  # tbl…
     email: str  # fld…  — Email
+    leads_email: str  # fld…  — Leads Email (PROD only; production poller's monitored mailbox)
     type: str  # fld…  — Type
     name: str  # fld…  — Name
     phone: str  # fld…  — Phone
@@ -95,6 +96,7 @@ PROD = PearTrackerSchema(
     users=UsersTable(
         id="tbl6DvdbIju2MKec6",
         email="fldDCUDfz6AuhILnp",
+        leads_email="fldFIrWA8BSaAxqSx",
         type="fldxN6RsgiHNtenGu",
         name="fldmN3zAR0jXLXnfa",
         phone="fld4V6YFX3T6Z3MX4",
@@ -134,6 +136,7 @@ TEST = PearTrackerSchema(
     users=UsersTable(
         id="tblgCLdJi0BjBAxej",
         email="fldUFXBBKRc5xytxI",
+        leads_email="MISSING",  # !! not in this base (PROD-only field)
         type="fld9Oo62F2XEIoul5",
         name="flddYErLw7omlqkI0",
         phone="fldsz89gmTzEKtK9r",
