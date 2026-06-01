@@ -63,12 +63,15 @@ class AirtableClient:
     # --- Lookups ---
 
     def find_monitored_user_by_leads_email(self, email: str) -> dict[str, Any] | None:
-        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by their Leads Email.
+        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by Leads Email,
+        falling back to the primary Email field when Leads Email is blank.
 
-        Leads Email is the mailbox the production poller monitors — for most
-        agents the same as their primary Email, for some (e.g. shared assistant
-        inboxes) deliberately different. Only present on the PROD schema; calling
-        this on a schema where leads_email is MISSING raises a clear error.
+        Most agents' Leads Email matches their primary Email; for some (e.g.
+        Richard's shared assistant inbox) they deliberately diverge. The fallback
+        makes Leads Email an opt-in override: leave it blank and the system uses
+        the user's primary Email — set it only when the two should differ. Only
+        present on the PROD schema; calling this on a schema where leads_email is
+        MISSING raises a clear error.
         """
         u = self.schema.users
         if u.leads_email == "MISSING":
@@ -77,9 +80,18 @@ class AirtableClient:
                 "leads_email is MISSING (e.g. the TEST base). The harness should "
                 "use find_monitored_user_by_autoreply_email instead."
             )
+        # Match if Leads Email is the lookup value, OR Leads Email is blank and
+        # primary Email is the lookup value. Airtable text fields test blank via
+        # `{field}=""`, which pyairtable emits from EQ(Field, "").
         formula = AND(
             EQ(Field(u.autoreply_enabled_agent), 1),
-            EQ(Field(u.leads_email), email),
+            OR(
+                EQ(Field(u.leads_email), email),
+                AND(
+                    EQ(Field(u.leads_email), ""),
+                    EQ(Field(u.email), email),
+                ),
+            ),
         )
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
@@ -100,12 +112,12 @@ class AirtableClient:
         return rows[0] if rows else None
 
     def list_monitored_leads_emails(self) -> list[str]:
-        """Return distinct, non-empty Leads Email values for monitored users.
+        """Return distinct mailboxes the production poller should monitor.
 
-        Used by the production poller for mailbox discovery. Rows where Autoreply
-        Enabled (Agent) is checked but Leads Email is blank are skipped with a
-        WARNING — they are misconfigured and would cause missed leads. Raises on
-        TEST schema where the field is MISSING.
+        For each Autoreply Enabled (Agent) = TRUE user, prefer Leads Email and
+        fall back to primary Email when Leads Email is blank. Rows where BOTH
+        are blank are skipped with a WARNING — they're misconfigured and would
+        cause missed leads. Raises on TEST schema where Leads Email is MISSING.
         """
         u = self.schema.users
         if u.leads_email == "MISSING":
@@ -115,16 +127,17 @@ class AirtableClient:
                 "use list_monitored_autoreply_inboxes instead."
             )
         formula = EQ(Field(u.autoreply_enabled_agent), 1)
-        rows = self._table(u.id).all(formula=formula, fields=[u.leads_email])
+        rows = self._table(u.id).all(formula=formula, fields=[u.leads_email, u.email])
         emails: set[str] = set()
         for row in rows:
-            email = row.get("fields", {}).get(u.leads_email)
-            if email:
-                emails.add(email)
+            fields = row.get("fields", {})
+            resolved = fields.get(u.leads_email) or fields.get(u.email)
+            if resolved:
+                emails.add(resolved)
             else:
                 logger.warning(
                     "list_monitored_leads_emails: user row %s has Autoreply Enabled "
-                    "but no Leads Email — skipped",
+                    "but neither Leads Email nor Email is set — skipped",
                     row.get("id", "<unknown>"),
                 )
         return sorted(emails)

@@ -50,6 +50,25 @@ def test_find_monitored_user_not_found(client: AirtableClient) -> None:
         assert client.find_monitored_user_by_leads_email("nobody@pearnyc.com") is None
 
 
+def test_find_monitored_user_by_leads_email_formula_falls_back_to_email(
+    client: AirtableClient,
+) -> None:
+    """The formula must match either Leads Email = X OR (Leads Email blank AND
+    Email = X), so users with no Leads Email set are still found by their
+    primary Email — the steady-state case for everyone except divergent rows
+    like Richard's shared inbox."""
+    tbl = _mock_table([])
+    with patch.object(client, "_table", return_value=tbl):
+        client.find_monitored_user_by_leads_email("sam@pearnyc.com")
+    formula = str(tbl.all.call_args.kwargs["formula"])
+    # Leads Email field and Email field both referenced; OR present.
+    assert PROD.users.leads_email in formula
+    assert PROD.users.email in formula
+    assert "OR(" in formula
+    # The fallback clause checks Leads Email is blank.
+    assert f"{{{PROD.users.leads_email}}}=''" in formula
+
+
 # ── find_monitored_user_by_autoreply_email ────────────────────────────────────
 # Legacy lookup kept while the harness still polls Autoreply Email (Agent)
 # during the migration window. process_lead picks between this and the primary-
@@ -86,14 +105,33 @@ def test_list_monitored_leads_emails_returns_sorted_distinct(client: AirtableCli
         assert client.list_monitored_leads_emails() == ["a@pearnyc.com", "b@pearnyc.com"]
 
 
-def test_list_monitored_leads_emails_filters_empty(client: AirtableClient) -> None:
+def test_list_monitored_leads_emails_falls_back_to_email(client: AirtableClient) -> None:
+    """Per row, prefer Leads Email when set, else use primary Email.
+    Skip only when BOTH are blank."""
     rows = [
-        _record("recAGENT1", {PROD.users.leads_email: "a@pearnyc.com"}),
-        _record("recAGENT2", {}),
-        _record("recAGENT3", {PROD.users.leads_email: ""}),
+        # Leads Email set — used directly.
+        _record(
+            "recAGENT1",
+            {PROD.users.leads_email: "richard-shared@pearnyc.com"},
+        ),
+        # Leads Email blank, Email set — falls back to Email.
+        _record(
+            "recAGENT2",
+            {PROD.users.leads_email: "", PROD.users.email: "dana@pearnyc.com"},
+        ),
+        # Leads Email absent entirely, Email set — also falls back.
+        _record("recAGENT3", {PROD.users.email: "mike@pearnyc.com"}),
+        # Both blank — skipped (with WARNING).
+        _record("recAGENT4", {PROD.users.leads_email: "", PROD.users.email: ""}),
+        # Both absent entirely — skipped.
+        _record("recAGENT5", {}),
     ]
     with patch.object(client, "_table", return_value=_mock_table(rows)):
-        assert client.list_monitored_leads_emails() == ["a@pearnyc.com"]
+        assert client.list_monitored_leads_emails() == [
+            "dana@pearnyc.com",
+            "mike@pearnyc.com",
+            "richard-shared@pearnyc.com",
+        ]
 
 
 def test_list_monitored_leads_emails_empty(client: AirtableClient) -> None:
