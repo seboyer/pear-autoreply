@@ -1,0 +1,201 @@
+# render.yaml — Pear Autoreplies (DigitalOcean → Render migration)
+#
+# Maps the docker-compose stack to Render. Caddy is dropped (Render terminates
+# TLS + routes); its /admin/* rate limiter is replaced by app-level middleware
+# (src/autoreplies/ratelimit.py).
+#
+# NOT declarable here, do in the Render dashboard after first sync (see
+# RENDER_MIGRATION.md):
+#   - Secret Files: mount the Google service-account JSON at
+#     /etc/pear-autoreply/sa.json on web, worker, scheduler, poller,
+#     harness-poller.
+#   - Secret env values: every `sync: false` key below is entered once in the
+#     dashboard (or via the env group).
+#
+# Singletons with a persistent disk (poller, harness-poller) MUST stay
+# numInstances: 1 — the SQLite state on the disk cannot be shared/scaled.
+
+services:
+  # ── web: FastAPI / uvicorn, public HTTPS (Render auto-TLS) ──────────────────
+  - type: web
+    name: pear-autoreplies-web
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    numInstances: 1
+    healthCheckPath: /healthz
+    autoDeploy: false
+    envVars:
+      - fromGroup: pear-autoreplies-config
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pear-autoreplies-redis
+          property: connectionString
+
+  # ── worker: RQ queue drainer, scale 2 ──────────────────────────────────────
+  - type: worker
+    name: pear-autoreplies-worker
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m autoreplies.workers.worker
+    numInstances: 2
+    autoDeploy: false
+    envVars:
+      - fromGroup: pear-autoreplies-config
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pear-autoreplies-redis
+          property: connectionString
+
+  # ── scheduler: daily Gmail watch renewal — singleton, no disk ───────────────
+  # Kept as a long-running worker (24h sleep loop) for behaviour parity with DO.
+  # Could become a Render Cron Job (type: cron, schedule: "0 8 * * *") IF the
+  # loop in workers/scheduler.py is converted to a one-shot — see RENDER_MIGRATION.md.
+  - type: worker
+    name: pear-autoreplies-scheduler
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m autoreplies.workers.scheduler
+    numInstances: 1
+    autoDeploy: false
+    envVars:
+      - fromGroup: pear-autoreplies-config
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pear-autoreplies-redis
+          property: connectionString
+
+  # ── poller: production Gmail poller — SINGLETON, SQLite on persistent disk ──
+  - type: worker
+    name: pear-autoreplies-poller
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m autoreplies.workers.poller
+    numInstances: 1
+    autoDeploy: false
+    disk:
+      name: poller-state
+      mountPath: /var/lib/pear-autoreply
+      sizeGB: 1
+    envVars:
+      - fromGroup: pear-autoreplies-config
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pear-autoreplies-redis
+          property: connectionString
+
+  # ── harness-poller: testing harness — SINGLETON, SQLite on persistent disk ──
+  # Deliberately Redis-free (distinctness invariant) — no REDIS_URL.
+  - type: worker
+    name: pear-autoreplies-harness-poller
+    runtime: docker
+    region: virginia
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: python -m autoreplies.harness watch
+    numInstances: 1
+    autoDeploy: false
+    disk:
+      name: harness-state
+      mountPath: /var/lib/pear-autoreply
+      sizeGB: 1
+    envVars:
+      - fromGroup: pear-autoreplies-config
+
+  # ── redis: managed Key Value (queue + idempotency state) ────────────────────
+  - type: keyvalue
+    name: pear-autoreplies-redis
+    region: virginia
+    plan: starter            # 'starter' persists; the free plan does NOT — needed for RQ durability parity
+    ipAllowList: []          # private only — reachable from services in this account/region
+    maxmemoryPolicy: noeviction   # never evict queued RQ jobs
+
+envVarGroups:
+  - name: pear-autoreplies-config
+    envVars:
+      # ---- non-secret config (literal values) ----
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: GOOGLE_APPLICATION_CREDENTIALS
+        value: /etc/pear-autoreply/sa.json
+      - key: PUBSUB_AUDIENCE
+        value: https://autoreplies.pearnyc.com/pubsub/inbox
+      - key: AIRTABLE_BASE_ID
+        value: appwPKlnV6YtbIjWz
+      - key: AIRTABLE_TEST_BASE_ID
+        value: appmSm1FyerysvtcX
+      - key: SUPABASE_URL
+        value: https://fuacxndojzybijrqdbym.supabase.co
+      - key: SLACK_CHANNEL
+        value: "#platform-leads"
+      - key: ANTHROPIC_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: DEDUP_TTL_DAYS
+        value: "30"
+      # humanization
+      - key: HUMANIZATION_TIMEZONE
+        value: America/New_York
+      - key: HUMANIZATION_WORKING_HOURS_START
+        value: "8"
+      - key: HUMANIZATION_WORKING_HOURS_END
+        value: "23"
+      - key: HUMANIZATION_WITHIN_JITTER_MIN_SEC
+        value: "60"
+      - key: HUMANIZATION_WITHIN_JITTER_MAX_SEC
+        value: "300"
+      - key: HUMANIZATION_OUT_JITTER_MIN_SEC
+        value: "0"
+      - key: HUMANIZATION_OUT_JITTER_MAX_SEC
+        value: "3600"
+      # poller
+      - key: POLLER_STATE_PATH
+        value: /var/lib/pear-autoreply/poller.sqlite
+      - key: POLLER_POLL_INTERVAL_SECONDS
+        value: "60"
+      - key: POLLER_BOOTSTRAP_LOOKBACK_SECONDS
+        value: "60"
+      # harness
+      - key: HARNESS_STATE_PATH
+        value: /var/lib/pear-autoreply/harness.sqlite
+      - key: HARNESS_POLL_INTERVAL_SECONDS
+        value: "60"
+      - key: HARNESS_BOOTSTRAP_LOOKBACK_SECONDS
+        value: "60"
+      # rate limiting (replaces the Caddy /admin/* limiter)
+      - key: RATELIMIT_ENABLED
+        value: "true"
+      - key: RATELIMIT_ADMIN_PER_MINUTE
+        value: "30"
+      - key: RATELIMIT_PUBSUB_PER_MINUTE
+        value: "300"
+      # ---- secrets: enter once in the Render dashboard (never commit) ----
+      - key: ADMIN_TOKEN
+        sync: false
+      - key: AIRTABLE_TOKEN
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SLACK_BOT_TOKEN
+        sync: false
+      - key: PUBSUB_SERVICE_ACCOUNT_EMAIL
+        sync: false

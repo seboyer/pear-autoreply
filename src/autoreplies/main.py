@@ -12,6 +12,7 @@ from fastapi import FastAPI
 
 from .config import get_settings
 from .logging_config import configure_logging
+from .ratelimit import RateLimitMiddleware
 from .routes import admin, health, pubsub
 
 
@@ -34,6 +35,16 @@ app = FastAPI(
     docs_url="/docs" if get_settings().app_env != "production" else None,
     redoc_url=None,
 )
+
+_settings = get_settings()
+if _settings.ratelimit_enabled:
+    app.add_middleware(
+        RateLimitMiddleware,
+        rules={
+            "/admin": _settings.ratelimit_admin_per_minute,
+            "/pubsub/inbox": _settings.ratelimit_pubsub_per_minute,
+        },
+    )
 
 app.include_router(health.router)
 app.include_router(pubsub.router)

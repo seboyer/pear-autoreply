@@ -53,6 +53,11 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     dedup_ttl_days: int = 30
 
+    # App-level rate limiting (replaces the Caddy /admin/* limiter post-Render-migration)
+    ratelimit_enabled: bool = True
+    ratelimit_admin_per_minute: int = 30
+    ratelimit_pubsub_per_minute: int = 300
+
     # Send timing (legacy quiet_hours_* kept for now; humanization_* are the active knobs)
     quiet_hours_tz: str = "America/New_York"
     quiet_hours_start: int = 23
