@@ -1,8 +1,9 @@
-"""RQ delayed job: send a Gmail reply and write back to Airtable.
+"""RQ delayed job: send a Gmail reply and write back to Airtable + Supabase.
 
 Enqueued by LiveSend.send_reply via rq.Queue.enqueue_at. All arguments are
 primitives so RQ can pickle them without issue. Clients (GmailClient,
-AirtableClient) are constructed inside the job from get_settings().
+AirtableClient, SupabaseClient) are constructed inside the job from
+get_settings().
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from autoreplies.config import get_settings
 from autoreplies.services.airtable import AirtableClient
 from autoreplies.services.airtable_schema import get_schema
 from autoreplies.services.gmail import GmailClient
+from autoreplies.services.supabase import SupabaseClient
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,9 @@ def send_reply_job(
     in_reply_to_message_id: str | None,
     thread_id: str | None,
 ) -> None:
-    """Send the autoreply via Gmail and write the body + message-id back to Airtable."""
+    """Send the autoreply via Gmail and write the body + message-id back to
+    both Airtable (Reply (Autoreply) + Gmail Message ID (Autoreply)) and
+    Supabase (reply_message + reply_gmail_message_id)."""
     settings = get_settings()
 
     gmail = GmailClient(
@@ -59,3 +63,14 @@ def send_reply_job(
         gmail_message_id=sent.message_id,
     )
     logger.info("send_reply_job: airtable updated inquiry=%s", inquiry_record_id)
+
+    supabase = SupabaseClient(
+        url=settings.supabase_url,
+        service_role_key=settings.supabase_service_role_key,
+    )
+    supabase.update_inquiry_reply(
+        id=inquiry_record_id,
+        reply_gmail_message_id=sent.message_id,
+        reply_message=sent.plaintext_body,
+    )
+    logger.info("send_reply_job: supabase updated inquiry=%s", inquiry_record_id)

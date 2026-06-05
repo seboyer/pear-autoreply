@@ -51,6 +51,74 @@ def test_upsert_inquiry_posts_correct_payload() -> None:
     assert "phone" not in payload
 
 
+def test_update_inquiry_reply_patches_correct_payload() -> None:
+    """update_inquiry_reply writes reply_gmail_message_id and reply_message
+    to the row keyed by id, via PATCH /inquiries?id=eq.<id>."""
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [{"id": "recABC", "reply_message": "Hi Casey,"}]
+
+    with patch("autoreplies.services.supabase.httpx.patch", return_value=fake_resp) as mock_patch:
+        result = client.update_inquiry_reply(
+            id="recABC",
+            reply_gmail_message_id="sent-msg-id",
+            reply_message="Hi Casey,",
+        )
+
+    assert result == {"id": "recABC", "reply_message": "Hi Casey,"}
+    mock_patch.assert_called_once()
+    call_kwargs = mock_patch.call_args.kwargs
+    assert call_kwargs["params"] == {"id": "eq.recABC"}
+    payload = call_kwargs["json"]
+    assert payload == {
+        "reply_gmail_message_id": "sent-msg-id",
+        "reply_message": "Hi Casey,",
+    }
+
+
+def test_update_inquiry_reply_warns_when_row_missing(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """If 0 rows match, log a WARNING and return {} — the Airtable row still
+    has the reply, so this is recoverable but worth surfacing."""
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = []
+
+    with (
+        patch("autoreplies.services.supabase.httpx.patch", return_value=fake_resp),
+        caplog.at_level("WARNING"),
+    ):
+        result = client.update_inquiry_reply(
+            id="recMISSING",
+            reply_gmail_message_id="sent-msg-id",
+            reply_message="Hi Casey,",
+        )
+
+    assert result == {}
+    assert any("0 rows matched" in r.message and "recMISSING" in r.message for r in caplog.records)
+
+
+def test_update_inquiry_reply_raises_on_http_error() -> None:
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = False
+    fake_resp.status_code = 401
+    fake_resp.text = "unauthorized"
+
+    with (
+        patch("autoreplies.services.supabase.httpx.patch", return_value=fake_resp),
+        pytest.raises(RuntimeError, match="Supabase reply update failed 401"),
+    ):
+        client.update_inquiry_reply(
+            id="recABC",
+            reply_gmail_message_id="sent-msg-id",
+            reply_message="Hi Casey,",
+        )
+
+
 def test_upsert_inquiry_uses_merge_duplicates_header() -> None:
     client = _client()
     fake_resp = MagicMock()

@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock, patch
 
 
-def test_send_reply_job_calls_gmail_and_airtable() -> None:
+def test_send_reply_job_calls_gmail_airtable_and_supabase() -> None:
     from autoreplies.services.gmail import SentMessage
     from autoreplies.workers.send_job import send_reply_job
 
@@ -18,16 +18,20 @@ def test_send_reply_job_calls_gmail_and_airtable() -> None:
     mock_gmail.send_reply.return_value = fake_sent
 
     mock_airtable = MagicMock()
+    mock_supabase = MagicMock()
 
     mock_settings = MagicMock()
     mock_settings.google_application_credentials = "/etc/sa.json"
     mock_settings.airtable_token = "pat-token"
     mock_settings.active_airtable_base_id = "appwPKlnV6YtbIjWz"
+    mock_settings.supabase_url = "https://fuacxndojzybijrqdbym.supabase.co"
+    mock_settings.supabase_service_role_key = "service-key"
 
     with (
         patch("autoreplies.workers.send_job.get_settings", return_value=mock_settings),
         patch("autoreplies.workers.send_job.GmailClient", return_value=mock_gmail),
         patch("autoreplies.workers.send_job.AirtableClient", return_value=mock_airtable),
+        patch("autoreplies.workers.send_job.SupabaseClient", return_value=mock_supabase),
         patch("autoreplies.workers.send_job.get_schema", return_value=MagicMock()),
     ):
         send_reply_job(
@@ -53,4 +57,9 @@ def test_send_reply_job_calls_gmail_and_airtable() -> None:
         inquiry_record_id="recINQ1",
         plaintext_body="Hi Casey,",
         gmail_message_id="sent-msg-id",
+    )
+    mock_supabase.update_inquiry_reply.assert_called_once_with(
+        id="recINQ1",
+        reply_gmail_message_id="sent-msg-id",
+        reply_message="Hi Casey,",
     )

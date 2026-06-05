@@ -5,9 +5,12 @@ Critical contract: `id` is the **Airtable record ID**, not the Gmail message-id.
 Uses `Prefer: resolution=merge-duplicates,return=representation` for idempotent upserts.
 """
 
+import logging
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 class SupabaseClient:
@@ -77,3 +80,45 @@ class SupabaseClient:
             raise RuntimeError(f"Supabase upsert failed {resp.status_code}: {resp.text[:500]}")
         body = resp.json()
         return body[0] if isinstance(body, list) else body
+
+    def update_inquiry_reply(
+        self,
+        *,
+        id: str,
+        reply_gmail_message_id: str,
+        reply_message: str,
+    ) -> dict[str, Any]:
+        """Write the sent reply's Gmail message-id and plaintext body back to the
+        Supabase inquiry row after a successful Gmail send.
+
+        `id` is the Airtable record ID — the row's primary key. The row is
+        expected to already exist (created by the earlier `upsert_inquiry` call
+        in Phase B). If 0 rows match, logs a WARNING — the Airtable row still
+        has the data, so this is recoverable but worth surfacing.
+
+        Mirrors AirtableClient.update_inquiry_autoreply_body. Called by
+        send_reply_job after Gmail send completes.
+        """
+        resp = httpx.patch(
+            f"{self.url}/rest/v1/inquiries",
+            headers=self._headers,
+            params={"id": f"eq.{id}"},
+            json={
+                "reply_gmail_message_id": reply_gmail_message_id,
+                "reply_message": reply_message,
+            },
+            timeout=30.0,
+        )
+        if not resp.is_success:
+            raise RuntimeError(
+                f"Supabase reply update failed {resp.status_code}: {resp.text[:500]}"
+            )
+        body = resp.json()
+        rows = body if isinstance(body, list) else [body]
+        if not rows:
+            logger.warning(
+                "update_inquiry_reply: 0 rows matched id=%s — reply data only in Airtable",
+                id,
+            )
+            return {}
+        return rows[0]
