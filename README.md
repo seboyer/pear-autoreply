@@ -85,7 +85,11 @@ make down      # stop everything
 
 ## Deployment
 
-Target: a single DigitalOcean droplet running this `docker-compose.yml`. Caddy auto-provisions Let's Encrypt certificates for the `/pubsub/inbox` endpoint (required by Pub/Sub push). See `PLAN.md` § "Deployment" for full provisioning notes.
+Target: **Render**, declared by [`render.yaml`](./render.yaml) (Blueprint). Render auto-provisions TLS and handles routing — Caddy is not used on Render. The stack maps directly: one `web` service, two `worker` replicas, one `scheduler`, one `poller`, one `harness-poller`, and a managed Key Value (`noeviction`) for RQ.
+
+The DigitalOcean droplet at `161.35.13.81` is retained as a rollback target until the Render environment passes the [RENDER_MIGRATION.md](./RENDER_MIGRATION.md) validation checklist.
+
+See [RENDER_MIGRATION.md](./RENDER_MIGRATION.md) for the full migration runbook, one-time dashboard setup (Secret Files, env secrets), staged rollout instructions, and the validation checklist.
 
 ## Testing harness
 
