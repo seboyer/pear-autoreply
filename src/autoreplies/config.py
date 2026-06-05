@@ -53,17 +53,31 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     dedup_ttl_days: int = 30
 
-    # Send timing
+    # Send timing (legacy quiet_hours_* kept for now; humanization_* are the active knobs)
     quiet_hours_tz: str = "America/New_York"
     quiet_hours_start: int = 23
     quiet_hours_end: int = 7
     send_jitter_min_seconds: int = 120
     send_jitter_max_seconds: int = 300
 
-    # Harness
+    # Humanization delay
+    humanization_timezone: str = "America/New_York"
+    humanization_working_hours_start: int = 8
+    humanization_working_hours_end: int = 23  # 11pm ET
+    humanization_within_jitter_min_sec: int = 60
+    humanization_within_jitter_max_sec: int = 300  # 5 min hard ceiling per product spec
+    humanization_out_jitter_min_sec: int = 0
+    humanization_out_jitter_max_sec: int = 3600
+
+    # Harness (kept — harness-poller still running during migration window)
     harness_poll_interval_seconds: int = 60
     harness_bootstrap_lookback_seconds: int = 60
     harness_state_path: str = "/var/lib/pear-autoreply/harness.sqlite"
+
+    # Production poller
+    poller_poll_interval_seconds: int = 60
+    poller_bootstrap_lookback_seconds: int = 60
+    poller_state_path: str = "/var/lib/pear-autoreply/poller.sqlite"
 
     @property
     def active_airtable_base_id(self) -> str:

@@ -184,6 +184,9 @@ def build_harness_pipeline() -> Callable[[str, str], None]:
             gmail=gmail,
             airtable=airtable,
             llm=llm,
+            # Harness polls per-agent autoreply inboxes (legacy); look up agents
+            # by that mailbox. Production passes "primary" (the default).
+            agent_lookup_by="autoreply",
         )
 
     return run

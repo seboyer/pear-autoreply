@@ -60,9 +60,13 @@ def _mock_airtable(
                 TEST.users.autoreply_test_template: "",  # use fallback template
             },
         }
+    # Both lookup variants return the same agent so this mock works regardless
+    # of which agent_lookup_by the caller passes to process_lead.
+    at.find_monitored_user_by_leads_email.return_value = agent_record
     at.find_monitored_user_by_autoreply_email.return_value = agent_record
 
-    # Apartment matching
+    # Apartment matching. The structured matcher returns (record, score); the
+    # streeteasy_id matcher returns just record.
     at.match_apartment_by_streeteasy_id.return_value = apartment_record
     at.match_apartment_by_address.return_value = (
         (apartment_record, 95) if apartment_record else None
@@ -270,27 +274,26 @@ def test_skipped_route_when_no_email() -> None:
     assert kwargs["skipped_reason"] is not None
 
 
-# ── Production strategies still raise ────────────────────────────────────────
+# ── Production strategies (Live*) delegate correctly ─────────────────────────
 
 
-def test_production_livesend_still_raises() -> None:
-    """The production strategy path must still raise NotImplementedError (Phase 2)."""
-    from autoreplies.pipeline.strategies import build_production_strategies
+def test_production_strategies_wire_live_types() -> None:
+    """build_production_strategies returns a PipelineStrategies with Live* instances."""
+    from unittest.mock import MagicMock
 
-    fixture = "streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"
-    gmail = _mock_gmail(fixture)
-    airtable = _mock_airtable()
-    llm = _mock_llm()
+    from autoreplies.pipeline.strategies import (
+        LiveSend,
+        LiveSlack,
+        LiveSupabase,
+        build_production_strategies,
+    )
 
-    with pytest.raises(NotImplementedError):
-        process_lead(
-            "gmail-msg-prod",
-            "garland@pearnyc.com",
-            strategies=build_production_strategies(),
-            gmail=gmail,
-            airtable=airtable,
-            llm=llm,
-        )
+    result = build_production_strategies(
+        queue=MagicMock(), slack_client=MagicMock(), supabase_client=MagicMock()
+    )
+    assert isinstance(result.send, LiveSend)
+    assert isinstance(result.slack, LiveSlack)
+    assert isinstance(result.supabase, LiveSupabase)
 
 
 # ── No services → raises NotImplementedError ─────────────────────────────────

@@ -18,6 +18,8 @@ import base64
 import email as email_lib
 from dataclasses import dataclass
 from email.message import Message
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import Any
 
 from google.oauth2 import service_account
@@ -27,6 +29,16 @@ _SCOPES = [
     "https://www.googleapis.com/auth/gmail.modify",
     "https://www.googleapis.com/auth/gmail.settings.basic",
 ]
+
+
+@dataclass(frozen=True)
+class SentMessage:
+    """Return value from GmailClient.send_reply."""
+
+    message_id: str
+    plaintext_body: str
+    html_body: str
+    raw_rfc822: bytes
 
 
 @dataclass(frozen=True)
@@ -151,9 +163,35 @@ class GmailClient:
         html_body: str,
         in_reply_to_message_id: str | None = None,
         thread_id: str | None = None,
-    ) -> str:
-        """Send a multipart/alternative reply. Returns the sent Gmail message-id."""
-        raise NotImplementedError("Phase 2")
+    ) -> SentMessage:
+        """Send a multipart/alternative reply and return a SentMessage."""
+        msg = MIMEMultipart("alternative")
+        msg["To"] = to
+        msg["Subject"] = subject
+        msg["From"] = self._mailbox_email
+        if in_reply_to_message_id:
+            msg["In-Reply-To"] = in_reply_to_message_id
+            msg["References"] = in_reply_to_message_id
+
+        msg.attach(MIMEText(plaintext_body, "plain", "utf-8"))
+        msg.attach(MIMEText(html_body, "html", "utf-8"))
+
+        raw_bytes = msg.as_bytes()
+        raw_b64 = base64.urlsafe_b64encode(raw_bytes).decode()
+
+        body: dict[str, Any] = {"raw": raw_b64}
+        if thread_id:
+            body["threadId"] = thread_id
+
+        sent = (
+            self._service.users().messages().send(userId=self._mailbox_email, body=body).execute()
+        )
+        return SentMessage(
+            message_id=sent["id"],
+            plaintext_body=plaintext_body,
+            html_body=html_body,
+            raw_rfc822=raw_bytes,
+        )
 
     def renew_watch(self, label_id: str, topic_name: str) -> dict[str, Any]:
         """Re-arm users.watch for this mailbox. Called daily by the scheduler."""

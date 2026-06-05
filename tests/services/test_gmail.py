@@ -252,11 +252,36 @@ def test_get_default_signature_raises_not_implemented(gmail_client: GmailClient)
         gmail_client.get_default_signature_html()
 
 
-def test_send_reply_raises_not_implemented(gmail_client: GmailClient) -> None:
-    with pytest.raises(NotImplementedError, match="Phase 2"):
-        gmail_client.send_reply(
-            to="x@y.com",
-            subject="Re: test",
-            plaintext_body="hi",
-            html_body="<p>hi</p>",
+def test_send_reply_builds_rfc822(gmail_client: GmailClient) -> None:
+    """send_reply calls Gmail API and returns SentMessage with the right bodies."""
+    from unittest.mock import patch
+
+    from autoreplies.services.gmail import SentMessage
+
+    fake_sent = {"id": "sent-msg-id-123"}
+
+    with patch.object(gmail_client, "_service") as mock_service:
+        mock_service.users.return_value.messages.return_value.send.return_value.execute.return_value = fake_sent
+        sent = gmail_client.send_reply(
+            to="prospect@example.com",
+            subject="Re: 123 Main St",
+            plaintext_body="Hi there,",
+            html_body="<p>Hi there,</p>",
+            in_reply_to_message_id="<orig@gmail.com>",
+            thread_id="thread-abc",
         )
+
+    import email as _email
+
+    assert isinstance(sent, SentMessage)
+    assert sent.message_id == "sent-msg-id-123"
+    assert sent.plaintext_body == "Hi there,"
+    assert sent.html_body == "<p>Hi there,</p>"
+    # Verify raw_rfc822 is parseable and contains the right parts.
+    parsed_msg = _email.message_from_bytes(sent.raw_rfc822)
+    assert parsed_msg["To"] == "prospect@example.com"
+    assert parsed_msg["Subject"] == "Re: 123 Main St"
+    assert parsed_msg["In-Reply-To"] == "<orig@gmail.com>"
+    payloads = {p.get_content_type(): p.get_payload(decode=True) for p in parsed_msg.get_payload()}
+    assert b"Hi there," in payloads["text/plain"]
+    assert b"<p>Hi there,</p>" in payloads["text/html"]

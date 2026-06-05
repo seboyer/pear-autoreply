@@ -50,13 +50,18 @@ def _make_airtable(*, apartment_via_streeteasy: bool = True) -> AirtableClient:
         mock.match_apartment_by_address.return_value = None
     else:
         mock.match_apartment_by_streeteasy_id.return_value = None
+        # Structured matcher returns (record, score) per match_apartment_by_address contract.
         mock.match_apartment_by_address.return_value = (fake_apt, 95)
 
     mock.find_existing_user.return_value = None
-    mock.find_monitored_user_by_autoreply_email.return_value = {
+    fake_agent = {
         "id": "recAGENT_FAKE",
         "fields": {TEST.users.autoreply_test_template: FAKE_TEMPLATE},
     }
+    # Both lookup variants return the same fake agent so the test is independent
+    # of which agent_lookup_by the caller passes to process_lead.
+    mock.find_monitored_user_by_leads_email.return_value = fake_agent
+    mock.find_monitored_user_by_autoreply_email.return_value = fake_agent
     mock.find_or_create_inquiry.return_value = "recINQ_FAKE"
     mock.create_draft.return_value = "recDRAFT_FAKE"
     return mock
@@ -113,7 +118,6 @@ def test_streeteasy_golden_path() -> None:
     assert call_kw["apartment_match_strategy"] == "streeteasy_id"
     assert call_kw["gmail_message_id"] == FAKE_MESSAGE_ID
     assert call_kw["inquiry_record_id"] == "recINQ_FAKE"
-    assert call_kw["sender"] == FAKE_MAILBOX
 
     # Production side-effects must be no-ops
     assert isinstance(strategies.slack, NoopSlack)

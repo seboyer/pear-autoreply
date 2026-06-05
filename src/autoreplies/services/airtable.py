@@ -54,7 +54,7 @@ class AirtableClient:
         self._api = Api(token, use_field_ids=True)
         # Per-instance cache of normalized apartment splits (record_id → split result).
         # Populated on first match_apartment_by_address call; never invalidated
-        # (the harness is short-lived per lead, so stale data is not a concern).
+        # (the client is short-lived per lead, so stale data is not a concern).
         self._apt_split_cache: dict[str, tuple[str, str, str] | None] = {}
 
     def _table(self, table_id: str) -> Any:
@@ -62,10 +62,46 @@ class AirtableClient:
 
     # --- Lookups ---
 
+    def find_monitored_user_by_leads_email(self, email: str) -> dict[str, Any] | None:
+        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by Leads Email,
+        falling back to the primary Email field when Leads Email is blank.
+
+        Most agents' Leads Email matches their primary Email; for some (e.g.
+        Richard's shared assistant inbox) they deliberately diverge. The fallback
+        makes Leads Email an opt-in override: leave it blank and the system uses
+        the user's primary Email — set it only when the two should differ. Only
+        present on the PROD schema; calling this on a schema where leads_email is
+        MISSING raises a clear error.
+        """
+        u = self.schema.users
+        if u.leads_email == "MISSING":
+            raise RuntimeError(
+                "find_monitored_user_by_leads_email called on a schema where "
+                "leads_email is MISSING (e.g. the TEST base). The harness should "
+                "use find_monitored_user_by_autoreply_email instead."
+            )
+        # Match if Leads Email is the lookup value, OR Leads Email is blank and
+        # primary Email is the lookup value. Airtable text fields test blank via
+        # `{field}=""`, which pyairtable emits from EQ(Field, "").
+        formula = AND(
+            EQ(Field(u.autoreply_enabled_agent), 1),
+            OR(
+                EQ(Field(u.leads_email), email),
+                AND(
+                    EQ(Field(u.leads_email), ""),
+                    EQ(Field(u.email), email),
+                ),
+            ),
+        )
+        rows = self._table(u.id).all(formula=formula)
+        return rows[0] if rows else None
+
     def find_monitored_user_by_autoreply_email(self, email: str) -> dict[str, Any] | None:
-        """Look up a monitored user (Autoreply Enabled (Agent) = TRUE) by their
-        Autoreply Email (Agent) — i.e. the @pearnyc.com autoreply mailbox the
-        poller is reading from, which is what process_lead receives as state.mailbox_email.
+        """Look up a monitored user by their Autoreply Email (Agent) — the legacy
+        per-user mailbox the harness still polls during the migration window.
+
+        Production lookups go through find_monitored_user_by_leads_email instead;
+        process_lead picks between the two via the `agent_lookup_by` parameter.
         """
         u = self.schema.users
         formula = AND(
@@ -75,16 +111,35 @@ class AirtableClient:
         rows = self._table(u.id).all(formula=formula)
         return rows[0] if rows else None
 
-    def list_monitored_primary_emails(self) -> list[str]:
-        """Return distinct, non-empty primary Emails for monitored users (Autoreply Enabled = TRUE)."""
+    def list_monitored_leads_emails(self) -> list[str]:
+        """Return distinct mailboxes the production poller should monitor.
+
+        For each Autoreply Enabled (Agent) = TRUE user, prefer Leads Email and
+        fall back to primary Email when Leads Email is blank. Rows where BOTH
+        are blank are skipped with a WARNING — they're misconfigured and would
+        cause missed leads. Raises on TEST schema where Leads Email is MISSING.
+        """
         u = self.schema.users
+        if u.leads_email == "MISSING":
+            raise RuntimeError(
+                "list_monitored_leads_emails called on a schema where "
+                "leads_email is MISSING (e.g. the TEST base). The harness should "
+                "use list_monitored_autoreply_inboxes instead."
+            )
         formula = EQ(Field(u.autoreply_enabled_agent), 1)
-        rows = self._table(u.id).all(formula=formula, fields=[u.email])
+        rows = self._table(u.id).all(formula=formula, fields=[u.leads_email, u.email])
         emails: set[str] = set()
         for row in rows:
-            email = row.get("fields", {}).get(u.email)
-            if email:
-                emails.add(email)
+            fields = row.get("fields", {})
+            resolved = fields.get(u.leads_email) or fields.get(u.email)
+            if resolved:
+                emails.add(resolved)
+            else:
+                logger.warning(
+                    "list_monitored_leads_emails: user row %s has Autoreply Enabled "
+                    "but neither Leads Email nor Email is set — skipped",
+                    row.get("id", "<unknown>"),
+                )
         return sorted(emails)
 
     def list_monitored_autoreply_inboxes(self) -> list[str]:
@@ -256,6 +311,33 @@ class AirtableClient:
             apartment_record_id=apartment_record_id,
             user_record_id=user_record_id,
         )
+
+    def update_inquiry_autoreply_body(
+        self,
+        inquiry_record_id: str,
+        plaintext_body: str,
+        gmail_message_id: str,
+    ) -> None:
+        """Write the sent reply body and Gmail message-id back to the Inquiries row.
+
+        Called by send_reply_job after a successful Gmail send. Writes both
+        `reply_autoreply` (plaintext body for human review) and
+        `gmail_message_id_autoreply` (message-id for Gmail cross-reference)
+        in a single PATCH.
+        """
+        inq = self.schema.inquiries
+        if inq.reply_autoreply == "MISSING":
+            logger.warning(
+                "update_inquiry_autoreply_body: reply_autoreply field is MISSING in schema "
+                "(TEST base?); skipping body write for record %s",
+                inquiry_record_id,
+            )
+            return
+        fields: dict[str, Any] = {
+            inq.reply_autoreply: plaintext_body,
+            inq.gmail_message_id_autoreply: gmail_message_id,
+        }
+        self._table(inq.id).update(inquiry_record_id, fields)
 
     def create_draft(
         self,

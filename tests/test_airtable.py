@@ -35,22 +35,64 @@ def _record(rec_id: str, fields: dict[str, Any]) -> dict[str, Any]:
     return {"id": rec_id, "fields": fields}
 
 
-# ── find_monitored_user_by_autoreply_email ────────────────────────────────────
+# ── find_monitored_user_by_leads_email ────────────────────────────────────────
 
 
 def test_find_monitored_user_found(client: AirtableClient) -> None:
-    row = _record("recAGENT1", {PROD.users.autoreply_email_agent: "sam@pearnyc.com"})
+    row = _record("recAGENT1", {PROD.users.leads_email: "sam@pearnyc.com"})
     with patch.object(client, "_table", return_value=_mock_table([row])):
-        result = client.find_monitored_user_by_autoreply_email("sam@pearnyc.com")
+        result = client.find_monitored_user_by_leads_email("sam@pearnyc.com")
     assert result == row
 
 
 def test_find_monitored_user_not_found(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
+        assert client.find_monitored_user_by_leads_email("nobody@pearnyc.com") is None
+
+
+def test_find_monitored_user_by_leads_email_formula_falls_back_to_email(
+    client: AirtableClient,
+) -> None:
+    """The formula must match either Leads Email = X OR (Leads Email blank AND
+    Email = X), so users with no Leads Email set are still found by their
+    primary Email — the steady-state case for everyone except divergent rows
+    like Richard's shared inbox."""
+    tbl = _mock_table([])
+    with patch.object(client, "_table", return_value=tbl):
+        client.find_monitored_user_by_leads_email("sam@pearnyc.com")
+    formula = str(tbl.all.call_args.kwargs["formula"])
+    # Leads Email field and Email field both referenced; OR present.
+    assert PROD.users.leads_email in formula
+    assert PROD.users.email in formula
+    assert "OR(" in formula
+    # The fallback clause checks Leads Email is blank.
+    assert f"{{{PROD.users.leads_email}}}=''" in formula
+
+
+# ── find_monitored_user_by_autoreply_email ────────────────────────────────────
+# Legacy lookup kept while the harness still polls Autoreply Email (Agent)
+# during the migration window. process_lead picks between this and the primary-
+# email variant via the agent_lookup_by parameter.
+
+
+def test_find_monitored_user_by_autoreply_email_found(client: AirtableClient) -> None:
+    row = _record(
+        "recAGENT2",
+        {PROD.users.autoreply_email_agent: "garlandautoreply@pearnyc.com"},
+    )
+    with patch.object(client, "_table", return_value=_mock_table([row])):
+        result = client.find_monitored_user_by_autoreply_email("garlandautoreply@pearnyc.com")
+    assert result == row
+
+
+def test_find_monitored_user_by_autoreply_email_not_found(client: AirtableClient) -> None:
+    with patch.object(client, "_table", return_value=_mock_table([])):
         assert client.find_monitored_user_by_autoreply_email("nobody@pearnyc.com") is None
 
 
-def test_find_monitored_user_uses_autoreply_email_field(client: AirtableClient) -> None:
+def test_find_monitored_user_by_autoreply_email_uses_autoreply_field(
+    client: AirtableClient,
+) -> None:
     """Formula must filter on autoreply_email_agent, not the primary email field."""
     tbl = MagicMock()
     tbl.all.return_value = []
@@ -63,32 +105,63 @@ def test_find_monitored_user_uses_autoreply_email_field(client: AirtableClient) 
     assert PROD.users.email not in formula_str
 
 
-# ── list_monitored_primary_emails ─────────────────────────────────────────────
+# ── list_monitored_leads_emails ───────────────────────────────────────────────
 
 
-def test_list_monitored_primary_emails_returns_sorted_distinct(client: AirtableClient) -> None:
+def test_list_monitored_leads_emails_returns_sorted_distinct(client: AirtableClient) -> None:
     rows = [
-        _record("recAGENT1", {PROD.users.email: "b@pearnyc.com"}),
-        _record("recAGENT2", {PROD.users.email: "a@pearnyc.com"}),
-        _record("recAGENT3", {PROD.users.email: "a@pearnyc.com"}),  # dup
+        _record("recAGENT1", {PROD.users.leads_email: "b@pearnyc.com"}),
+        _record("recAGENT2", {PROD.users.leads_email: "a@pearnyc.com"}),
+        _record("recAGENT3", {PROD.users.leads_email: "a@pearnyc.com"}),  # dup
     ]
     with patch.object(client, "_table", return_value=_mock_table(rows)):
-        assert client.list_monitored_primary_emails() == ["a@pearnyc.com", "b@pearnyc.com"]
+        assert client.list_monitored_leads_emails() == ["a@pearnyc.com", "b@pearnyc.com"]
 
 
-def test_list_monitored_primary_emails_filters_empty(client: AirtableClient) -> None:
+def test_list_monitored_leads_emails_falls_back_to_email(client: AirtableClient) -> None:
+    """Per row, prefer Leads Email when set, else use primary Email.
+    Skip only when BOTH are blank."""
     rows = [
-        _record("recAGENT1", {PROD.users.email: "a@pearnyc.com"}),
-        _record("recAGENT2", {}),
-        _record("recAGENT3", {PROD.users.email: ""}),
+        # Leads Email set — used directly.
+        _record(
+            "recAGENT1",
+            {PROD.users.leads_email: "richard-shared@pearnyc.com"},
+        ),
+        # Leads Email blank, Email set — falls back to Email.
+        _record(
+            "recAGENT2",
+            {PROD.users.leads_email: "", PROD.users.email: "dana@pearnyc.com"},
+        ),
+        # Leads Email absent entirely, Email set — also falls back.
+        _record("recAGENT3", {PROD.users.email: "mike@pearnyc.com"}),
+        # Both blank — skipped (with WARNING).
+        _record("recAGENT4", {PROD.users.leads_email: "", PROD.users.email: ""}),
+        # Both absent entirely — skipped.
+        _record("recAGENT5", {}),
     ]
     with patch.object(client, "_table", return_value=_mock_table(rows)):
-        assert client.list_monitored_primary_emails() == ["a@pearnyc.com"]
+        assert client.list_monitored_leads_emails() == [
+            "dana@pearnyc.com",
+            "mike@pearnyc.com",
+            "richard-shared@pearnyc.com",
+        ]
 
 
-def test_list_monitored_primary_emails_empty(client: AirtableClient) -> None:
+def test_list_monitored_leads_emails_empty(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert client.list_monitored_primary_emails() == []
+        assert client.list_monitored_leads_emails() == []
+
+
+def test_leads_email_methods_reject_test_schema() -> None:
+    """The TEST base has no Leads Email field; the methods must raise rather
+    than silently issue a malformed Airtable query."""
+    from autoreplies.services.airtable_schema import TEST
+
+    c = AirtableClient(token="fake-token", schema=TEST)
+    with pytest.raises(RuntimeError, match="leads_email is MISSING"):
+        c.find_monitored_user_by_leads_email("any@pearnyc.com")
+    with pytest.raises(RuntimeError, match="leads_email is MISSING"):
+        c.list_monitored_leads_emails()
 
 
 # ── list_monitored_autoreply_inboxes ──────────────────────────────────────────
@@ -154,6 +227,9 @@ def test_find_user_not_found(client: AirtableClient) -> None:
 
 def test_find_existing_user_excludes_admins(client: AirtableClient) -> None:
     """Admin rows must never be returned as prospect matches."""
+    # The formula excludes Admins, so Airtable would return no rows; we model
+    # that by having the mock return empty — the important thing is the formula
+    # sent to Airtable contains NE(Type, "Admin").
     tbl = MagicMock()
     tbl.all.return_value = []
     with patch.object(client, "_table", return_value=tbl):
@@ -443,7 +519,6 @@ def test_create_draft_full_streeteasy(test_client: AirtableClient) -> None:
     assert fields[d.llm_model] == "claude-haiku-4-5-20251001"
     assert fields[d.llm_latency_ms] == 823
     assert fields[d.would_send_at] == _SEND_AT.isoformat()
-    assert fields[d.sender] == "agent@pearnyc.com"
     # skipped_reason absent when not provided
     assert d.skipped_reason not in fields
 
@@ -498,16 +573,6 @@ def test_create_draft_uses_test_schema_field_ids(test_client: AirtableClient) ->
     # Every key should start with 'fld' (Airtable field ID format)
     for key in fields:
         assert key.startswith("fld"), f"Unexpected key in draft fields: {key!r}"
-
-
-def test_create_draft_sender_field_id_is_correct(test_client: AirtableClient) -> None:
-    """The sender field in the payload must use the known TEST field ID."""
-    tbl = MagicMock()
-    tbl.create.return_value = {"id": "recDRAFT_5"}
-    with patch.object(test_client, "_table", return_value=tbl):
-        test_client.create_draft(**_draft_kwargs(sender="fleisherautoreply@pearnyc.com"))
-    fields = tbl.create.call_args[0][0]
-    assert fields["fldYaTBUGIT10r9dj"] == "fleisherautoreply@pearnyc.com"
 
 
 # ── find_or_create_inquiry ─────────────────────────────────────────────────────

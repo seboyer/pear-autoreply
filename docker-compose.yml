@@ -75,6 +75,20 @@ services:
     volumes:
       - ./secrets/sa.json:/etc/pear-autoreply/sa.json:ro
 
+  poller:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    command: ["python", "-m", "autoreplies.workers.poller"]
+    volumes:
+      - ./secrets/sa.json:/etc/pear-autoreply/sa.json:ro
+      - poller_state:/var/lib/pear-autoreply
+
   harness-poller:
     build:
       context: .
@@ -109,3 +123,4 @@ volumes:
   caddy_data:
   caddy_config:
   harness_state:
+  poller_state:
