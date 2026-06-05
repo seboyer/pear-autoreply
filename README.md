@@ -63,6 +63,8 @@ The healthcheck is at <http://localhost:8000/healthz>.
 
 ### macOS + iCloud note
 
+The repo lives at `~/Dev/autoreplies` (it was moved out of `~/Documents/Pear/Dev/autoreplies` specifically to escape iCloud sync, so the workaround below is no longer strictly required at the current path — but the `venv/` pin is kept in case the repo is ever cloned back under `~/Documents` or `~/Desktop`).
+
 This project's venv lives at `venv/` (not `.venv/`). On macOS, iCloud Drive auto-applies the `UF_HIDDEN` flag to dot-prefixed directories inside `~/Documents` and `~/Desktop`, and CPython skips hidden `.pth` files — silently breaking editable installs (see [uv#16977](https://github.com/astral-sh/uv/issues/16977)).
 
 `make` targets handle this via `UV_PROJECT_ENVIRONMENT=venv` set in the Makefile. For direct `uv run` / `uv sync` invocations from your shell, add this once to your `~/.zshrc` (or `.envrc` if you use direnv):
@@ -71,7 +73,7 @@ This project's venv lives at `venv/` (not `.venv/`). On macOS, iCloud Drive auto
 export UV_PROJECT_ENVIRONMENT=venv
 ```
 
-Without it, `uv run` will create a fresh `.venv/` that ends up hidden and unusable.
+Without it, `uv run` will create a fresh `.venv/` that ends up hidden and unusable (only relevant if you ever check the project out under an iCloud-synced directory).
 
 ## Docker
 

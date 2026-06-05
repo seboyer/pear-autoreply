@@ -4,7 +4,10 @@
 # Use a non-dot venv directory. macOS auto-applies the UF_HIDDEN flag to
 # dot-prefixed directories inside iCloud-synced locations (~/Documents,
 # ~/Desktop), and CPython's site.py skips hidden .pth files — which silently
-# breaks editable installs. See uv#16977.
+# breaks editable installs. See uv#16977. The repo was moved to ~/Dev to
+# escape iCloud, so this pin is now defensive (no-op at the current path,
+# but keeps things correct if the repo is ever cloned back under
+# ~/Documents or ~/Desktop).
 UV_PROJECT_ENVIRONMENT ?= venv
 export UV_PROJECT_ENVIRONMENT
 
