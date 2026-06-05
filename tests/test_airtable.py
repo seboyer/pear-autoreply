@@ -92,6 +92,21 @@ def test_find_monitored_user_by_autoreply_email_not_found(client: AirtableClient
         )
 
 
+def test_find_monitored_user_by_autoreply_email_uses_autoreply_field(
+    client: AirtableClient,
+) -> None:
+    """Formula must filter on autoreply_email_agent, not the primary email field."""
+    tbl = MagicMock()
+    tbl.all.return_value = []
+    with patch.object(client, "_table", return_value=tbl):
+        client.find_monitored_user_by_autoreply_email("sam@pearnyc.com")
+    formula_str = str(tbl.all.call_args.kwargs["formula"])
+    # Must reference autoreply_email_agent field ID
+    assert PROD.users.autoreply_email_agent in formula_str
+    # Must NOT reference the primary email field
+    assert PROD.users.email not in formula_str
+
+
 # ── list_monitored_leads_emails ───────────────────────────────────────────────
 
 
@@ -289,6 +304,40 @@ def test_match_apartment_address_parametrized(
 def test_match_apartment_address_empty_table(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
         assert client.match_apartment_by_address("123 Main St #1A") is None
+
+
+def test_match_apartment_address_returns_best_of_multiple_candidates(
+    client: AirtableClient,
+) -> None:
+    """When multiple rows share the same house + unit, the highest-scoring street wins."""
+    rows = [
+        _apt_row("recAPT_CLOSE", "353 Flatbush Ave 4R, Brooklyn, NY, 11238"),
+        _apt_row("recAPT_FAR", "353 Flatbush Court 4R, Brooklyn, NY, 11238"),
+    ]
+    with patch.object(client, "_table", return_value=_mock_table(rows)):
+        result = client.match_apartment_by_address("353 Flatbush Avenue #4R")
+    assert result is not None
+    record, _score = result
+    assert record["id"] == "recAPT_CLOSE"
+
+
+def test_match_apartment_address_unparseable_returns_none(client: AirtableClient) -> None:
+    """Addresses that don't split (no house number or no unit) return None immediately."""
+    with patch.object(client, "_table", return_value=_mock_table([])) as mock_tbl:
+        result = client.match_apartment_by_address("just some words without structure")
+    assert result is None
+    # Airtable should not be queried when the address can't be parsed
+    mock_tbl.all.assert_not_called()
+
+
+def test_match_apartment_address_caches_splits(client: AirtableClient) -> None:
+    """Second call reuses cached splits instead of re-normalizing stored rows."""
+    row = _apt_row("recAPT_CACHE", "100 Main St 2A, Brooklyn, NY, 11201")
+    with patch.object(client, "_table", return_value=_mock_table([row])):
+        client.match_apartment_by_address("100 Main Street #2A")
+        client.match_apartment_by_address("100 Main Street #2A")
+    # Cache should have been populated after first call
+    assert "recAPT_CACHE" in client._apt_split_cache
 
 
 # ── find_inquiry_by_gmail_message_id ──────────────────────────────────────────

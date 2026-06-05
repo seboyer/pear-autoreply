@@ -33,8 +33,7 @@ Never reach into production wiring with feature flags, monkey-patches, or "if mo
 
 | Task | How |
 |---|---|
-| Add an Airtable field | Edit `CURATED` in `scripts/generate_airtable_schema.py`, run it, plumb the new ID through the relevant client method. |
-| Tune the address-match threshold | Set `APARTMENT_FUZZY_MATCH_THRESHOLD` in `.env` (default 92). Wired through `deps.get_airtable_client`. |
+| Add an Airtable field | Edit `CURATED` in `scripts/generate_airtable_schema.py`, run it, plumb the new ID through the relevant client method. Requires `AIRTABLE_BASE_ID`, `AIRTABLE_STAGING_BASE_ID`, and `AIRTABLE_TEST_BASE_ID` all populated in `.env` — the generator rebuilds the file from scratch, and a guard at the top of `main()` errors out if you'd silently drop a base that's currently in the on-disk module. |
 | Add a new pipeline side-effect | Add a strategy protocol (per harness brief § H1), implement `Live*` and `Noop*`/test variants, inject via the factory. |
 | Run tests | `make test` (full suite incl. distinctness). |
 | Lint / typecheck | `make lint`, `make typecheck`. |
