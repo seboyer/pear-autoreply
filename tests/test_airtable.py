@@ -87,9 +87,7 @@ def test_find_monitored_user_by_autoreply_email_found(client: AirtableClient) ->
 
 def test_find_monitored_user_by_autoreply_email_not_found(client: AirtableClient) -> None:
     with patch.object(client, "_table", return_value=_mock_table([])):
-        assert (
-            client.find_monitored_user_by_autoreply_email("nobody@pearnyc.com") is None
-        )
+        assert client.find_monitored_user_by_autoreply_email("nobody@pearnyc.com") is None
 
 
 def test_find_monitored_user_by_autoreply_email_uses_autoreply_field(
@@ -158,6 +156,7 @@ def test_leads_email_methods_reject_test_schema() -> None:
     """The TEST base has no Leads Email field; the methods must raise rather
     than silently issue a malformed Airtable query."""
     from autoreplies.services.airtable_schema import TEST
+
     c = AirtableClient(token="fake-token", schema=TEST)
     with pytest.raises(RuntimeError, match="leads_email is MISSING"):
         c.find_monitored_user_by_leads_email("any@pearnyc.com")

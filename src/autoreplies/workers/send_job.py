@@ -58,6 +58,4 @@ def send_reply_job(
         plaintext_body=sent.plaintext_body,
         gmail_message_id=sent.message_id,
     )
-    logger.info(
-        "send_reply_job: airtable updated inquiry=%s", inquiry_record_id
-    )
+    logger.info("send_reply_job: airtable updated inquiry=%s", inquiry_record_id)

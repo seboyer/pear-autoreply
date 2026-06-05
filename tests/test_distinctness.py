@@ -83,9 +83,7 @@ def test_harness_does_not_import_workers_poller() -> None:
     for module_name in _iter_harness_modules(harness_pkg):
         importlib.import_module(module_name)
 
-    leaked = sorted(
-        name for name in sys.modules if name.startswith(workers_poller_prefix)
-    )
+    leaked = sorted(name for name in sys.modules if name.startswith(workers_poller_prefix))
     assert leaked == [], (
         "Harness code transitively imported workers.poller — boundary violated. "
         f"Leaked modules: {leaked}"

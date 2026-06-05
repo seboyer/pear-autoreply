@@ -52,6 +52,7 @@ def _build_default_strategies() -> PipelineStrategies:
     )
     return build_production_strategies(queue=queue, slack_client=slack, supabase_client=supabase)
 
+
 if TYPE_CHECKING:
     from autoreplies.services.airtable import AirtableClient
     from autoreplies.services.gmail import GmailClient

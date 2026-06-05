@@ -89,19 +89,19 @@ def test_upsert_inquiry_raises_on_http_error() -> None:
         pytest.raises(RuntimeError, match="Supabase upsert failed"),
     ):
         client.upsert_inquiry(
-                id="recABC",
-                gmail_message_id="msg-1",
-                user_id=None,
-                apartment_id=None,
-                apartment_failsafe=None,
-                name_form=None,
-                email_form=None,
-                name=None,
-                email=None,
-                phone=None,
-                message=None,
-                type_platform="StreetEasy",
-            )
+            id="recABC",
+            gmail_message_id="msg-1",
+            user_id=None,
+            apartment_id=None,
+            apartment_failsafe=None,
+            name_form=None,
+            email_form=None,
+            name=None,
+            email=None,
+            phone=None,
+            message=None,
+            type_platform="StreetEasy",
+        )
 
 
 def test_upsert_inquiry_posts_to_correct_url() -> None:

@@ -74,8 +74,6 @@ class SupabaseClient:
             timeout=30.0,
         )
         if not resp.is_success:
-            raise RuntimeError(
-                f"Supabase upsert failed {resp.status_code}: {resp.text[:500]}"
-            )
+            raise RuntimeError(f"Supabase upsert failed {resp.status_code}: {resp.text[:500]}")
         body = resp.json()
         return body[0] if isinstance(body, list) else body

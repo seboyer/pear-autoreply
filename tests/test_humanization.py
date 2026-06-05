@@ -107,9 +107,7 @@ def test_out_of_hours_23_schedules_next_morning() -> None:
 def test_out_of_hours_adds_jitter() -> None:
 
     now = _now(2)  # 2am ET — outside hours
-    result_no_jitter = compute_send_at(
-        now, rng=_FixedRng(0), out_of_hours_jitter_seconds=(0, 0)
-    )
+    result_no_jitter = compute_send_at(now, rng=_FixedRng(0), out_of_hours_jitter_seconds=(0, 0))
     result_with_jitter = compute_send_at(
         now, rng=_FixedRng(1800), out_of_hours_jitter_seconds=(0, 3600)
     )

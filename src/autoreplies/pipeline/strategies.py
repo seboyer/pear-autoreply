@@ -219,7 +219,9 @@ class LiveSupabase:
         return self._client.upsert_inquiry(id=id, **fields)
 
 
-def build_production_strategies(*, queue: Any, slack_client: Any, supabase_client: Any) -> PipelineStrategies:
+def build_production_strategies(
+    *, queue: Any, slack_client: Any, supabase_client: Any
+) -> PipelineStrategies:
     """Construct the production strategy bundle with real client instances."""
     return PipelineStrategies(
         send=LiveSend(queue=queue),

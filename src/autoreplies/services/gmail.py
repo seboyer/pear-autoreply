@@ -184,10 +184,7 @@ class GmailClient:
             body["threadId"] = thread_id
 
         sent = (
-            self._service.users()
-            .messages()
-            .send(userId=self._mailbox_email, body=body)
-            .execute()
+            self._service.users().messages().send(userId=self._mailbox_email, body=body).execute()
         )
         return SentMessage(
             message_id=sent["id"],

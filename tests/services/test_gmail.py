@@ -261,9 +261,7 @@ def test_send_reply_builds_rfc822(gmail_client: GmailClient) -> None:
     fake_sent = {"id": "sent-msg-id-123"}
 
     with patch.object(gmail_client, "_service") as mock_service:
-        mock_service.users.return_value.messages.return_value.send.return_value.execute.return_value = (
-            fake_sent
-        )
+        mock_service.users.return_value.messages.return_value.send.return_value.execute.return_value = fake_sent
         sent = gmail_client.send_reply(
             to="prospect@example.com",
             subject="Re: 123 Main St",

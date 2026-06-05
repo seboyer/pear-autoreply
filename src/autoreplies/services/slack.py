@@ -27,7 +27,9 @@ class SlackClient:
     ) -> str:
         """Post the Block Kit lead notification. Returns the posted Slack ts."""
         match_badge = (
-            f":white_check_mark: {apartment_match_confidence}%" if apartment_match_confidence else ":x: No match"
+            f":white_check_mark: {apartment_match_confidence}%"
+            if apartment_match_confidence
+            else ":x: No match"
         )
 
         fields: list[dict[str, Any]] = [
@@ -84,6 +86,8 @@ class SlackClient:
     def post_alert(self, *, summary: str, details: dict[str, Any]) -> str:
         """Post a yellow-flag alert (parser failed, agent not found, etc.)."""
         detail_lines = "\n".join(f"• *{k}*: {v}" for k, v in details.items())
-        text = f":warning: *{summary}*\n{detail_lines}" if detail_lines else f":warning: *{summary}*"
+        text = (
+            f":warning: *{summary}*\n{detail_lines}" if detail_lines else f":warning: *{summary}*"
+        )
         resp = self._client.chat_postMessage(channel=self.channel, text=text)
         return resp["ts"]
