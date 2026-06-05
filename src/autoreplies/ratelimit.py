@@ -96,9 +96,7 @@ class _FixedWindowLimiter:
         with self._lock:
             # Cheap GC: if the store is over the key cap, drop all stale entries.
             if len(self._store) >= self._max_keys:
-                self._store = {
-                    k: v for k, v in self._store.items() if v[0] == window_index
-                }
+                self._store = {k: v for k, v in self._store.items() if v[0] == window_index}
 
             entry = self._store.get(key)
             if entry is None or entry[0] != window_index:
