@@ -18,7 +18,7 @@ help:
 	@echo "  dev         run the FastAPI app locally with hot reload"
 	@echo "  worker      run an RQ worker locally"
 	@echo "  test        run pytest"
-	@echo "  lint        ruff check"
+	@echo "  lint        ruff check + ruff format --check (matches CI)"
 	@echo "  format      ruff format"
 	@echo "  typecheck   mypy"
 	@echo "  up          docker compose up -d"
@@ -48,6 +48,7 @@ test:
 
 lint:
 	uv run ruff check src tests
+	uv run ruff format --check src tests
 
 format:
 	uv run ruff format src tests
