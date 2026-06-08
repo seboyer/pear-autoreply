@@ -9,8 +9,9 @@ truth for the default. See PLAN.md § 4 + Appendix A.
 The Airtable field this reads from is base-dependent:
   - Harness (TEST base): `Users.autoreply_test_template`
     (a new editable field that mirrors the eventual production shape)
-  - Production (PROD base, post-cutover): `Users.autoreply_agent`
-    (the existing field, currently owned by the legacy Zapier flow)
+  - Production (PROD base): `Users.autoreply_template`
+    (the new {{variable}} template field; the legacy `autoreply_agent` is no
+    longer read after the user-driven changeover)
 Callers pass the field ID explicitly so this module stays base-agnostic.
 """
 
@@ -89,7 +90,7 @@ def get_template_for_agent(
     """Return `(template_text, source)` for one agent.
 
     `template_field_id` is the Airtable field ID of the per-agent template
-    column for the active base — typically `schema.users.autoreply_agent` in
+    column for the active base — typically `schema.users.autoreply_template` in
     production and `schema.users.autoreply_test_template` in the harness.
     Passing it in keeps this module base-agnostic.
 

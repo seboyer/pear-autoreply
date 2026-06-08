@@ -69,7 +69,12 @@ CURATED: dict[str, TableSpec] = {
             "Type",                      # "Agent" / "Admin" / other
             "Name",                      # Slack display: "Agent: Jane Doe"
             "Phone",                     # prospect→user match
-            "Autoreply (Agent)",         # per-agent reply template (PROD, synced — used post-cutover)
+            # LEGACY per-agent template (no variables). Kept curated/readable for
+            # reference + rollback, but production no longer reads it (see new field below).
+            "Autoreply (Agent)",
+            # NEW per-agent template (with {{variables}}). Production reads THIS field
+            # post-changeover (user-driven); when empty → Pear-wide FALLBACK_TEMPLATE.
+            ("Autoreply Template (Agent)", "autoreply_template"),
             "Autoreply Email (Agent)",   # legacy per-user inbox — the harness polls this; deleted post-cutover
             "Autoreply Enabled (Agent)", # checkbox: source of truth for "in scope" rows (prod + harness)
         ],
