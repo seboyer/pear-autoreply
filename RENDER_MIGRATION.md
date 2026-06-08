@@ -26,7 +26,7 @@ Keep it deployable until production is stable on Render.
 |---|---|---|
 | `web` (FastAPI/uvicorn behind Caddy) | `type: web` — `pear-autoreplies-web` | Render terminates TLS; no Caddy needed |
 | `worker` (RQ drainer) | `type: worker` — `pear-autoreplies-worker` | `numInstances: 2`; `dockerCommand` overrides CMD |
-| `scheduler` (Gmail watch renewal) | `type: worker` — `pear-autoreplies-scheduler` | 24h sleep loop; see §7 for cron alternative |
+| `scheduler` (Gmail watch renewal) | **Not deployed** | Watch-renewal serves only the Pub/Sub push path; prod polls, so it's a no-op (see §7) |
 | `poller` (production Gmail poller) | `type: worker` — `pear-autoreplies-poller` | `numInstances: 1`; SQLite on persistent disk |
 | `harness-poller` (testing harness) | `type: worker` — `pear-autoreplies-harness-poller` | `numInstances: 1`; own persistent disk; no Redis |
 | `redis` (RQ + idempotency) | `type: keyvalue` — `pear-autoreplies-redis` | `plan: starter` for persistence; `noeviction` policy |
@@ -55,7 +55,7 @@ at all; add them by hand:
 
 **Dashboard → left nav → Env Groups → `pear-autoreplies-config` → Add
 Environment Variable.** Every service links this group via `fromGroup`, so each
-secret entered here reaches web/worker/scheduler/poller/harness-poller at once.
+secret entered here reaches web/worker/poller/harness-poller at once.
 
 | Key | Value |
 |---|---|
@@ -74,9 +74,10 @@ following services and add a Secret File:
 
 - `pear-autoreplies-web`
 - `pear-autoreplies-worker`
-- `pear-autoreplies-scheduler`
 - `pear-autoreplies-poller`
 - `pear-autoreplies-harness-poller`
+
+(`pear-autoreplies-scheduler` is not deployed — see §7.)
 
 For each service: **Settings → Secret Files → Add Secret File**.
 - **Filename (mount path):** `/etc/pear-autoreply/sa.json`
@@ -136,8 +137,8 @@ Two facts make this safe to stage:
 
 ### Stage 1 — Harness hand-off + platform validation
 
-1. In the Render dashboard, **suspend** `-poller`, `-worker`, `-scheduler`, and
-   do **not** add their SA Secret File yet.
+1. In the Render dashboard, **suspend** `-poller` and `-worker`, and do **not**
+   add their SA Secret File yet.
 2. Add the secrets to the env group (§2) and the SA Secret File to **`-web` and
    `-harness-poller` only**.
 3. **Stop the DO harness first** so it stops writing the TEST base:
@@ -229,8 +230,8 @@ Only proceed after all §4 checklist items pass.  This is the actual go-live.
 
 ### Enable the production services
 
-1. Add the SA Secret File (`/etc/pear-autoreply/sa.json`) to `-poller`,
-   `-worker`, `-scheduler`.
+1. Add the SA Secret File (`/etc/pear-autoreply/sa.json`) to `-poller` and
+   `-worker`.
 2. **Verify `AIRTABLE_TOKEN` resolves before starting the poller.**  The env
    group must have it set (§2).  A missing/invalid token makes the poller fail
    mailbox discovery with `401 AUTHENTICATION_REQUIRED` and send nothing — this
@@ -249,7 +250,7 @@ Only proceed after all §4 checklist items pass.  This is the actual go-live.
    ssh root@161.35.13.81
    cd /opt/pear-autoreplies/app && docker compose stop poller worker scheduler
    ```
-5. Un-suspend `-poller` (and `-worker`/`-scheduler`) on Render.  It is now the
+5. Un-suspend `-poller` (and `-worker`) on Render.  It is now the
    sole production poller.  Watch the first real leads end-to-end.
 
 ### Flip the platform endpoints
@@ -295,27 +296,17 @@ download` or shell access) into the DO SQLite before starting the DO poller.
 
 ---
 
-## 7. Scheduler tradeoff note
+## 7. Scheduler — not deployed (and why)
 
-The `pear-autoreplies-scheduler` service runs `workers/scheduler.py`, which
-loops forever and renews the Gmail Pub/Sub watch once every 24 hours.  On
-Render it is deployed as a **Background Worker** (always-on, `type: worker`).
+`workers/scheduler.py` renews Gmail `users.watch` subscriptions on a 24h loop.
+`users.watch` exists **only** to drive the Pub/Sub **push** ingestion path —
+which production does not use (it polls; see PLAN.md §1 implementation note).
+So the scheduler has nothing to do: its `_run_once()` is currently a no-op.
 
-**Current choice — Background Worker:**
-- Identical to DO behaviour: zero code change required.
-- Drawback: an always-on instance (billed continuously) for a task that runs
-  for a few seconds per day.
-- The 24-hour sleep timer resets on every redeploy.  This is harmless: Gmail
-  watch subscriptions have a 7-day expiry, and the 24-hour renewal cadence
-  leaves a 6-day safety margin.
+It is therefore **omitted from `render.yaml`** rather than deployed as an
+always-on worker doing nothing.  `workers/scheduler.py` stays in the codebase.
 
-**Alternative — Render Cron Job (`type: cron`):**
-- Cheaper: the container runs only for the duration of the renewal call.
-- Fixed wall-clock schedule (e.g., `"0 8 * * *"` — 8 AM UTC daily).
-- Requires converting `workers/scheduler.py`'s sleep loop to a one-shot:
-  call `_run_once()` (or equivalent) and exit, then declare a
-  `type: cron, schedule: "0 8 * * *"` service in `render.yaml`.
-
-**Recommendation:** keep the Background Worker for the launch to minimise
-diff.  Revisit the cron conversion post-launch once the Render environment is
-stable.
+If the Pub/Sub push path is ever revived, re-add a scheduler service — either:
+- a `type: worker` (always-on 24h sleep loop, zero code change), or
+- a `type: cron` with `schedule: "0 8 * * *"`, which is cheaper but needs
+  `workers/scheduler.py`'s loop converted to a one-shot (`_run_once()` then exit).

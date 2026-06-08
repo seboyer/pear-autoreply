@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-A Python service that ingests StreetEasy / Zillow lead emails in real time via Gmail Pub/Sub, identifies the receiving agent by recipient address, parses the inquiry, sends a controlled auto-reply using each agent's per-record template (filled by Claude Haiku 4.5), best-effort matches the apartment for analytics, writes a row to the Airtable `Inquiries` table, persists canonical data to Supabase, and posts a notification to a single shared Slack channel. Runs on a DigitalOcean droplet with Redis-backed worker queue. Targets sub-30-second time-to-reply at 500+/day.
+A Python service that ingests StreetEasy / Zillow lead emails by polling the agent mailboxes (Gmail query, ~60s), identifies the receiving agent by recipient address, parses the inquiry, sends a controlled auto-reply using each agent's per-record template (filled by Claude Haiku 4.5), best-effort matches the apartment for analytics, writes a row to the Airtable `Inquiries` table, persists canonical data to Supabase, and posts a notification to a single shared Slack channel. Runs with a Redis-backed worker queue. Sized for 500+/day; replies are intentionally humanization-delayed (1–5 min in working hours), not instant. _(The original real-time Pub/Sub-push design was superseded by polling at launch — see the §1 implementation note.)_
 
 ---
 
@@ -16,7 +16,7 @@ A Python service that ingests StreetEasy / Zillow lead emails in real time via G
 
 | Decision | Choice | Why |
 |---|---|---|
-| Email ingestion | Gmail API + Pub/Sub push (`users.watch`) | Real-time, robust, scales |
+| Email ingestion | **As built: Gmail query polling (~60s)** — Pub/Sub push (`users.watch`) deferred as fallback | Push was overkill for the volume; humanization delay makes real-time moot (see §1 note) |
 | Reply mode | Auto-send | Sam confirmed; speed > review-loop |
 | Volume target | 500+/day | Justifies a queue + workers |
 | Supabase write | Rewritten in-repo (existing script as reference) | Single deployable, single set of credentials |
@@ -96,6 +96,24 @@ Cloud Pub/Sub  ──push──►  FastAPI /pubsub/inbox
 ## Component breakdown
 
 ### 1. Ingestion — Gmail filter + Pub/Sub watch (combined)
+
+> **Implementation note (as-built — supersedes this section).** Production does
+> **not** use Pub/Sub push. It ingests by **polling** the agent mailboxes with a
+> Gmail query every ~60s (`workers/poller.py`), shipped in the "Production
+> launch" PR (#9). Rationale: Pub/Sub push was overkill for this task's volume,
+> and the humanization delay (replies are deliberately held 1–5 min in working
+> hours, up to ~1 hr off-hours) makes the sub-30-second real-time target moot —
+> instant replies aren't even desired. The Pub/Sub design below (filter +
+> `users.watch` + `/pubsub/inbox` + JWT verify + `users.history.list` + the
+> watch-renewal scheduler) is **retained as a deferred fallback** for if volume
+> scaled drastically or we wanted multi-turn conversations — though even then a
+> conversational agent would likely be a fresh build, not an extension of this
+> project, so treat the push path as effectively dormant. Concretely: the
+> `/pubsub/inbox` route is a stub, the `scheduler`'s watch-renewal is a no-op,
+> and neither is deployed on Render. The poller queries Gmail directly by the
+> lead **sender** allowlist
+> (`from:(noreply@email.streeteasy.com OR rentalclientservices@zillowrentals.com)`),
+> so it does not depend on the `Pear/Leads` label / `users.watch` machinery below.
 
 The cleanest way to ingest exactly the leads we want, and nothing else, is to combine two Google-native primitives. The spec below is **empirically derived** from analysis of 62,470 historical lead emails (Jan 2024 – Apr 2026):
 
