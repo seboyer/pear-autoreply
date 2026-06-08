@@ -2,11 +2,13 @@
 
 Replaces the Caddy ``rate_limit`` directive that is dropped in the Render
 migration (Caddy cannot run on Render without the custom caddy-ratelimit
-image).  Covers two path prefixes:
+image).  Currently guards one path prefix:
 
-- ``/admin/*`` — also bearer-gated; this is a second layer of defence.
-- ``/pubsub/inbox`` — OIDC-gated in Phase 1; until then this is its **only**
-  flood-protection layer.
+- ``/admin/*`` — also bearer-gated; a second layer of defence against
+  brute-forcing the admin token.
+
+The middleware is generic (a ``{prefix: limit}`` map), so new prefixes can be
+added in ``main.py`` without touching this module.
 
 Implementation notes
 --------------------

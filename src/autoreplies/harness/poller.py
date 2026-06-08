@@ -4,8 +4,8 @@ Per HARNESS_BUILD_BRIEF.md § H4: list messages matching the lead-sender
 allowlist `from:(noreply@email.streeteasy.com OR
 rentalclientservices@zillowrentals.com)` since the per-mailbox cursor, dedup
 against the SQLite state store, and dispatch each new message through the
-harness pipeline. Production uses Pub/Sub + history.list; this side-car uses
-timestamp-based polling so there's no Gmail filter setup to coordinate.
+harness pipeline. Both production and this harness side-car use timestamp-based
+polling, so there's no Gmail filter setup to coordinate.
 
 The Gmail surface this module needs is intentionally narrow — see
 `MessageLister`. Production's `services/gmail.py` is not extended here; H4e (or

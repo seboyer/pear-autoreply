@@ -192,7 +192,3 @@ class GmailClient:
             html_body=html_body,
             raw_rfc822=raw_bytes,
         )
-
-    def renew_watch(self, label_id: str, topic_name: str) -> dict[str, Any]:
-        """Re-arm users.watch for this mailbox. Called daily by the scheduler."""
-        raise NotImplementedError("Phase 1")

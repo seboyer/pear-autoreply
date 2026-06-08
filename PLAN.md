@@ -105,12 +105,12 @@ Cloud Pub/Sub  ──push──►  FastAPI /pubsub/inbox
 > hours, up to ~1 hr off-hours) makes the sub-30-second real-time target moot —
 > instant replies aren't even desired. The Pub/Sub design below (filter +
 > `users.watch` + `/pubsub/inbox` + JWT verify + `users.history.list` + the
-> watch-renewal scheduler) is **retained as a deferred fallback** for if volume
-> scaled drastically or we wanted multi-turn conversations — though even then a
-> conversational agent would likely be a fresh build, not an extension of this
-> project, so treat the push path as effectively dormant. Concretely: the
-> `/pubsub/inbox` route is a stub, the `scheduler`'s watch-renewal is a no-op,
-> and neither is deployed on Render. The poller queries Gmail directly by the
+> watch-renewal scheduler) was **removed from the codebase** — the
+> `/pubsub/inbox` route, the watch-renewal `scheduler`, and the JWT-verify config
+> were deleted as dead, unwired scaffolding. If volume ever scaled drastically or
+> we wanted multi-turn conversations we'd revisit real-time delivery, but as a
+> fresh build, not a revival of this scaffolding. (The design prose below is kept
+> as a historical record of the original plan.) The poller queries Gmail directly by the
 > lead **sender** allowlist
 > (`from:(noreply@email.streeteasy.com OR rentalclientservices@zillowrentals.com)`),
 > so it does not depend on the `Pear/Leads` label / `users.watch` machinery below.

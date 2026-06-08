@@ -18,7 +18,6 @@ import pytest
         "autoreplies.logging_config",
         "autoreplies.deps",
         "autoreplies.routes.health",
-        "autoreplies.routes.pubsub",
         "autoreplies.routes.admin",
         "autoreplies.services.gmail",
         "autoreplies.services.airtable",
@@ -33,7 +32,6 @@ import pytest
         "autoreplies.pipeline.strategies",
         "autoreplies.utils.coerce",
         "autoreplies.workers.worker",
-        "autoreplies.workers.scheduler",
     ],
 )
 def test_module_imports(module_path: str) -> None:
@@ -54,5 +52,4 @@ def test_app_constructs_with_routes() -> None:
 
     paths = {route.path for route in app.routes}  # type: ignore[attr-defined]
     assert "/healthz" in paths
-    assert "/pubsub/inbox" in paths
     assert "/admin/replay/{message_id}" in paths
