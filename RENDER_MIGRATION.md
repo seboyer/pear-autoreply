@@ -176,6 +176,15 @@ Only proceed after the §4 checklist passes.
 Execute these checks after Stage 1 is running.  Check the box and record the
 result when each passes.
 
+> **Validation status — 2026-06-08 (harness validated on Render; ready to cut over):**
+> - Disk writable by non-root `app` user ✓ (harness opened `harness.sqlite` on the mounted disk)
+> - SA file working ✓ — added as `sa.json`, mounts at `/etc/secrets/sa.json`, with
+>   `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/sa.json` in the env group; harness READS Gmail
+> - `AIRTABLE_TOKEN` resolves, no 401 ✓ · harness materializing Drafts into the TEST base ✓
+> - **False-positive guard ✓** — `scripts/check_prod_inbox_leads.py` sampled the production
+>   inboxes and confirmed the autoreply would NOT trigger on any existing mail, so enabling the
+>   poller won't reply to old messages (the 60s `POLLER_BOOTSTRAP_LOOKBACK_SECONDS` also bounds this).
+
 - [ ] **Disk is writable by the non-root user** (check FIRST) — Confirm the
   `harness-poller` successfully creates/opens its SQLite file at
   `/var/lib/pear-autoreply/harness.sqlite`.  In the Render service logs there
@@ -251,8 +260,18 @@ Only proceed after all §4 checklist items pass.  This is the actual go-live.
    ssh root@161.35.13.81
    cd /opt/pear-autoreplies/app && docker compose stop poller worker scheduler
    ```
-5. Un-suspend `-poller` (and `-worker`) on Render.  It is now the
-   sole production poller.  Watch the first real leads end-to-end.
+5. Un-suspend `-worker` **first (or together with the poller)** — the worker is
+   the sender (it runs the RQ `send_reply_job`). If the poller runs while the
+   worker is suspended, the poller still writes to the PROD base / Slack / Supabase
+   and queues the sends, which then **flush in a burst** when the worker starts.
+   Then un-suspend `-poller`; it is now the sole production poller. Watch the first
+   real leads end-to-end.
+
+> **Template field at launch:** production reads the new `Autoreply Template (Agent)`
+> field (PR #16, merged — `process_lead` resolves `autoreply_template`). Agents who
+> have **not** populated it get the Pear-wide `FALLBACK_TEMPLATE`, not their legacy
+> `Autoreply (Agent)` text (pure swap). Confirm which agents are migrated so you know
+> who receives a personalized vs. generic first reply.
 
 ### Flip the platform endpoints
 
