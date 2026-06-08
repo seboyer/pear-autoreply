@@ -20,13 +20,25 @@ The agent's name, phone, license info, etc. are **not** template slots — they 
 
 ## Template body
 
-> Hi {{first_name|there}},
+> Hi {{first_name|there}}! 
 >
-> Thanks for your interest in {{apartment_address|the listing}}! I'd love to help you find a great fit in NYC.
+>Thank you so much for showing interest in {{apartment_address|my listing}}. The faster I can get a bit more information, the faster we can schedule a showing in person or virtually! 
 >
-> Are you available for a showing this week? If you can share a few day/time options, I'll get something on the calendar. In the meantime, feel free to reply with any questions about the apartment, the neighborhood, or our application process.
+>Please let me know if your credit score is in good standing (generally 680 is considered good, but a lot of owners will consider a lower score). 
 >
-> Talk soon,
+>If you are applying alone, or with roommates and/or a partner, do you make a combined income of 40 x the rent? (if the unit is 2000 then usually 80 k income is required). If you have guarantors, a new job offer or decent savings then this may not apply. 
+>
+>Do you have a pet or pets? 
+>
+>When are you looking to move in?
+>
+>What is your availability during the week and on the weekend?
+>
+>If you are using a government subsidy or voucher, please provide the details. Please note: if the voucher covers the full rent, the credit score requirement does not apply.
+>
+>*If you already answered these questions in an original email through StreetEasy, Trulia or Zillow, please forward that. 
+>
+>Happy Hunting, 
 
 ## How it renders
 

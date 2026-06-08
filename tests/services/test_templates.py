@@ -18,8 +18,10 @@ def _reset_fallback_cache() -> None:
 
 def test_pear_fallback_template_contains_expected_slots() -> None:
     body = templates.get_pear_fallback_template()
-    assert "{{first_name|there}}" in body
-    assert "{{apartment_address|the listing}}" in body
+    # Assert the slots are present without pinning the default copy — the sales
+    # team edits the fallback wording, and that shouldn't break the suite.
+    assert "{{first_name|" in body
+    assert "{{apartment_address|" in body
 
 
 def test_pear_fallback_template_strips_blockquote_prefix() -> None:
