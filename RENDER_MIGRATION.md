@@ -1,9 +1,20 @@
 # Render Migration Runbook — Pear Autoreplies
 
 This document describes the migration of the Pear Autoreplies stack from a
-DigitalOcean droplet (single Docker Compose host) to Render.  The DigitalOcean
-droplet stays live and deployable throughout — it is the rollback target until
-the Render environment passes the validation checklist below.
+DigitalOcean droplet (single Docker Compose host) to Render.
+
+**Current state (read this first):** DO is running the **testing harness**, which
+writes to the TEST Airtable base — **production has not launched anywhere yet.**
+So this migration is two distinct moves:
+
+1. **Hand the harness off** from DO to Render (stop DO's harness-poller, start
+   Render's). Both write the same TEST base, so they must never run at once.
+2. **Launch production for the first time, on Render** (enable the prod poller).
+   This is a first-time launch, not a cutover from a running DO prod system.
+
+DO's role is therefore (a) the harness to hand off, and (b) a **fallback launch
+target** for production if Render misbehaves — not a live system to "restore".
+Keep it deployable until production is stable on Render.
 
 ---
 
@@ -23,7 +34,7 @@ the Render environment passes the validation checklist below.
 
 ### Goal
 
-Launch all services on Render, validate via the testing harness (parse/match/template parity), then cut over production lead delivery from the DigitalOcean droplet.  Keep DO as a rollback target throughout.
+Move the testing harness to Render and validate parity (parse/match/template) against the DO harness's known-good output, then **launch production for the first time on Render**.  Production has never run on DO, so this is a launch, not a cutover.  Keep DO deployable as a fallback launch target until Render is stable.
 
 ---
 
@@ -35,21 +46,25 @@ Launch all services on Render, validate via the testing harness (parse/match/tem
 2. Connect the GitHub repo: `github.com/seboyer/pear-autoreply`.
 3. Point it at `render.yaml` in the repo root.  Render will create all declared services in the `virginia` region.
 
-### Enter secrets in the dashboard
+### Add secrets to the env group (manually — `sync: false` does NOT work in groups)
 
-`render.yaml` declares several env vars with `sync: false`.  These are
-**not** stored in the YAML (never commit secrets).  After the Blueprint syncs,
-open the `pear-autoreplies-config` env group in the dashboard and enter the
-values for:
+**Render ignores `sync: false` on env vars declared inside an environment
+group** — it silently drops them. This is what caused the `AIRTABLE_TOKEN` 401
+on the first poller boot. So the secrets are **not** declared in `render.yaml`
+at all; add them by hand:
 
-| Key | Where to find the value |
+**Dashboard → left nav → Env Groups → `pear-autoreplies-config` → Add
+Environment Variable.** Every service links this group via `fromGroup`, so each
+secret entered here reaches web/worker/scheduler/poller/harness-poller at once.
+
+| Key | Value |
 |---|---|
 | `ADMIN_TOKEN` | Generate: `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
-| `AIRTABLE_TOKEN` | Existing PAT from `.env` |
+| `AIRTABLE_TOKEN` | Existing PAT from `.env` (covers prod + test bases) |
 | `ANTHROPIC_API_KEY` | Existing key from `.env` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Existing key from `.env` |
 | `SLACK_BOT_TOKEN` | Existing token from `.env` |
-| `PUBSUB_SERVICE_ACCOUNT_EMAIL` | The Google SA email used for Pub/Sub push verification |
+| `PUBSUB_SERVICE_ACCOUNT_EMAIL` | The **GCP service-account email** that signs Pub/Sub push OIDC tokens (e.g. `pubsub-pusher@<project>.iam.gserviceaccount.com`) — **not** a human/admin address. Optional for now: `/pubsub/inbox` is a stub that doesn't verify the JWT yet, and the live path is the poller, so nothing consumes this until Phase 1. |
 
 ### Mount the Google service-account JSON as a Secret File
 
@@ -71,8 +86,20 @@ For each service: **Settings → Secret Files → Add Secret File**.
 
 The `pear-autoreplies-redis` Key Value service uses `plan: starter`.  The
 **free** plan does not persist data across restarts — RQ jobs would be lost on
-every Redis restart.  The `starter` plan persists and is required for
-production durability parity with the DO Redis container.
+every Redis restart.  Paid plans (`starter` and up) persist to disk
+(`appendfsync everysec`), required for durability parity with the DO Redis
+container.
+
+Where to set / verify the plan:
+- **Declaratively:** `plan: starter` on the `keyvalue` service in `render.yaml`
+  (already set).
+- **Dashboard:** the Key Value instance → **Info** page → **Key Value Instance**
+  section → **Update** under **Instance Type**.
+
+⚠️ Confirm the instance is **not Free** before relying on it — and note that
+**upgrading a Free instance wipes its data**, so pick a paid plan from the start.
+`maxmemoryPolicy: noeviction` (so RQ jobs are never evicted) is set in the
+Blueprint and editable in the instance settings.
 
 ### Known risk — non-root disk write permissions
 
@@ -99,34 +126,39 @@ Stage-1 logs show the disk is not writable.
 
 ## 3. Staged rollout (zero client risk)
 
-The only component that sends live replies to prospects is the `poller` worker.
-The `web` service (Pub/Sub push route) is a Phase-0 stub that acks without
-processing.  This means the Render environment can be brought up and validated
-without any risk of sending duplicate or premature replies.
+Two facts make this safe to stage:
+- The only component that sends live replies is the **`poller`**.  The `web`
+  Pub/Sub route is a Phase-0 stub that acks without processing.  As long as the
+  poller stays suspended, nothing can send.
+- DO and Render **harness-pollers target the same mailboxes and write the same
+  TEST base** (`appmSm1FyerysvtcX`).  Running both = **duplicate Drafts rows**,
+  so the harness move is a hand-off, not a parallel bring-up.
 
-**Bring up in two stages:**
+### Stage 1 — Harness hand-off + platform validation
 
-### Stage 1 — Validation (safe to run alongside DO)
+1. In the Render dashboard, **suspend** `-poller`, `-worker`, `-scheduler`, and
+   do **not** add their SA Secret File yet.
+2. Add the secrets to the env group (§2) and the SA Secret File to **`-web` and
+   `-harness-poller` only**.
+3. **Stop the DO harness first** so it stops writing the TEST base:
+   ```bash
+   ssh root@161.35.13.81
+   cd /opt/pear-autoreplies/app && docker compose stop harness-poller
+   ```
+4. Bring up Render `-redis` + `-web` + `-harness-poller`.  The Render harness is
+   now the **sole** writer to `appmSm1FyerysvtcX`.
+5. Run the §4 checklist.  Fill any hand-off gap (leads between DO-stop and
+   Render-start beyond the 60s bootstrap lookback) with
+   `python -m autoreplies.harness backfill --since <stop-time>`, scoped to the
+   gap **only** — overlapping a window DO already wrote duplicates rows.
 
-In the Render dashboard, **suspend** the following services before they start:
-- `pear-autoreplies-poller`
-- `pear-autoreplies-worker`
-- `pear-autoreplies-scheduler`
+> For a true side-by-side parity diff, point the Render harness at a **separate
+> scratch base** via `AIRTABLE_TEST_BASE_ID`, run both in parallel, diff, then
+> switch back to `appmSm1FyerysvtcX` and do the hand-off above.
 
-Do **not** yet add the SA Secret File to these three services.
+### Stage 2 — Production launch (see §5)
 
-Bring up only:
-- `pear-autoreplies-redis` (Key Value — starts automatically)
-- `pear-autoreplies-web`
-- `pear-autoreplies-harness-poller`
-
-The harness-poller will begin polling the Gmail mailboxes and writing Drafts
-rows to the TEST Airtable base (`appmSm1FyerysvtcX`).  Compare its output to
-the DO harness over the same time window (see §4 checklist).
-
-### Stage 2 — Cutover (see §5)
-
-Only proceed to Stage 2 after the §4 checklist passes.
+Only proceed after the §4 checklist passes.
 
 ---
 
@@ -143,11 +175,12 @@ result when each passes.
   permissions" before continuing — everything downstream depends on this.
   _Result: pending_
 
-- [ ] **Harness parity** — The Render `harness-poller` materialises the same
-  Drafts rows into the TEST Airtable base (`appmSm1FyerysvtcX`) as the DO
-  harness for the same lead window.  Cross-check parse/match/template output
-  with `python -m autoreplies.harness stats --since <date>` on both
-  environments and `diff` the CSV exports if practical.
+- [ ] **Harness parity** — With the DO harness stopped (per §3), the Render
+  `harness-poller` is the sole writer to the TEST base (`appmSm1FyerysvtcX`).
+  Confirm its new Drafts rows match the shape/values of the DO harness's prior
+  known-good rows for comparable leads (same parsers/matchers/templates →
+  identical output).  `python -m autoreplies.harness stats --since <date>`; use
+  the scratch-base side-by-side diff (§3) if you want a direct A/B.
   _Result: pending_
 
 - [ ] **Web service reachable** — `/healthz` returns HTTP 200 over HTTPS on
@@ -168,9 +201,10 @@ result when each passes.
   cutover — the controlled send test is part of §5.
   _Result: pending_
 
-- [ ] **Redis connectivity** — After un-suspending `-worker` and `-scheduler`
-  (with their SA Secret File added), confirm `REDIS_URL` resolves and RQ can
-  enqueue/drain a test job.  Check Render logs for connection errors.
+- [ ] **Redis connectivity** — Briefly un-suspend `-worker` (no SA file or
+  running poller needed for this) and confirm `REDIS_URL` resolves from the env
+  group and the worker connects to the Key Value instance with no errors in the
+  logs.  Re-suspend it afterwards.
   _Result: pending_
 
 - [ ] **SQLite state survives redeploy** — Note the current harness-poller
@@ -189,74 +223,75 @@ result when each passes.
 
 ---
 
-## 5. Cutover
+## 5. Production launch (first-time live sends)
 
-Only proceed after all §4 checklist items pass.
+Only proceed after all §4 checklist items pass.  This is the actual go-live.
 
 ### Enable the production services
 
-1. Add the SA Secret File (`/etc/pear-autoreply/sa.json`) to
-   `pear-autoreplies-poller`, `pear-autoreplies-worker`, and
-   `pear-autoreplies-scheduler`.
-2. Un-suspend all three services from the dashboard.
-3. Run a controlled send test: use `make harness-replay` or a direct
-   `python -m autoreplies.harness replay` call to confirm the full pipeline
-   (parse → match → template → Gmail SEND) works from Render before flipping
-   the Pub/Sub subscription.
+1. Add the SA Secret File (`/etc/pear-autoreply/sa.json`) to `-poller`,
+   `-worker`, `-scheduler`.
+2. **Verify `AIRTABLE_TOKEN` resolves before starting the poller.**  The env
+   group must have it set (§2).  A missing/invalid token makes the poller fail
+   mailbox discovery with `401 AUTHENTICATION_REQUIRED` and send nothing — this
+   is what happened on the first boot.  Un-suspend `-worker` briefly and confirm
+   no Airtable 401s in the logs before touching the poller.
+3. **Controlled end-to-end send test.**  Note: the **harness does not send** (it
+   writes Drafts to the TEST base), so a real send test must use the **prod**
+   pipeline.  Point the poller at a single **test/agent mailbox you control**
+   (via the monitored-mailbox list in Airtable), drop a synthetic
+   StreetEasy/Zillow lead in, and confirm a reply is sent and rows land in the
+   PROD base (`appwPKlnV6YtbIjWz`) + Slack `#platform-leads` + Supabase.  Then
+   restore the real monitored-mailbox set.
+4. **Guarantee a single prod poller** — ensure the DO prod poller cannot also run
+   (even if idle today):
+   ```bash
+   ssh root@161.35.13.81
+   cd /opt/pear-autoreplies/app && docker compose stop poller worker scheduler
+   ```
+5. Un-suspend `-poller` (and `-worker`/`-scheduler`) on Render.  It is now the
+   sole production poller.  Watch the first real leads end-to-end.
 
-### Flip the platform pointers
+### Flip the platform endpoints
 
-1. **Pub/Sub push subscription** — update the push endpoint URL in the Google
-   Cloud console from the DO URL to the Render URL (either the `.onrender.com`
-   address or the custom domain once DNS is set).
-2. **`PUBSUB_AUDIENCE`** — update the env var in the `pear-autoreplies-config`
-   env group to match the exact URL used in step 1.
-   - If validating against `.onrender.com`, set audience to that URL.
-   - At custom-domain cutover, set it back to
-     `https://autoreplies.pearnyc.com/pubsub/inbox`.
-3. **DNS (Google Domains)** — either:
-   - Repoint the `autoreplies.pearnyc.com` A/CNAME records to Render, OR
-   - Add `autoreplies.pearnyc.com` as a **Custom Domain** in the Render
-     `pear-autoreplies-web` service settings (CNAME the domain to the
-     service's `.onrender.com` host).  Render will auto-provision a
-     Let's Encrypt cert.
-4. Keep `PUBSUB_SERVICE_ACCOUNT_EMAIL` intact — the OIDC service-account check
-   remains active.
+These serve `/admin`, `/healthz`, and the **future** Pub/Sub push path — they do
+**not** carry live lead traffic today (the poller pulls from Gmail directly), so
+they can be flipped without a send-traffic cutover.
 
-### Suspend the DO poller
-
-SSH to `161.35.13.81` as root:
-
-```bash
-cd /opt/pear-autoreplies/app
-docker compose stop poller worker scheduler
-```
-
-Leave the DO stack otherwise intact for rollback.
+1. **DNS (Google Domains)** — repoint `autoreplies.pearnyc.com` to Render, or add
+   it as a **Custom Domain** on `-web` (CNAME → the `.onrender.com` host; Render
+   auto-provisions the cert).
+2. **Pub/Sub push subscription** — update the push endpoint URL to the Render URL
+   (for when the push path is wired in Phase 1).
+3. **`PUBSUB_AUDIENCE`** — set to the exact URL from step 2 (custom domain →
+   `https://autoreplies.pearnyc.com/pubsub/inbox`).  Keep
+   `PUBSUB_SERVICE_ACCOUNT_EMAIL` intact.
 
 ---
 
 ## 6. Rollback
 
-The DO droplet stays deployable at all times.  To roll back:
+No data migration is needed — SQLite cursors are independent per platform.  The
+two moves roll back separately.
 
-1. SSH to `161.35.13.81` as root:
-   ```bash
-   cd /opt/pear-autoreplies/app
-   git pull && docker compose up -d
-   ```
-2. Repoint the Pub/Sub push subscription endpoint back to the DO URL.
-3. Repoint DNS (`autoreplies.pearnyc.com`) back to the DO droplet.
-4. Suspend the Render poller/worker/scheduler from the dashboard to avoid
-   double-processing.
+**Harness (Stage 1):** suspend the Render `-harness-poller`, then restart DO's so
+exactly one harness writes the TEST base:
+```bash
+ssh root@161.35.13.81
+cd /opt/pear-autoreplies/app && docker compose start harness-poller
+```
+`backfill --since` any gap on whichever harness resumes.
 
-No data migration is needed: the SQLite cursor files are independent per
-platform.  Mind cursor overlap on rollback the same way as cutover — if the
-Render poller processed some messages before rollback, those message IDs will
-not be in the DO poller's `processed_messages` table and could be re-processed.
-If overlap is a concern, copy the relevant `processed_messages` rows from the
-Render disk (via `render disk download` or shell access) into the DO SQLite
-before restarting the DO poller.
+**Production (Stage 2):** suspend the Render `-poller` **first** (single-poller
+invariant), then launch production on DO as the fallback:
+```bash
+cd /opt/pear-autoreplies/app && git pull && docker compose up -d
+```
+Revert DNS + the Pub/Sub endpoint + `PUBSUB_AUDIENCE` to DO.  If the Render
+poller already sent for some messages, those IDs are not in DO's
+`processed_messages`, so DO could re-send them — if overlap matters, copy the
+relevant `processed_messages` rows from the Render disk (via `render disk
+download` or shell access) into the DO SQLite before starting the DO poller.
 
 ---
 

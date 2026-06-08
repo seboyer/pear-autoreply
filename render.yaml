@@ -9,8 +9,9 @@
 #   - Secret Files: mount the Google service-account JSON at
 #     /etc/pear-autoreply/sa.json on web, worker, scheduler, poller,
 #     harness-poller.
-#   - Secret env values: every `sync: false` key below is entered once in the
-#     dashboard (or via the env group).
+#   - Secret env values: add them MANUALLY to the pear-autoreplies-config env
+#     group in the dashboard. (Render IGNORES `sync: false` inside an env group,
+#     so secrets cannot be seeded from this Blueprint — see the env group below.)
 #
 # Singletons with a persistent disk (poller, harness-poller) MUST stay
 # numInstances: 1 — the SQLite state on the disk cannot be shared/scaled.
@@ -186,16 +187,19 @@ envVarGroups:
         value: "30"
       - key: RATELIMIT_PUBSUB_PER_MINUTE
         value: "300"
-      # ---- secrets: enter once in the Render dashboard (never commit) ----
-      - key: ADMIN_TOKEN
-        sync: false
-      - key: AIRTABLE_TOKEN
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SLACK_BOT_TOKEN
-        sync: false
-      - key: PUBSUB_SERVICE_ACCOUNT_EMAIL
-        sync: false
+      # ---- secrets: NOT declared here ----
+      # Render IGNORES `sync: false` on env vars inside an environment group, so
+      # secrets CANNOT be seeded via this Blueprint (declaring them here silently
+      # drops them — this caused an AIRTABLE_TOKEN 401 on first deploy).
+      # Add them MANUALLY in the dashboard:
+      #   Env Groups -> pear-autoreplies-config -> Add Environment Variable.
+      # Every service links this group via `fromGroup`, so each secret added here
+      # reaches web/worker/scheduler/poller/harness-poller at once:
+      #   ADMIN_TOKEN                   generate: python -c "import secrets; print(secrets.token_urlsafe(32))"
+      #   AIRTABLE_TOKEN                PAT covering the prod + test bases
+      #   ANTHROPIC_API_KEY
+      #   SUPABASE_SERVICE_ROLE_KEY
+      #   SLACK_BOT_TOKEN
+      #   PUBSUB_SERVICE_ACCOUNT_EMAIL  GCP push-subscription SA email (NOT a human
+      #                                 address); optional until the /pubsub/inbox
+      #                                 OIDC check is wired (Phase 1)
