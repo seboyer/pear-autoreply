@@ -201,12 +201,15 @@ def _phase_a_create_airtable(
     if agent_record is None:
         logger.warning("_phase_a: no agent record found for mailbox=%s", state.mailbox_email)
 
-    # 6. Look up reply template (harness uses autoreply_test_template; prod uses autoreply_agent).
+    # 6. Look up reply template. Harness uses autoreply_test_template; production
+    #    uses autoreply_template — the new {{variable}} template field that replaced
+    #    the legacy autoreply_agent at the user-driven changeover. An agent whose
+    #    new field is empty falls back to the Pear-wide FALLBACK_TEMPLATE.
     schema = airtable.schema
     template_field_id = (
         schema.users.autoreply_test_template
         if schema.users.autoreply_test_template != "MISSING"
-        else schema.users.autoreply_agent
+        else schema.users.autoreply_template
     )
     template_text, template_source = get_template_for_agent(
         agent_record or {}, template_field_id=template_field_id
