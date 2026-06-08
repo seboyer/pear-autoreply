@@ -6,8 +6,10 @@
 #
 # NOT declarable here, do in the Render dashboard after first sync (see
 # RENDER_MIGRATION.md):
-#   - Secret Files: mount the Google service-account JSON at
-#     /etc/pear-autoreply/sa.json on web, worker, poller, harness-poller.
+#   - Secret Files: add the Google service-account JSON as a Secret File named
+#     `sa.json` (service Environment tab). Render mounts it at /etc/secrets/sa.json
+#     — which GOOGLE_APPLICATION_CREDENTIALS points at below. Needed on
+#     harness-poller now; poller + worker at cutover (web has no Gmail use).
 #   - Secret env values: add them MANUALLY to the pear-autoreplies-config env
 #     group in the dashboard. (Render IGNORES `sync: false` inside an env group,
 #     so secrets cannot be seeded from this Blueprint — see the env group below.)
@@ -119,10 +121,10 @@ envVarGroups:
         value: production
       - key: LOG_LEVEL
         value: INFO
+      # Render mounts Secret Files at /etc/secrets/<filename>; the SA JSON is added
+      # in the dashboard as `sa.json` (NOT the DigitalOcean volume path).
       - key: GOOGLE_APPLICATION_CREDENTIALS
-        value: /etc/pear-autoreply/sa.json
-      - key: PUBSUB_AUDIENCE
-        value: https://autoreplies.pearnyc.com/pubsub/inbox
+        value: /etc/secrets/sa.json
       - key: AIRTABLE_BASE_ID
         value: appwPKlnV6YtbIjWz
       - key: AIRTABLE_TEST_BASE_ID

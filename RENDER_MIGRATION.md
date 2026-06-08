@@ -66,22 +66,30 @@ secret entered here reaches web/worker/poller/harness-poller at once.
 | `SLACK_BOT_TOKEN` | Existing token from `.env` |
 | `PUBSUB_SERVICE_ACCOUNT_EMAIL` | The **GCP service-account email** that signs Pub/Sub push OIDC tokens (e.g. `pubsub-pusher@<project>.iam.gserviceaccount.com`) — **not** a human/admin address. Optional for now: `/pubsub/inbox` is a stub that doesn't verify the JWT yet, and the live path is the poller, so nothing consumes this until Phase 1. |
 
-### Mount the Google service-account JSON as a Secret File
+### Add the Google service-account JSON as a Secret File
 
-Render Secret Files are configured per-service in the dashboard — they cannot
-be declared in `render.yaml`.  After the Blueprint syncs, open each of the
-following services and add a Secret File:
+Render Secret Files are configured per-service in the dashboard (not declarable
+in `render.yaml`). For each service that talks to Gmail:
+**Environment tab → Secret Files → Add Secret File**.
 
-- `pear-autoreplies-web`
-- `pear-autoreplies-worker`
-- `pear-autoreplies-poller`
-- `pear-autoreplies-harness-poller`
+- **Filename:** `sa.json` — Render rejects absolute paths and always mounts
+  Secret Files at `/etc/secrets/<filename>`, so the file lands at
+  `/etc/secrets/sa.json`. Do **not** use the DigitalOcean volume path
+  `/etc/pear-autoreply/sa.json` here.
+- **Contents:** the full JSON of the Google service-account key with
+  domain-wide delegation.
 
-(`pear-autoreplies-scheduler` is not deployed — see §7.)
+The env group sets `GOOGLE_APPLICATION_CREDENTIALS=/etc/secrets/sa.json` to match
+this mount path. (On DigitalOcean the same file is volume-mounted at
+`/etc/pear-autoreply/sa.json` — the two platforms use different paths, set via
+the env group vs `.env`.)
 
-For each service: **Settings → Secret Files → Add Secret File**.
-- **Filename (mount path):** `/etc/pear-autoreply/sa.json`
-- **Contents:** paste the full JSON of the Google service-account key that has domain-wide delegation.
+Add the Secret File to:
+- `pear-autoreplies-harness-poller` — now (Stage 1; it reads Gmail).
+- `pear-autoreplies-poller` and `pear-autoreplies-worker` — at cutover (§5).
+
+(`pear-autoreplies-web` does not need it — it serves only `/healthz` + `/admin`,
+no Gmail. `pear-autoreplies-scheduler` is not deployed — see §7.)
 
 ### Redis plan note
 
@@ -139,8 +147,8 @@ Two facts make this safe to stage:
 
 1. In the Render dashboard, **suspend** `-poller` and `-worker`, and do **not**
    add their SA Secret File yet.
-2. Add the secrets to the env group (§2) and the SA Secret File to **`-web` and
-   `-harness-poller` only**.
+2. Add the secrets to the env group (§2) and the SA Secret File (`sa.json` →
+   `/etc/secrets/sa.json`, see §2) to **`-harness-poller` only**.
 3. **Stop the DO harness first** so it stops writing the TEST base:
    ```bash
    ssh root@161.35.13.81
@@ -223,8 +231,8 @@ Only proceed after all §4 checklist items pass.  This is the actual go-live.
 
 ### Enable the production services
 
-1. Add the SA Secret File (`/etc/pear-autoreply/sa.json`) to `-poller` and
-   `-worker`.
+1. Add the SA Secret File (`sa.json` → `/etc/secrets/sa.json`, see §2) to
+   `-poller` and `-worker`.
 2. **Verify `AIRTABLE_TOKEN` resolves before starting the poller.**  The env
    group must have it set (§2).  A missing/invalid token makes the poller fail
    mailbox discovery with `401 AUTHENTICATION_REQUIRED` and send nothing — this
