@@ -189,13 +189,6 @@ result when each passes.
   certificate is valid.
   _Result: pending_
 
-- [ ] **Pub/Sub push accepted** — POST a well-formed Pub/Sub envelope to
-  `/pubsub/inbox` on the Render URL.  Confirm it returns 2xx (the Phase-0
-  stub acks all messages).  Confirm that a burst of requests is rate-limited
-  (i.e., a 429 appears after `RATELIMIT_PUBSUB_PER_MINUTE` hits in a minute
-  from the same IP).
-  _Result: pending_
-
 - [ ] **SA domain-wide delegation from Render** — Confirm the harness-poller
   can READ Gmail (it lists messages for at least one monitored mailbox without
   errors in the Render service logs).  Do NOT test SEND from Render until
@@ -255,18 +248,13 @@ Only proceed after all §4 checklist items pass.  This is the actual go-live.
 
 ### Flip the platform endpoints
 
-These serve `/admin`, `/healthz`, and the **future** Pub/Sub push path — they do
-**not** carry live lead traffic today (the poller pulls from Gmail directly), so
-they can be flipped without a send-traffic cutover.
+This serves `/admin` and `/healthz` — it does **not** carry live lead traffic
+(the poller pulls from Gmail directly), so it can be flipped without a
+send-traffic cutover.
 
 1. **DNS (Google Domains)** — repoint `autoreplies.pearnyc.com` to Render, or add
    it as a **Custom Domain** on `-web` (CNAME → the `.onrender.com` host; Render
    auto-provisions the cert).
-2. **Pub/Sub push subscription** — update the push endpoint URL to the Render URL
-   (for when the push path is wired in Phase 1).
-3. **`PUBSUB_AUDIENCE`** — set to the exact URL from step 2 (custom domain →
-   `https://autoreplies.pearnyc.com/pubsub/inbox`).  Keep
-   `PUBSUB_SERVICE_ACCOUNT_EMAIL` intact.
 
 ---
 
@@ -288,7 +276,7 @@ invariant), then launch production on DO as the fallback:
 ```bash
 cd /opt/pear-autoreplies/app && git pull && docker compose up -d
 ```
-Revert DNS + the Pub/Sub endpoint + `PUBSUB_AUDIENCE` to DO.  If the Render
+Revert DNS to DO.  If the Render
 poller already sent for some messages, those IDs are not in DO's
 `processed_messages`, so DO could re-send them — if overlap matters, copy the
 relevant `processed_messages` rows from the Render disk (via `render disk

@@ -23,8 +23,7 @@ def require_admin_token(authorization: str | None = Header(default=None)) -> Non
     """Bearer-token auth for /admin/* endpoints.
 
     Constant-time comparison to defeat timing attacks. Token is a single shared
-    secret stored in env; rotate quarterly. Pub/Sub endpoint is *not* gated by this
-    — its auth is JWT signature verification on the push request.
+    secret stored in env; rotate quarterly.
     """
     settings: Settings = get_settings()
 

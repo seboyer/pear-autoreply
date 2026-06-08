@@ -24,10 +24,6 @@ class Settings(BaseSettings):
     # Admin auth
     admin_token: str = Field(default="dev-token-change-me", min_length=16)
 
-    # Pub/Sub
-    pubsub_audience: str = "https://autoreplies.pearnyc.com/pubsub/inbox"
-    pubsub_service_account_email: str = ""
-
     # Google
     google_application_credentials: str = "/etc/pear-autoreply/sa.json"
 
@@ -56,7 +52,6 @@ class Settings(BaseSettings):
     # App-level rate limiting (replaces the Caddy /admin/* limiter post-Render-migration)
     ratelimit_enabled: bool = True
     ratelimit_admin_per_minute: int = 30
-    ratelimit_pubsub_per_minute: int = 300
 
     # Send timing (legacy quiet_hours_* kept for now; humanization_* are the active knobs)
     quiet_hours_tz: str = "America/New_York"

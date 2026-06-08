@@ -1,6 +1,6 @@
 """FastAPI app entrypoint.
 
-Wires the three route groups (health, pubsub, admin) and exposes the ASGI app
+Wires the two route groups (health, admin) and exposes the ASGI app
 as `autoreplies.main:app` for uvicorn.
 """
 
@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from .config import get_settings
 from .logging_config import configure_logging
 from .ratelimit import RateLimitMiddleware
-from .routes import admin, health, pubsub
+from .routes import admin, health
 
 
 @asynccontextmanager
@@ -42,10 +42,8 @@ if _settings.ratelimit_enabled:
         RateLimitMiddleware,
         rules={
             "/admin": _settings.ratelimit_admin_per_minute,
-            "/pubsub/inbox": _settings.ratelimit_pubsub_per_minute,
         },
     )
 
 app.include_router(health.router)
-app.include_router(pubsub.router)
 app.include_router(admin.router)

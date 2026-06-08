@@ -67,7 +67,7 @@ def test_limiter_tracks_buckets_independently() -> None:
     assert limiter.hit("ip1", "/admin", limit, now=0.0) is False
 
     # Different bucket — should still be allowed.
-    assert limiter.hit("ip1", "/pubsub/inbox", limit, now=0.0) is True
+    assert limiter.hit("ip1", "/other", limit, now=0.0) is True
 
 
 # ---------------------------------------------------------------------------
