@@ -7,8 +7,7 @@
 # NOT declarable here, do in the Render dashboard after first sync (see
 # RENDER_MIGRATION.md):
 #   - Secret Files: mount the Google service-account JSON at
-#     /etc/pear-autoreply/sa.json on web, worker, scheduler, poller,
-#     harness-poller.
+#     /etc/pear-autoreply/sa.json on web, worker, poller, harness-poller.
 #   - Secret env values: add them MANUALLY to the pear-autoreplies-config env
 #     group in the dashboard. (Render IGNORES `sync: false` inside an env group,
 #     so secrets cannot be seeded from this Blueprint — see the env group below.)
@@ -55,27 +54,12 @@ services:
           name: pear-autoreplies-redis
           property: connectionString
 
-  # ── scheduler: daily Gmail watch renewal — singleton, no disk ───────────────
-  # Kept as a long-running worker (24h sleep loop) for behaviour parity with DO.
-  # Could become a Render Cron Job (type: cron, schedule: "0 8 * * *") IF the
-  # loop in workers/scheduler.py is converted to a one-shot — see RENDER_MIGRATION.md.
-  - type: worker
-    name: pear-autoreplies-scheduler
-    runtime: docker
-    region: virginia
-    plan: starter
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    dockerCommand: python -m autoreplies.workers.scheduler
-    numInstances: 1
-    autoDeploy: false
-    envVars:
-      - fromGroup: pear-autoreplies-config
-      - key: REDIS_URL
-        fromService:
-          type: keyvalue
-          name: pear-autoreplies-redis
-          property: connectionString
+  # ── scheduler: NOT DEPLOYED ─────────────────────────────────────────────────
+  # workers/scheduler.py renews Gmail `users.watch` subscriptions, which only the
+  # Pub/Sub *push* ingestion path needs. Production ingests by POLLING (see the
+  # poller below + PLAN.md §1 implementation note), so watch-renewal is unused and
+  # workers/scheduler.py._run_once() is currently a no-op. Re-add a `type: worker`
+  # (or `type: cron`) service here only if the Pub/Sub push path is revived.
 
   # ── poller: production Gmail poller — SINGLETON, SQLite on persistent disk ──
   - type: worker
@@ -194,7 +178,7 @@ envVarGroups:
       # Add them MANUALLY in the dashboard:
       #   Env Groups -> pear-autoreplies-config -> Add Environment Variable.
       # Every service links this group via `fromGroup`, so each secret added here
-      # reaches web/worker/scheduler/poller/harness-poller at once:
+      # reaches web/worker/poller/harness-poller at once:
       #   ADMIN_TOKEN                   generate: python -c "import secrets; print(secrets.token_urlsafe(32))"
       #   AIRTABLE_TOKEN                PAT covering the prod + test bases
       #   ANTHROPIC_API_KEY
