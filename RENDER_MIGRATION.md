@@ -238,6 +238,58 @@ result when each passes.
 
 Only proceed after all §4 checklist items pass.  This is the actual go-live.
 
+> **Launch record — 2026-06-10 (production live on Render; quiet pre-changeover state):**
+> - SA Secret File `sa.json` added to `-worker` (the poller already had it); both now
+>   mount `/etc/secrets/sa.json`.
+> - **Pre-resume safety gate re-run fresh:** `scripts/check_prod_inbox_leads.py` →
+>   **0 triggering leads** across all 7 monitored mailboxes (dana, jair, jordan, mike,
+>   richard, robert, shayna). The prod poller had a stale cursor from a brief
+>   2026-06-07 22:15–22:27 live run (only deploy before this), but the clean 30-day
+>   check window fully covers the replay window, so resume replays nothing — confirmed
+>   empirically by `fetched=0` on every mailbox after bring-up.
+> - **DO quiesced:** `worker` + `scheduler` stopped (no `poller` service exists on DO);
+>   `harness-poller` already `Exited` 44h prior; `web`/`caddy`/`redis` left up (live domain
+>   + rollback fallback).
+> - **Render bring-up:** `-worker` resumed first (RQ `Listening on default` ×2 → Redis OK,
+>   no Airtable 401, no errors), then `-poller` (polls all 7 mailboxes, `fetched=0`
+>   everywhere → disk writable, SA read works, 0 sends). `/healthz` → HTTP 200 over HTTPS.
+> - **Deployed commit verified:** worker + poller both live on `31d03e1` (#19), which has
+>   #16 (`f0f5588`, the template-field swap) and #17 as ancestors, and whose `Dockerfile`
+>   COPYs `FALLBACK_TEMPLATE.md` (not `.dockerignore`d) — so the template + fallback paths
+>   are correct in the running image. (`autoDeploy: false` means resume could have pinned an
+>   older commit; it did not — it rebuilt connected-branch HEAD.)
+> - **Supabase key pre-checked:** read-only PostgREST probe of `inquiries` → HTTP 200 with
+>   the new-format `sb_secret_…` key (REST-compatible). The Supabase write is otherwise
+>   never exercised before the first real lead (harness uses a Noop Supabase strategy).
+> - **`ADMIN_TOKEN` set (2026-06-10):** added as a **web-service-level** env var (NOT the
+>   group, so poller/worker/harness didn't churn). Verified on `/admin/healthz/detail`:
+>   no token → 401, old default `dev-token-change-me` → 401, new token → 200. The default-token
+>   exposure on the public `.onrender.com` URL is now closed. Value recorded in
+>   `~/Dev/1-Resources/master.env` as `ADMIN_TOKEN_AUTOREPLIES` (maps to the `ADMIN_TOKEN`
+>   env var the app reads). Web is now on `31d03e1` too.
+>   ⚠️ **Gotcha:** with `autoDeploy: false`, adding/editing an env var does **not** auto-deploy
+>   the service — the value is staged but the running container keeps the old config until you
+>   trigger a deploy (`POST /v1/services/{id}/deploys` or the dashboard). The first probe after
+>   the `PUT` still showed the old default working; a manual deploy was required to apply it.
+> - **Still pending (user-driven):** (1) controlled single-mailbox send test — one agent
+>   repoints their StreetEasy account to the production email; that first real lead is the
+>   live send-path test (the worker's SA *send* scope / domain-wide delegation is
+>   unexercised until then). (2) Open the remaining mailboxes. (3) DNS flip of
+>   `autoreplies.pearnyc.com` → Render (Custom Domain on `-web`; `ADMIN_TOKEN` now in place).
+>
+> **Per-agent changeover gotchas (observed during richard@/Richard Garland's test, 2026-06-11):**
+> - **The Leads-Email change requires a poller restart.** The poller caches the monitored-mailbox
+>   list for 6h and SIGHUP is not exposed on Render — so after editing a User's `Leads Email` in
+>   Airtable, redeploy `-poller` (`POST /v1/services/{id}/deploys`, disk/cursor persist) or wait
+>   out the cache. A new mailbox bootstraps with the 60s lookback, so restart *before* leads start
+>   arriving there. (richard: legacy email `garland@pearnyc.com` → new leads email `inbox@pearnyc.com`.)
+> - **StreetEasy's email cutover is NOT instant.** After repointing the StreetEasy account, leads
+>   kept arriving at the *old* autoreply email (`garland@`) for ~10 min (real inquiry "524 Lafayette
+>   Avenue #2 / Jose Godinez" landed at `garland@` 14:55 UTC, well after the repoint). **Keep the
+>   legacy autoreply system LIVE on the old mailbox through each changeover** so propagation-gap leads
+>   are still answered — the new poller only watches the new leads email and will not see the old one.
+>   Confirm the first lead actually lands in the new mailbox before considering that agent cut over.
+
 ### Enable the production services
 
 1. Add the SA Secret File (`sa.json` → `/etc/secrets/sa.json`, see §2) to
