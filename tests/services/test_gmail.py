@@ -247,9 +247,74 @@ def test_list_history_raises_not_implemented(gmail_client: GmailClient) -> None:
         gmail_client.list_history("h-id", "label-id")
 
 
-def test_get_default_signature_raises_not_implemented(gmail_client: GmailClient) -> None:
-    with pytest.raises(NotImplementedError, match="Phase 2"):
-        gmail_client.get_default_signature_html()
+# ── get_default_signature_html ────────────────────────────────────────────────
+
+
+def test_get_default_signature_html_returns_default_entry(
+    gmail_client: GmailClient, mock_service: MagicMock
+) -> None:
+    """isDefault=True entry is chosen and its signature returned (stripped)."""
+    mock_service.users().settings().sendAs().list().execute.return_value = {
+        "sendAs": [
+            {"sendAsEmail": "other@example.com", "isDefault": False, "signature": "<p>Other</p>"},
+            {
+                "sendAsEmail": "agent@pearnyc.com",
+                "isDefault": True,
+                "signature": "  <div>—Agent Sig</div>  ",
+            },
+        ]
+    }
+
+    result = gmail_client.get_default_signature_html()
+
+    assert result == "<div>—Agent Sig</div>"
+    mock_service.users().settings().sendAs().list.assert_called_with(userId="agent@pearnyc.com")
+
+
+def test_get_default_signature_html_falls_back_to_mailbox_email(
+    gmail_client: GmailClient, mock_service: MagicMock
+) -> None:
+    """When no isDefault entry exists, fall back to the entry matching mailbox email."""
+    mock_service.users().settings().sendAs().list().execute.return_value = {
+        "sendAs": [
+            {
+                "sendAsEmail": "Agent@PearNYC.com",
+                "isDefault": False,
+                "signature": "<p>Fallback</p>",
+            },
+        ]
+    }
+
+    result = gmail_client.get_default_signature_html()
+
+    assert result == "<p>Fallback</p>"
+    mock_service.users().settings().sendAs().list.assert_called_with(userId="agent@pearnyc.com")
+
+
+def test_get_default_signature_html_returns_none_when_all_empty(
+    gmail_client: GmailClient, mock_service: MagicMock
+) -> None:
+    """Returns None when the chosen entry has an empty/whitespace-only signature."""
+    mock_service.users().settings().sendAs().list().execute.return_value = {
+        "sendAs": [
+            {"sendAsEmail": "agent@pearnyc.com", "isDefault": True, "signature": "   "},
+        ]
+    }
+
+    result = gmail_client.get_default_signature_html()
+
+    assert result is None
+
+
+def test_get_default_signature_html_returns_none_when_no_entries(
+    gmail_client: GmailClient, mock_service: MagicMock
+) -> None:
+    """Returns None when sendAs list is empty."""
+    mock_service.users().settings().sendAs().list().execute.return_value = {"sendAs": []}
+
+    result = gmail_client.get_default_signature_html()
+
+    assert result is None
 
 
 def test_send_reply_builds_rfc822(gmail_client: GmailClient) -> None:

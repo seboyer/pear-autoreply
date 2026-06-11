@@ -39,14 +39,28 @@ def send_reply_job(
         mailbox_email=mailbox_email,
         credentials_path=settings.google_application_credentials,
     )
+    # `html_body` arrives as plaintext (the filled template); render it to
+    # real HTML so the multipart/alternative HTML part keeps its line and
+    # paragraph breaks instead of collapsing into one run-on paragraph.
+    # Signature goes on the HTML part only — plaintext stays unsigned per the
+    # FALLBACK_TEMPLATE design. A fetch failure or missing signature must never
+    # block the send.
+    html = plaintext_to_html(html_body)
+    try:
+        signature = gmail.get_default_signature_html()
+    except Exception:
+        logger.warning(
+            "send_reply_job: signature fetch failed for mailbox=%s; sending unsigned",
+            mailbox_email,
+        )
+        signature = None
+    if signature:
+        html = f"{html}<br><br>{signature}"
     sent = gmail.send_reply(
         to=to,
         subject=subject,
         plaintext_body=plaintext_body,
-        # `html_body` arrives as plaintext (the filled template); render it to
-        # real HTML so the multipart/alternative HTML part keeps its line and
-        # paragraph breaks instead of collapsing into one run-on paragraph.
-        html_body=plaintext_to_html(html_body),
+        html_body=html,
         in_reply_to_message_id=in_reply_to_message_id,
         thread_id=thread_id,
     )
