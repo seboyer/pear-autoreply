@@ -82,6 +82,24 @@ def reload_pear_fallback_template() -> str:
     return _load_fallback_template()
 
 
+# Airtable returns rich-text fields as Markdown, backslash-escaping special
+# characters (e.g. `{{first_name}}` comes back as `{{first\_name}}`). That breaks
+# slot parsing — the `{{slot}}` regex doesn't match `first\_name` — and leaves
+# stray backslashes in the sent reply. Only agent templates come from a rich-text
+# field; the FALLBACK_TEMPLATE.md body is authored plain and is not un-escaped.
+_MARKDOWN_ESCAPE_RE = re.compile(r"\\([\\`*_{}\[\]()#+\-.!|~>])")
+
+
+def _unescape_rich_text(text: str) -> str:
+    """Reverse Airtable rich-text Markdown escaping (e.g. ``\\_`` → ``_``).
+
+    Strips only a backslash that precedes a Markdown-special character; any other
+    backslash is left intact. Does not touch intentional Markdown such as
+    ``**bold**`` (no backslash to remove).
+    """
+    return _MARKDOWN_ESCAPE_RE.sub(r"\1", text)
+
+
 def get_template_for_agent(
     agent_record: dict[str, Any],
     *,
@@ -100,5 +118,8 @@ def get_template_for_agent(
     fields = agent_record.get("fields", {}) if agent_record else {}
     raw = fields.get(template_field_id)
     if isinstance(raw, str) and raw.strip():
-        return raw.strip(), "agent"
+        # The agent field is rich text — un-escape Airtable's Markdown escaping
+        # so slots like `{{first\_name|there}}` parse and the prose has no stray
+        # backslashes.
+        return _unescape_rich_text(raw.strip()), "agent"
     return get_pear_fallback_template(), "pear_default"
