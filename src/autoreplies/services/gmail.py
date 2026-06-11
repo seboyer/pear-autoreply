@@ -151,8 +151,33 @@ class GmailClient:
         raise NotImplementedError("Phase 1")
 
     def get_default_signature_html(self) -> str | None:
-        """Fetch the default sendAs signature HTML for this mailbox."""
-        raise NotImplementedError("Phase 2")
+        """Fetch the default sendAs signature HTML for this mailbox.
+
+        Calls users.settings.sendAs.list and returns the `signature` field of
+        the chosen entry, stripped, or None if no entry has a non-empty signature.
+
+        Selection priority:
+        1. The entry with `isDefault` == True.
+        2. Fallback: the entry whose `sendAsEmail` matches this mailbox (case-insensitive).
+        """
+        resp = self._service.users().settings().sendAs().list(userId=self._mailbox_email).execute()
+        entries: list[dict[str, Any]] = resp.get("sendAs", [])
+
+        chosen: dict[str, Any] | None = None
+        for entry in entries:
+            if entry.get("isDefault"):
+                chosen = entry
+                break
+        if chosen is None:
+            for entry in entries:
+                if entry.get("sendAsEmail", "").lower() == self._mailbox_email.lower():
+                    chosen = entry
+                    break
+
+        if chosen is None:
+            return None
+        signature = (chosen.get("signature") or "").strip()
+        return signature if signature else None
 
     def send_reply(
         self,
