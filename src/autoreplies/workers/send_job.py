@@ -15,6 +15,7 @@ from autoreplies.services.airtable import AirtableClient
 from autoreplies.services.airtable_schema import get_schema
 from autoreplies.services.gmail import GmailClient
 from autoreplies.services.supabase import SupabaseClient
+from autoreplies.utils.email_format import plaintext_to_html
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,10 @@ def send_reply_job(
         to=to,
         subject=subject,
         plaintext_body=plaintext_body,
-        html_body=html_body,
+        # `html_body` arrives as plaintext (the filled template); render it to
+        # real HTML so the multipart/alternative HTML part keeps its line and
+        # paragraph breaks instead of collapsing into one run-on paragraph.
+        html_body=plaintext_to_html(html_body),
         in_reply_to_message_id=in_reply_to_message_id,
         thread_id=thread_id,
     )
