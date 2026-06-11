@@ -61,6 +61,21 @@ def test_get_template_for_agent_strips_whitespace() -> None:
     assert source == "agent"
 
 
+def test_get_template_for_agent_unescapes_rich_text_slots() -> None:
+    # Airtable rich-text fields return slot underscores backslash-escaped
+    # (`{{first\_name}}`), which would otherwise break `{{slot}}` parsing.
+    # get_template_for_agent normalizes it back to clean slots. Mirrors the
+    # real shape of a populated `Autoreply Template (Agent)` field.
+    agent = {
+        "fields": {
+            "fldTEMPLATE": r"Hi {{first\_name|there}}! See {{apartment\_address|my listing}}."
+        }
+    }
+    body, source = templates.get_template_for_agent(agent, template_field_id="fldTEMPLATE")
+    assert body == "Hi {{first_name|there}}! See {{apartment_address|my listing}}."
+    assert source == "agent"
+
+
 def test_get_template_for_agent_falls_back_when_field_missing() -> None:
     agent = {"fields": {}}
     body, source = templates.get_template_for_agent(agent, template_field_id="fldTEMPLATE")
@@ -87,6 +102,24 @@ def test_get_template_for_agent_handles_missing_fields_key() -> None:
     body, source = templates.get_template_for_agent({}, template_field_id="fldTEMPLATE")
     assert source == "pear_default"
     assert body == templates.get_pear_fallback_template()
+
+
+# ── _unescape_rich_text (Airtable rich-text Markdown un-escaping) ─────────────
+
+
+def test_unescape_rich_text_unescapes_markdown_specials() -> None:
+    assert templates._unescape_rich_text(r"{{first\_name|there}}") == "{{first_name|there}}"
+    assert templates._unescape_rich_text(r"a\*b\_c\.d\!e") == "a*b_c.d!e"
+
+
+def test_unescape_rich_text_leaves_clean_text_unchanged() -> None:
+    clean = "Hi {{first_name|there}}! Thanks for your interest in {{apartment_address|my listing}}."
+    assert templates._unescape_rich_text(clean) == clean
+
+
+def test_unescape_rich_text_preserves_intentional_markdown() -> None:
+    # No backslash to strip — bold/italic markers pass through untouched.
+    assert templates._unescape_rich_text("**bold** and _italic_") == "**bold** and _italic_"
 
 
 # ── reload_pear_fallback_template ─────────────────────────────────────────────
