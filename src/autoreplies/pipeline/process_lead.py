@@ -21,6 +21,8 @@ from __future__ import annotations
 import dataclasses
 import logging
 from dataclasses import dataclass, field
+from email.message import Message
+from email.utils import getaddresses
 from typing import TYPE_CHECKING, Any, Literal
 
 from autoreplies.parsers import base as parsers_base
@@ -76,6 +78,25 @@ class JobState:
     last_error: str | None = None
     attempts: int = 0
     extra: dict[str, Any] = field(default_factory=dict)
+
+
+class _NotAddressedToMailbox(Exception):
+    """Internal signal: the message wasn't delivered to the polled mailbox (a
+    Hiver shared-inbox mirror). process_lead skips it without side effects."""
+
+
+def _addressed_to_mailbox(message: Message, mailbox_email: str) -> bool:
+    """True iff `mailbox_email` is one of the message's To/Cc recipients.
+
+    Hiver (shared inbox) copies every shared-inbox message into each Hiver user's
+    *personal* mailbox while preserving the original recipients, so a mailbox can
+    hold mail it was never addressed on. Gating on the actual recipient keeps a
+    single shared-inbox lead auto-replied exactly once — by the addressed
+    mailbox — instead of once per monitored Hiver user.
+    """
+    recipients = (message.get_all("To", []) or []) + (message.get_all("Cc", []) or [])
+    addrs = {addr.lower() for _name, addr in getaddresses(recipients) if addr}
+    return mailbox_email.lower() in addrs
 
 
 def process_lead(
@@ -147,6 +168,17 @@ def process_lead(
             "process_lead: done message_id=%s record_id=%s", message_id, state.airtable_record_id
         )
 
+    except _NotAddressedToMailbox:
+        # Not a failure — a Hiver shared-inbox mirror for another mailbox. Skip
+        # cleanly (no reply, no rows); the poller marks it processed so it isn't
+        # re-evaluated.
+        logger.info(
+            "process_lead: skip (Hiver mirror; not addressed to mailbox=%s) message_id=%s",
+            mailbox_email,
+            message_id,
+        )
+        return
+
     except Exception as exc:
         state.last_error = repr(exc)
         _save_state(state)
@@ -176,6 +208,16 @@ def _phase_a_create_airtable(
 
     # 1. Fetch raw email.
     message, thread_id = gmail.get_message(state.message_id)
+
+    # 1a. Hiver (shared inbox) drops a copy of every shared-inbox message into
+    #     each Hiver user's personal mailbox, keeping the original recipients —
+    #     so a mailbox holds mail it was never addressed on. Skip a message not
+    #     actually addressed to the mailbox we're polling, so one shared-inbox
+    #     lead is auto-replied once (by the addressed mailbox), not once per
+    #     monitored Hiver user (e.g. a lead To: inbox@ otherwise also fires from
+    #     jair@ because jair@ mirrors inbox@).
+    if not _addressed_to_mailbox(message, state.mailbox_email):
+        raise _NotAddressedToMailbox(state.mailbox_email)
 
     # 2. Parse the lead.
     parsed = parsers_base.parse(message)
