@@ -177,7 +177,82 @@ def test_streeteasy_subject_mismatch_raises_parser_error() -> None:
         b"Well Done!\r\n"
     )
     msg = email.message_from_bytes(raw, policy=policy.default)
-    with pytest.raises(ParserError, match="StreetEasy subject"):
+    with pytest.raises(ParserError, match="not a prospect lead"):
+        parse(msg)
+
+
+def test_streeteasy_new_message_from_is_a_lead() -> None:
+    """'New Message From <name>' emails with an external Reply-To are real leads."""
+    import email
+    from email import policy
+
+    # Contact block split across lines so the lookahead terminates the body
+    # before the contact info (matching the layout SE uses in real emails).
+    raw = (
+        b"From: StreetEasy <noreply@email.streeteasy.com>\r\n"
+        b"Reply-To: avery.brooks.demo@example.com\r\n"
+        b"To: agent@pearnyc.com\r\n"
+        b"Subject: New Message From Avery Brooks\r\n"
+        b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
+        b"Review and reply now.\r\n"
+        b" <https://streeteasy.com/> Industry Hub <https://streeteasy.com/agent-resources>\r\n"
+        b"You Have a New Message\r\n"
+        b" Hi, My name is Avery Brooks, and I'm currently looking for a 1-2 bedroom\r\n"
+        b" apartment in Ridgewood, NY. My budget is up to $2,000/month.\r\n"
+        b" I look forward to hearing from you. Best, Avery Brooks\r\n"
+        b"avery.brooks.demo@example.com <mailto:avery.brooks.demo@example.com>\r\n"
+        b"+16465550123 <tel:+16465550123>\r\n"
+        b"REPLY <mailto:avery.brooks.demo@example.com>\r\n"
+        b"StreetEasy (c)2026\r\n"
+    )
+    msg = email.message_from_bytes(raw, policy=policy.default)
+    lead = parse(msg)
+
+    assert lead.source == "StreetEasy"
+    assert lead.parser_used == "streeteasy"
+    assert lead.first_name == "Avery"
+    assert lead.last_name == "Brooks"
+    assert lead.email == "avery.brooks.demo@example.com"
+    assert lead.phone == "6465550123"
+    assert lead.apartment_address is None
+    assert lead.listing_url is None
+    assert lead.listing_id is None
+    assert lead.message_body is not None
+    assert "Ridgewood" in lead.message_body
+
+
+def test_streeteasy_system_mail_with_internal_replyto_rejected() -> None:
+    """System/marketing emails with a StreetEasy Reply-To must be rejected."""
+    import email
+    from email import policy
+
+    raw = (
+        b"From: StreetEasy <noreply@email.streeteasy.com>\r\n"
+        b"Reply-To: skylines@streeteasy.com\r\n"
+        b"To: agent@pearnyc.com\r\n"
+        b"Subject: Reminder: Share your Skylines feedback\r\n"
+        b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
+        b"Thank you for attending Skylines! Please share your feedback.\r\n"
+    )
+    msg = email.message_from_bytes(raw, policy=policy.default)
+    with pytest.raises(ParserError, match="not a prospect lead"):
+        parse(msg)
+
+
+def test_streeteasy_system_mail_no_replyto_rejected() -> None:
+    """System emails with no Reply-To header (e.g. listing-live confirmations) are rejected."""
+    import email
+    from email import policy
+
+    raw = (
+        b"From: StreetEasy <noreply@email.streeteasy.com>\r\n"
+        b"To: agent@pearnyc.com\r\n"
+        b"Subject: Congrats, 100 Example Street, #2 Is Live\r\n"
+        b"Content-Type: text/plain; charset=utf-8\r\n\r\n"
+        b"Your listing is now live on StreetEasy!\r\n"
+    )
+    msg = email.message_from_bytes(raw, policy=policy.default)
+    with pytest.raises(ParserError, match="not a prospect lead"):
         parse(msg)
 
 
