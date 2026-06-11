@@ -9,8 +9,8 @@ def test_send_reply_job_calls_gmail_airtable_and_supabase() -> None:
 
     fake_sent = SentMessage(
         message_id="sent-msg-id",
-        plaintext_body="Hi Casey,",
-        html_body="<p>Hi Casey,</p>",
+        plaintext_body="Hi Casey,\n\nThanks!",
+        html_body="Hi Casey,<br>\n<br>\nThanks!",
         raw_rfc822=b"...",
     )
 
@@ -39,8 +39,10 @@ def test_send_reply_job_calls_gmail_airtable_and_supabase() -> None:
             inquiry_record_id="recINQ1",
             to="casey@example.com",
             subject="Re: 123 Main St",
-            plaintext_body="Hi Casey,",
-            html_body="<p>Hi Casey,</p>",
+            plaintext_body="Hi Casey,\n\nThanks!",
+            # html_body arrives as the plaintext filled template; send_reply_job
+            # renders it to HTML (newlines → <br>) before handing to Gmail.
+            html_body="Hi Casey,\n\nThanks!",
             in_reply_to_message_id="<orig@gmail.com>",
             thread_id="thread-abc",
         )
@@ -48,18 +50,18 @@ def test_send_reply_job_calls_gmail_airtable_and_supabase() -> None:
     mock_gmail.send_reply.assert_called_once_with(
         to="casey@example.com",
         subject="Re: 123 Main St",
-        plaintext_body="Hi Casey,",
-        html_body="<p>Hi Casey,</p>",
+        plaintext_body="Hi Casey,\n\nThanks!",
+        html_body="Hi Casey,<br>\n<br>\nThanks!",
         in_reply_to_message_id="<orig@gmail.com>",
         thread_id="thread-abc",
     )
     mock_airtable.update_inquiry_autoreply_body.assert_called_once_with(
         inquiry_record_id="recINQ1",
-        plaintext_body="Hi Casey,",
+        plaintext_body="Hi Casey,\n\nThanks!",
         gmail_message_id="sent-msg-id",
     )
     mock_supabase.update_inquiry_reply.assert_called_once_with(
         id="recINQ1",
         reply_gmail_message_id="sent-msg-id",
-        reply_message="Hi Casey,",
+        reply_message="Hi Casey,\n\nThanks!",
     )
