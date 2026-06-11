@@ -27,7 +27,9 @@ FILLED_BODY = "Hi there, thanks for your interest in the listing."
 FAKE_TEMPLATE = (
     "Hi {{first_name|there}}, thanks for your interest in {{apartment_address|the listing}}."
 )
-FAKE_MAILBOX = "agent@pearnyc.com"
+# Must match the fixtures' To: recipient — process_lead skips a message not
+# addressed to the polled mailbox (Hiver shared-inbox mirror guard).
+FAKE_MAILBOX = "garland@pearnyc.com"
 FAKE_MESSAGE_ID = "msg-integration-001"
 
 
