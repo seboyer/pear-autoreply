@@ -6,7 +6,7 @@ interact. Wipe by deleting the file or running `make harness-reset`.
 """
 
 import sqlite3
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 _SCHEMA = """
@@ -24,6 +24,16 @@ CREATE TABLE IF NOT EXISTS processed_messages (
     processed_at        TEXT NOT NULL,
     error               TEXT
 );
+
+CREATE TABLE IF NOT EXISTS replied_fingerprints (
+    mailbox_email     TEXT NOT NULL,
+    fingerprint       TEXT NOT NULL,
+    gmail_message_id  TEXT NOT NULL,
+    inquiry_id        TEXT,
+    replied_at        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS replied_fingerprints_lookup_idx
+    ON replied_fingerprints (mailbox_email, fingerprint, replied_at);
 """
 
 
@@ -95,6 +105,52 @@ class HarnessState:
             VALUES (?, ?, ?, ?, ?, ?)
             """,
             (message_id, mailbox, inquiry_id, draft_id, now, error),
+        )
+        self._conn.commit()
+
+    # ── content fingerprint dedup ─────────────────────────────────────────────
+
+    def recent_duplicate_message_id(
+        self,
+        *,
+        mailbox: str,
+        fingerprint: str,
+        exclude_message_id: str,
+        within_seconds: int,
+        now: datetime | None = None,
+    ) -> str | None:
+        """Return the gmail_message_id of a recent reply with the same fingerprint.
+
+        Returns None if no match exists (safe to reply).
+        `exclude_message_id` prevents self-match — critical for replay recovery.
+        """
+        now = now or datetime.now(UTC)
+        cutoff = (now - timedelta(seconds=within_seconds)).isoformat()
+        row = self._conn.execute(
+            """SELECT gmail_message_id FROM replied_fingerprints
+               WHERE mailbox_email = ? AND fingerprint = ?
+                 AND gmail_message_id != ? AND replied_at >= ?
+               ORDER BY replied_at DESC LIMIT 1""",
+            (mailbox, fingerprint, exclude_message_id, cutoff),
+        ).fetchone()
+        return row[0] if row else None
+
+    def record_reply(
+        self,
+        *,
+        mailbox: str,
+        fingerprint: str,
+        gmail_message_id: str,
+        inquiry_id: str | None,
+        now: datetime | None = None,
+    ) -> None:
+        """Record that a reply was dispatched for this fingerprint."""
+        now = now or datetime.now(UTC)
+        self._conn.execute(
+            """INSERT INTO replied_fingerprints
+                   (mailbox_email, fingerprint, gmail_message_id, inquiry_id, replied_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (mailbox, fingerprint, gmail_message_id, inquiry_id, now.isoformat()),
         )
         self._conn.commit()
 

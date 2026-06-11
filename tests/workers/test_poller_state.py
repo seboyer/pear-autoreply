@@ -58,3 +58,106 @@ def test_creates_parent_directories(tmp_path: Path) -> None:
     s = PollerState(deep_path)
     assert deep_path.exists()
     s.close()
+
+
+# ── replied_fingerprints dedup ────────────────────────────────────────────────
+
+
+def test_record_and_lookup_fingerprint(state: PollerState) -> None:
+    state.record_reply(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-abc",
+        gmail_message_id="msg-A",
+        inquiry_id="recINQ1",
+    )
+    result = state.recent_duplicate_message_id(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-abc",
+        exclude_message_id="msg-B",
+        within_seconds=3600,
+    )
+    assert result == "msg-A"
+
+
+def test_exclude_self_returns_none(state: PollerState) -> None:
+    """Querying with exclude_message_id=A when only A is recorded returns None."""
+    state.record_reply(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-abc",
+        gmail_message_id="msg-A",
+        inquiry_id="recINQ1",
+    )
+    result = state.recent_duplicate_message_id(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-abc",
+        exclude_message_id="msg-A",
+        within_seconds=3600,
+    )
+    assert result is None
+
+
+def test_exclude_self_returns_prior_when_different_exclude(state: PollerState) -> None:
+    """Recording A, then querying with exclude_message_id=B returns A."""
+    state.record_reply(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-abc",
+        gmail_message_id="msg-A",
+        inquiry_id="recINQ1",
+    )
+    result = state.recent_duplicate_message_id(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-abc",
+        exclude_message_id="msg-B",
+        within_seconds=3600,
+    )
+    assert result == "msg-A"
+
+
+def test_window_expiry_returns_none(state: PollerState) -> None:
+    """A fingerprint recorded at time T is not returned when queried far in the future."""
+    from datetime import UTC, datetime, timedelta
+
+    past = datetime(2020, 1, 1, tzinfo=UTC)
+    state.record_reply(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-xyz",
+        gmail_message_id="msg-old",
+        inquiry_id=None,
+        now=past,
+    )
+    far_future = past + timedelta(days=365)
+    result = state.recent_duplicate_message_id(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-xyz",
+        exclude_message_id="msg-new",
+        within_seconds=3600,
+        now=far_future,
+    )
+    assert result is None
+
+
+def test_mailbox_scoping(state: PollerState) -> None:
+    """A fingerprint recorded for mailbox A does not match mailbox B."""
+    state.record_reply(
+        mailbox="agent-a@pearnyc.com",
+        fingerprint="fp-shared",
+        gmail_message_id="msg-A",
+        inquiry_id=None,
+    )
+    result = state.recent_duplicate_message_id(
+        mailbox="agent-b@pearnyc.com",
+        fingerprint="fp-shared",
+        exclude_message_id="msg-B",
+        within_seconds=3600,
+    )
+    assert result is None
+
+
+def test_unknown_fingerprint_returns_none(state: PollerState) -> None:
+    result = state.recent_duplicate_message_id(
+        mailbox="agent@pearnyc.com",
+        fingerprint="fp-never-recorded",
+        exclude_message_id="msg-X",
+        within_seconds=3600,
+    )
+    assert result is None

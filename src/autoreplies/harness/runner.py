@@ -32,7 +32,7 @@ def _cmd_watch(args: argparse.Namespace) -> int:
     settings = get_settings()
     state = HarnessState(settings.harness_state_path)
     airtable = build_harness_airtable_client()
-    pipeline_run = build_harness_pipeline()
+    pipeline_run = build_harness_pipeline(dedup=state)
     interval = args.interval or settings.harness_poll_interval_seconds
 
     def gmail_factory(mailbox: str) -> GmailClient:
@@ -65,7 +65,7 @@ def _cmd_backfill(args: argparse.Namespace) -> int:
     settings = get_settings()
     state = HarnessState(settings.harness_state_path)
     airtable = build_harness_airtable_client()
-    pipeline_run = build_harness_pipeline()
+    pipeline_run = build_harness_pipeline(dedup=state)
 
     since_dt = datetime.fromisoformat(args.since)
     since_unix = int(since_dt.timestamp())

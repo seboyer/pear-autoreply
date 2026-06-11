@@ -26,6 +26,12 @@ from email.utils import getaddresses
 from typing import TYPE_CHECKING, Any, Literal
 
 from autoreplies.parsers import base as parsers_base
+from autoreplies.pipeline.dedup import (
+    DedupStore,
+    DuplicateLeadSuppressed,
+    NoopDedup,
+    compute_fingerprint,
+)
 from autoreplies.pipeline.reply_route import (
     ReplyDestination,
     resolve_reply_destination,
@@ -108,6 +114,8 @@ def process_lead(
     airtable: AirtableClient | None = None,
     llm: LLMClient | None = None,
     agent_lookup_by: Literal["leads", "autoreply"] = "leads",
+    dedup: DedupStore | None = None,
+    dedup_window_seconds: int = 3600,
 ) -> None:
     """Drive a single lead message through the full pipeline.
 
@@ -128,6 +136,8 @@ def process_lead(
     """
     if strategies is None:
         strategies = _build_default_strategies()
+    if dedup is None:
+        dedup = NoopDedup()
 
     state = _load_state(message_id, mailbox_email)
     if state.fully_done:
@@ -147,6 +157,8 @@ def process_lead(
                 airtable=airtable,
                 llm=llm,
                 agent_lookup_by=agent_lookup_by,
+                dedup=dedup,
+                dedup_window_seconds=dedup_window_seconds,
             )
             _save_state(state)
 
@@ -179,6 +191,14 @@ def process_lead(
         )
         return
 
+    except DuplicateLeadSuppressed as exc:
+        logger.info(
+            "process_lead: duplicate suppressed message_id=%s prior=%s",
+            message_id,
+            exc.prior_message_id,
+        )
+        return
+
     except Exception as exc:
         state.last_error = repr(exc)
         _save_state(state)
@@ -197,6 +217,8 @@ def _phase_a_create_airtable(
     airtable: AirtableClient | None,
     llm: LLMClient | None,
     agent_lookup_by: Literal["leads", "autoreply"],
+    dedup: DedupStore,
+    dedup_window_seconds: int,
 ) -> None:
     """Fetch the email, parse, generate + send the auto-reply, write Airtable.
 
@@ -221,6 +243,36 @@ def _phase_a_create_airtable(
 
     # 2. Parse the lead.
     parsed = parsers_base.parse(message)
+
+    # 2b. Content-fingerprint dedup — suppress re-sends of the same inquiry.
+    #     Checked immediately after parse, before any side effect.
+    fingerprint = compute_fingerprint(
+        mailbox=state.mailbox_email,
+        prospect_email=parsed.email,
+        message_body=parsed.message_body,
+        apartment_address=parsed.apartment_address,
+        source=parsed.source,
+    )
+    try:
+        prior = dedup.recent_duplicate_message_id(
+            mailbox=state.mailbox_email,
+            fingerprint=fingerprint,
+            exclude_message_id=state.message_id,
+            within_seconds=dedup_window_seconds,
+        )
+    except Exception:
+        logger.exception(
+            "_phase_a: dedup lookup failed; failing OPEN (will reply) message_id=%s",
+            state.message_id,
+        )
+        prior = None  # FAIL OPEN — never gate a reply on the dedup subsystem
+    if prior is not None:
+        logger.info(
+            "_phase_a: duplicate suppressed message_id=%s prior=%s",
+            state.message_id,
+            prior,
+        )
+        raise DuplicateLeadSuppressed(fingerprint=fingerprint, prior_message_id=prior)
 
     # 3. Match apartment.
     apartment_record, apartment_match_strategy, apartment_match_confidence = (
@@ -332,6 +384,23 @@ def _phase_a_create_airtable(
         llm_latency_ms=llm_latency_ms,
         notes=notes,
     )
+
+    # 11b. Record fingerprint for future dedup — only when we actually replied.
+    #      Record at enqueue time (here), NOT at Gmail-send time: duplicates often
+    #      both arrive before the humanization-delayed first send fires.
+    if dest.route != "skipped":
+        try:
+            dedup.record_reply(
+                mailbox=state.mailbox_email,
+                fingerprint=fingerprint,
+                gmail_message_id=state.message_id,
+                inquiry_id=inquiry_id,
+            )
+        except Exception:
+            logger.exception(
+                "_phase_a: dedup record failed (reply already dispatched) message_id=%s",
+                state.message_id,
+            )
 
     # 12. Update state.
     state.airtable_record_id = inquiry_id
