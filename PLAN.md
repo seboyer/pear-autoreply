@@ -207,6 +207,8 @@ Two-stage, with measured success rates from the 200-message sampling pass agains
    - `apartment_address`: 95.5%
    - `listing_url`: 100%
 
+   **StreetEasy "New Message From" variant** (added 2026-06-11): besides the canonical `<address> StreetEasy Inquiry From <name>` subject, StreetEasy also sends proactive prospect outreach with subject `New Message From <name>` and body heading `You Have a New Message`. These are real leads but **listing-agnostic** (no address/listing). The parser no longer gates on the subject format: an email is accepted as a lead when **either** the subject is canonical **or** its `Reply-To` is an external prospect address (not a StreetEasy/Zillow/no-reply address) **and** the body carries a `mailto:<that address>` REPLY link. System/marketing mail (Skylines events, magic-code auth, listing-live confirmations) is rejected because it lacks an external prospect `Reply-To`. For "New Message From" leads `apartment_address`/`listing` are `None`; the template's `{{apartment_address|…}}` fallback covers the salutation.
+
    **Zillow parser** (regex against the canonical subject line + HTML body — Zillow has no `text/plain` MIME part, so the parser must extract from the HTML alternative):
    - `first_name`: high — current Zillow format includes the prospect's first name in the body (`<First Last> says: …`). Confirmed empirically across the legacy mailbox (Aug 2024–Apr 2026). Earlier "0%" claim was an artifact of attempting plain-text extraction on an HTML-only body.
    - `email` (prospect): 100% (taken from `Reply-To` header)
@@ -452,10 +454,11 @@ A small set of anonymized fixture emails (3 StreetEasy + 3 Zillow) is staged in 
 
 ## Remaining open items
 
-All resolved as of 2026-04-25:
+Resolved at launch (2026-04-25), plus one deferred follow-up logged during cutover:
 
 | Item | Resolution |
 |---|---|
+| Repeated / duplicate inquiries (logged 2026-06-11) | StreetEasy duplicate-sends the same inquiry (observed 2× per prospect, ~minutes apart) and a prospect's conversation follow-ups also arrive as `New Message From <name>`. Dedup is per Gmail message-id, so each currently triggers its own auto-reply (a prospect can receive the same reply twice). **Deferred by Sam:** ship per-message handling now; later add prospect-level dedup (e.g. at most one auto-reply per prospect+agent within a window) at the dispatch layer — not the parser. Low volume today; revisit before high-volume cutover. |
 | Fallback template | Drafted — see appendix A. Saved to repo as `FALLBACK_TEMPLATE.md` for Sam to edit. |
 | `sales` Supabase column | Always set to `false` for rental-platform leads. Sales leads are out of scope. |
 | Slack agent identification | Show name + email in the message body; don't `@`-mention. Feed is for admin visibility, not agent pings. |
