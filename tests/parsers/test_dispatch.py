@@ -69,7 +69,12 @@ def test_parse_unknown_source_raises() -> None:
         ("Mr. John Doe", ("John", "Doe")),
         ("Mx Avery Smith", ("Avery", "Smith")),
         ("Dr. Patel", (None, "Patel")),
-        ("Madonna", (None, "Madonna")),
+        # Single bare token → used as the first name (the common case where a
+        # prospect enters just their first name).
+        ("Madonna", ("Madonna", None)),
+        ("aida", ("aida", None)),
+        # …except an email-shaped token, which can't be a salutation.
+        ("avollavanh@gmail.com", (None, "avollavanh@gmail.com")),
         ("", (None, None)),
         ("   ", (None, None)),
         (None, (None, None)),

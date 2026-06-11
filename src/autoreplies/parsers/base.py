@@ -122,17 +122,25 @@ def split_name(full: str | None) -> tuple[str | None, str | None]:
     """Split a display name into (first_name, last_name).
 
     - Strips common title prefixes (Mr./Mrs./Ms./Mx./Dr./Miss).
-    - Single token after stripping → (None, that token). The name is too
-      ambiguous to call it a first name; the template fallback handles it.
     - Two+ tokens → (first, " ".join(rest)).
+    - Single token → treated as the first name (the common case — prospects
+      frequently enter just their first name), EXCEPT when it can't serve as a
+      salutation: an email-shaped token (someone typed their address as their
+      name) or the residue of a stripped title (e.g. "Ms. Gray" → "Gray", a
+      surname). Those return (None, token) so the template's
+      ``{{first_name|there}}`` fallback handles the greeting.
     """
     if not full:
         return None, None
     tokens = full.strip().split()
-    if tokens and tokens[0].lower() in _TITLE_PREFIXES:
+    title_stripped = bool(tokens) and tokens[0].lower() in _TITLE_PREFIXES
+    if title_stripped:
         tokens = tokens[1:]
     if not tokens:
         return None, None
     if len(tokens) == 1:
-        return None, tokens[0]
+        token = tokens[0]
+        if title_stripped or "@" in token:
+            return None, token
+        return token, None
     return tokens[0], " ".join(tokens[1:])
