@@ -88,9 +88,10 @@ Goal: a policy + mechanism for recognizing the same prospect ACROSS inquiries an
 deciding when to (not) auto-reply (e.g. don't re-send the full first-touch template into
 an active conversation; a genuinely new listing inquiry may still warrant one).
 
-**Before designing:** there is a SEPARATE project/repo, **`message-monitor`** (locate it
-— likely under `~/Dev`; ask Sam if unclear), which has **proposed schema changes for a
-unified client-identity model.** Read those proposals first and base your Phase-2 design
+**Before designing:** there is a SEPARATE repo, **`message-monitor`**, at
+**`~/Dev/message-monitor`** (alongside this repo), which has **proposed schema changes
+for a unified client-identity model.** Start with its `CLAUDE.md`, `migrations/`, and
+`todo.md` to find the proposal. Read those proposals first and base your Phase-2 design
 on integrating with that model, so client identity is shared/consistent across systems
 rather than reinvented here.
 
