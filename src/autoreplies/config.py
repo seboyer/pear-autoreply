@@ -79,6 +79,14 @@ class Settings(BaseSettings):
     poller_bootstrap_lookback_seconds: int = 60
     poller_state_path: str = "/var/lib/pear-autoreply/poller.sqlite"
 
+    # Content-fingerprint dedupe window (seconds): suppress a re-send of the same
+    # inquiry within this window. Validated against garland@ via
+    # scripts/check_duplicate_inquiries.py — true StreetEasy re-sends arrive
+    # <=~16 min apart, while genuine re-inquiries are >=~16 h apart, so 1h covers
+    # re-sends without suppressing legitimate repeat contact. Override via the
+    # DEDUP_WINDOW_SECONDS env var.
+    dedup_window_seconds: int = 3600
+
     @property
     def active_airtable_base_id(self) -> str:
         """Use the staging base when configured (dev/staging only)."""

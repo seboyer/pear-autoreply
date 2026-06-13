@@ -16,6 +16,7 @@ from typing import Any, Literal
 
 from autoreplies.config import get_settings
 from autoreplies.parsers.base import ParsedLead
+from autoreplies.pipeline.dedup import DedupStore
 from autoreplies.pipeline.process_lead import process_lead
 from autoreplies.pipeline.strategies import (
     PipelineStrategies,
@@ -160,12 +161,17 @@ def build_harness_strategies(airtable: AirtableClient) -> PipelineStrategies:
     )
 
 
-def build_harness_pipeline() -> Callable[[str, str], None]:
+def build_harness_pipeline(
+    dedup: DedupStore | None = None,
+) -> Callable[[str, str], None]:
     """Return a run(message_id, mailbox) callable wired with harness strategies.
 
     The AirtableClient and LLMClient are constructed once and shared across calls.
     GmailClient is per-mailbox (domain-wide delegation is bound at construction),
     so it is constructed fresh on each run() invocation.
+
+    Pass `dedup` to enable content-fingerprint suppression (watch/backfill). Leave
+    None (NoopDedup) for replay, which bypasses dedup by design.
     """
     settings = get_settings()
     airtable = build_harness_airtable_client()
@@ -187,6 +193,8 @@ def build_harness_pipeline() -> Callable[[str, str], None]:
             # Harness polls per-agent autoreply inboxes (legacy); look up agents
             # by that mailbox. Production passes "primary" (the default).
             agent_lookup_by="autoreply",
+            dedup=dedup,
+            dedup_window_seconds=settings.dedup_window_seconds,
         )
 
     return run

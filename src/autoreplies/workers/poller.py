@@ -343,6 +343,8 @@ def main() -> int:
             credentials_path=settings.google_application_credentials,
         )
 
+    state = PollerState(settings.poller_state_path)
+
     def dispatch(message_id: str, mailbox: str) -> None:
         gmail = gmail_factory(mailbox)
         process_lead(
@@ -353,9 +355,9 @@ def main() -> int:
             airtable=airtable,
             llm=llm,
             agent_lookup_by="leads",
+            dedup=state,
+            dedup_window_seconds=settings.dedup_window_seconds,
         )
-
-    state = PollerState(settings.poller_state_path)
 
     cfg = PollerConfig(
         interval_seconds=settings.poller_poll_interval_seconds,

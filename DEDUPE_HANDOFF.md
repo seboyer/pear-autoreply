@@ -7,6 +7,14 @@ This task adds **dedupe** so a prospect doesn't receive the same auto-reply more
 once. It was deliberately deferred during launch; it's logged in PLAN.md "Remaining
 open items" (entry "Repeated / duplicate inquiries").
 
+> **STATUS (current):**
+> - **Phase 1 (duplicate messages) — ✅ DONE, PR #27.** Content+sender fingerprint
+>   dedupe at the dispatch layer.
+> - **Phase 2 (repeated inquiries from the same person) — DEFERRED, BLOCKED on
+>   message-monitor go-live.** The current self-contained brief is
+>   **[DEDUPE_PHASE2_HANDOFF.md](./DEDUPE_PHASE2_HANDOFF.md)** — start there. The
+>   Phase 2 section below is the original sketch, superseded by that doc.
+
 ## Why this exists / current behavior
 
 The pipeline dedupes strictly **per Gmail message-id**:
@@ -48,7 +56,12 @@ Recently merged, relevant context:
   which AMPLIFIES the repeated-inquiry problem. Don't undo this.
 - **PR #21** un-escaped Airtable rich-text in agent templates (unrelated, just context).
 
-## Phase 1 — suppress duplicate messages (implement)
+## Phase 1 — suppress duplicate messages (implement) — ✅ DONE (PR #27)
+
+> Implemented: content+sender fingerprint dedupe in `process_lead` (after parse,
+> before any side effect), with a `replied_fingerprints` store on PollerState +
+> HarnessState (`pipeline/dedup.py`). Window = `DEDUP_WINDOW_SECONDS` (default 3600s),
+> validated against real `garland@` data. The brief below is kept for the record.
 
 Goal: when the SAME inquiry is delivered more than once, auto-reply exactly once.
 Genuine new inquiries and genuine follow-ups (different content) must still go through.
@@ -83,6 +96,12 @@ to `main` (services deploy from `main`; `autoDeploy: false`, so note a
 poller, not the worker).
 
 ## Phase 2 — propose handling for repeated inquiries from the same user (design)
+
+> **➡️ Superseded by [DEDUPE_PHASE2_HANDOFF.md](./DEDUPE_PHASE2_HANDOFF.md).** Phase 2
+> is BLOCKED on message-monitor go-live and will be picked up in a future session; that
+> doc is the current self-contained brief (it folds in this session's findings: the
+> PostgREST `core`-access wrinkle, the deployment blocker, and the "launch in parallel
+> with message-monitor" decision). The text below is the original sketch.
 
 Goal: a policy + mechanism for recognizing the same prospect ACROSS inquiries and
 deciding when to (not) auto-reply (e.g. don't re-send the full first-touch template into

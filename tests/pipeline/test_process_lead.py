@@ -9,6 +9,7 @@ actual email bytes — only the downstream Airtable/LLM calls are mocked.
 from __future__ import annotations
 
 import email as email_lib
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -303,3 +304,187 @@ def test_no_services_raises_not_implemented() -> None:
     """When no services are passed (production path), phase A raises NotImplementedError."""
     with pytest.raises(NotImplementedError):
         process_lead("msg-id", "agent@pearnyc.com")
+
+
+# ── FakeDedup — in-memory DedupStore for integration tests ────────────────────
+
+
+class FakeDedup:
+    """In-memory DedupStore that faithfully honours exclude_message_id."""
+
+    def __init__(self) -> None:
+        # List of (mailbox, fingerprint, gmail_message_id, inquiry_id, replied_at).
+        self._records: list[tuple[str, str, str, str | None, datetime]] = []
+
+    def recent_duplicate_message_id(
+        self,
+        *,
+        mailbox: str,
+        fingerprint: str,
+        exclude_message_id: str,
+        within_seconds: int,
+        now: datetime | None = None,
+    ) -> str | None:
+        now = now or datetime.now(UTC)
+        from datetime import timedelta
+
+        cutoff = now - timedelta(seconds=within_seconds)
+        for mb, fp, mid, _inq, replied_at in reversed(self._records):
+            if (
+                mb == mailbox
+                and fp == fingerprint
+                and mid != exclude_message_id
+                and replied_at >= cutoff
+            ):
+                return mid
+        return None
+
+    def record_reply(
+        self,
+        *,
+        mailbox: str,
+        fingerprint: str,
+        gmail_message_id: str,
+        inquiry_id: str | None,
+        now: datetime | None = None,
+    ) -> None:
+        now = now or datetime.now(UTC)
+        self._records.append((mailbox, fingerprint, gmail_message_id, inquiry_id, now))
+
+
+# ── Dedup integration tests ───────────────────────────────────────────────────
+
+
+def test_duplicate_suppressed_second_message_not_drafted() -> None:
+    """Two messages with the same content fingerprint: only the first creates a draft."""
+    fixture = "streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"
+    airtable = _mock_airtable(inquiry_id="recINQ_SE")
+    llm = _mock_llm()
+    strategies = _harness_strategies(airtable)
+    fake_dedup = FakeDedup()
+
+    # First message — should create a draft and record fingerprint.
+    process_lead(
+        "gmail-msg-first",
+        "garland@pearnyc.com",
+        strategies=strategies,
+        gmail=_mock_gmail(fixture, thread_id="thread-se-001"),
+        airtable=airtable,
+        llm=llm,
+        dedup=fake_dedup,
+    )
+    assert airtable.create_draft.call_count == 1
+
+    # Second message — same fixture = same fingerprint, different message_id.
+    process_lead(
+        "gmail-msg-second",
+        "garland@pearnyc.com",
+        strategies=strategies,
+        gmail=_mock_gmail(fixture, thread_id="thread-se-001"),
+        airtable=airtable,
+        llm=llm,
+        dedup=fake_dedup,
+    )
+    # create_draft must NOT have been called again.
+    assert airtable.create_draft.call_count == 1
+
+
+def test_different_content_both_send() -> None:
+    """Two messages with different content fingerprints both create a draft."""
+    airtable = _mock_airtable()
+    llm = _mock_llm()
+    strategies = _harness_strategies(airtable)
+    fake_dedup = FakeDedup()
+
+    process_lead(
+        "gmail-msg-se",
+        "garland@pearnyc.com",
+        strategies=strategies,
+        gmail=_mock_gmail("streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"),
+        airtable=airtable,
+        llm=llm,
+        dedup=fake_dedup,
+    )
+    process_lead(
+        "gmail-msg-zl",
+        "garland@pearnyc.com",
+        strategies=strategies,
+        gmail=_mock_gmail("zillow/lead__170-prospect-pl-3b__1.eml"),
+        airtable=airtable,
+        llm=llm,
+        dedup=fake_dedup,
+    )
+    assert airtable.create_draft.call_count == 2
+
+
+def test_fail_open_when_dedup_raises() -> None:
+    """If DedupStore.recent_duplicate_message_id raises, the reply still happens."""
+
+    class BrokenDedup:
+        def recent_duplicate_message_id(self, **_: object) -> str | None:
+            raise RuntimeError("database exploded")
+
+        def record_reply(self, **_: object) -> None:
+            return None
+
+    fixture = "streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"
+    airtable = _mock_airtable()
+    llm = _mock_llm()
+    strategies = _harness_strategies(airtable)
+
+    # Must NOT raise; must still create the draft.
+    process_lead(
+        "gmail-msg-broken-dedup",
+        "garland@pearnyc.com",
+        strategies=strategies,
+        gmail=_mock_gmail(fixture),
+        airtable=airtable,
+        llm=llm,
+        dedup=BrokenDedup(),  # type: ignore[arg-type]
+    )
+    airtable.create_draft.assert_called_once()
+
+
+def test_skipped_route_does_not_record_fingerprint() -> None:
+    """When route=skipped, record_reply is NOT called."""
+    fixture = "streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"
+    raw = _load_fixture_bytes(fixture)
+    msg = email_lib.message_from_bytes(raw)
+    del msg["Reply-To"]
+
+    from autoreplies.parsers.base import ParsedLead
+
+    mock_parsed = ParsedLead(
+        source="StreetEasy",
+        first_name="Grace",
+        last_name="Xu",
+        email=None,
+        phone=None,
+        apartment_address="65 Saint Mark's Avenue #2B",
+        listing_id=None,
+        listing_url=None,
+        message_body=None,
+        parser_used="streeteasy",
+    )
+
+    gmail = MagicMock()
+    gmail.get_message.return_value = (msg, "thread-001")
+
+    airtable = _mock_airtable(inquiry_id="recINQ_SKIP")
+    llm = _mock_llm()
+
+    fake_dedup = FakeDedup()
+
+    with patch("autoreplies.pipeline.process_lead.parsers_base.parse", return_value=mock_parsed):
+        process_lead(
+            "gmail-msg-skip",
+            "garland@pearnyc.com",
+            strategies=_harness_strategies(airtable),
+            gmail=gmail,
+            airtable=airtable,
+            llm=llm,
+            dedup=fake_dedup,
+        )
+
+    # Route is skipped — no fingerprint should be recorded.
+    assert len(fake_dedup._records) == 0
