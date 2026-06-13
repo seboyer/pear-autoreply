@@ -5,8 +5,10 @@ with the production parser, computes a content fingerprint per lead, and groups
 messages by fingerprint. Any group with >1 message is a suspected duplicate set.
 
 Reports: subjects, message_ids, time gaps between consecutive messages in the group.
-At the end, prints the MAX observed gap — this informs the `dedup_window_seconds`
-setting. Rule of thumb: set dedup_window_seconds to (max_observed_gap_seconds * 2).
+At the end it splits the observed gaps into two populations — true re-sends (minutes
+apart) vs genuine re-inquiries from the same person (hours/days apart) — and recommends
+a `dedup_window_seconds` that covers re-sends without suppressing re-inquiries. (Naive
+`max(gap) * 2` is wrong: it keys off a re-inquiry gap. See `_summarize_gaps`.)
 
 No side effects. No DB writes. Read-only.
 
@@ -24,6 +26,7 @@ primary inboxes.
 from __future__ import annotations
 
 import argparse
+import math
 import os
 import sys
 import time
@@ -51,6 +54,44 @@ CREDS_PATH = os.environ.get(
 
 def _ts(ms: int) -> str:
     return datetime.fromtimestamp(ms / 1000, tz=UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
+
+
+# Min multiplicative jump between sorted gaps to call the distribution bimodal.
+_JUMP_THRESHOLD = 4.0
+
+
+def _summarize_gaps(gaps: list[float]) -> tuple[float, float | None, float]:
+    """Split observed inter-message gaps into two populations.
+
+    Returns (re_send_max, re_inquiry_min_or_None, jump_ratio).
+
+    Inter-message gaps within fingerprint groups come from two distinct
+    phenomena on very different time scales: **true re-sends** (StreetEasy
+    resending the same inquiry, minutes apart — what the dedupe window should
+    cover) and **genuine re-inquiries** (the same person contacting again, hours
+    to days later — what the window must NOT suppress; that's Phase 2). So we
+    find the largest *multiplicative* jump between consecutive sorted gaps — that
+    boundary is the "valley" between the populations. A jump >= _JUMP_THRESHOLD
+    marks a real split; otherwise the gaps are treated as one population.
+
+    NOTE: this is why a naive `max(gap) * 2` is wrong — it keys off the largest
+    re-inquiry gap and recommends a window that suppresses legitimate re-inquiries.
+    """
+    ordered = sorted(gaps)
+    if len(ordered) < 2:
+        return (ordered[0] if ordered else 0.0), None, 1.0
+
+    best_ratio = 1.0
+    split_idx: int | None = None
+    for i in range(len(ordered) - 1):
+        ratio = ordered[i + 1] / max(ordered[i], 1.0)
+        if ratio > best_ratio:
+            best_ratio = ratio
+            split_idx = i
+
+    if split_idx is not None and best_ratio >= _JUMP_THRESHOLD:
+        return ordered[split_idx], ordered[split_idx + 1], best_ratio
+    return ordered[-1], None, best_ratio
 
 
 def main() -> None:
@@ -96,7 +137,7 @@ def main() -> None:
     query = f"{LEAD_SENDER_QUERY} after:{after_epoch}"
     print(f"Gmail query: {query!r}\n")
 
-    max_gap_seconds: float = 0.0
+    all_gaps: list[float] = []
     total_duplicate_groups = 0
 
     for mailbox in mailboxes:
@@ -149,36 +190,63 @@ def main() -> None:
                 msgs_sorted = sorted(msgs, key=lambda x: x[1])
                 print(f"  Fingerprint: {fp[:16]}…")
                 for i, (mid, ts, subj) in enumerate(msgs_sorted):
-                    print(f"    [{i+1}] {_ts(ts)}  message_id={mid}  subject={subj!r}")
+                    print(f"    [{i + 1}] {_ts(ts)}  message_id={mid}  subject={subj!r}")
                 # Compute gaps between consecutive messages.
                 gaps_sec = [
                     (msgs_sorted[i + 1][1] - msgs_sorted[i][1]) / 1000
                     for i in range(len(msgs_sorted) - 1)
                 ]
                 for gap in gaps_sec:
-                    print(f"         ^ gap to next: {gap:.0f}s ({gap/60:.1f} min)")
-                    if gap > max_gap_seconds:
-                        max_gap_seconds = gap
+                    print(f"         ^ gap to next: {gap:.0f}s ({gap / 60:.1f} min)")
+                all_gaps.extend(gaps_sec)
                 print()
 
         except Exception as exc:
             print(f"  ERROR: {exc}\n")
 
     print("=" * 60)
-    if total_duplicate_groups == 0:
+    if total_duplicate_groups == 0 or not all_gaps:
         print("Result: No duplicate inquiry groups found across all inboxes.")
-        print("  dedup_window_seconds can remain at the default (21600 = 6h).")
-    else:
+        print("  dedup_window_seconds can stay at the default (3600 = 1h).")
+        return
+
+    def _fmt(s: float) -> str:
+        return f"{s:.0f}s ({s / 60:.1f} min / {s / 3600:.1f} h)"
+
+    re_send_max, re_inquiry_min, jump = _summarize_gaps(all_gaps)
+    print(
+        f"Result: {total_duplicate_groups} duplicate fingerprint group(s), "
+        f"{len(all_gaps)} inter-message gap(s)."
+    )
+
+    if re_inquiry_min is None:
+        # No clear bimodal split — treat as a single re-send population.
+        print(f"  Single gap population (largest jump {jump:.1f}x); max gap {_fmt(re_send_max)}.")
+        recommended = int(re_send_max * 2)
         print(
-            f"Result: {total_duplicate_groups} duplicate group(s) found. "
-            f"Max gap between re-sends: {max_gap_seconds:.0f}s "
-            f"({max_gap_seconds / 60:.1f} min)."
+            f"  Recommended dedup_window_seconds: {recommended} (= max_gap * 2). "
+            "Eyeball the per-group gaps above before trusting this."
         )
-        recommended = int(max_gap_seconds * 2)
-        print(
-            f"  Recommended dedup_window_seconds: {recommended} "
-            f"(= max_gap * 2; current default is 21600)."
-        )
+        return
+
+    # Two populations: true re-sends (small gaps) vs genuine re-inquiries (large).
+    print(
+        f"  Two gap populations detected (boundary jump {jump:.1f}x):\n"
+        f"    - true re-sends (suppress these):       max {_fmt(re_send_max)}\n"
+        f"    - genuine re-inquiries (do NOT suppress): min {_fmt(re_inquiry_min)}"
+    )
+    recommended = int(re_send_max * 2)
+    if recommended >= re_inquiry_min:
+        # Narrow valley — land inside it via the geometric mean of the boundary.
+        recommended = int(math.sqrt(re_send_max * re_inquiry_min))
+    print(
+        f"  Recommended dedup_window_seconds: {recommended} ({recommended / 60:.0f} min) "
+        "— covers re-sends, stays below the re-inquiry floor."
+    )
+    print(
+        "  (The re-inquiry population is Phase 2's job, not the dedupe window — "
+        "see DEDUPE_PHASE2_HANDOFF.md.)"
+    )
 
 
 if __name__ == "__main__":
