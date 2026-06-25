@@ -34,6 +34,15 @@ CREATE TABLE IF NOT EXISTS replied_fingerprints (
 );
 CREATE INDEX IF NOT EXISTS replied_fingerprints_lookup_idx
     ON replied_fingerprints (mailbox_email, fingerprint, replied_at);
+
+CREATE TABLE IF NOT EXISTS replied_persons (
+    person_id         TEXT NOT NULL,
+    mailbox_email     TEXT NOT NULL,
+    gmail_message_id  TEXT NOT NULL,
+    replied_at        TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS replied_persons_lookup_idx
+    ON replied_persons (person_id, mailbox_email, replied_at);
 """
 
 
@@ -151,6 +160,51 @@ class HarnessState:
                    (mailbox_email, fingerprint, gmail_message_id, inquiry_id, replied_at)
                VALUES (?, ?, ?, ?, ?)""",
             (mailbox, fingerprint, gmail_message_id, inquiry_id, now.isoformat()),
+        )
+        self._conn.commit()
+
+    # ── person-identity repeated-inquiry dedup (Phase 2) ─────────────────────
+
+    def recent_person_reply(
+        self,
+        *,
+        person_id: str,
+        mailbox: str,
+        exclude_message_id: str,
+        within_seconds: int,
+        now: datetime | None = None,
+    ) -> bool:
+        """Return True if this person has been replied to from this mailbox recently.
+
+        Returns False if no match exists (safe to send first-touch reply).
+        `exclude_message_id` prevents self-match on replay recovery.
+        """
+        now = now or datetime.now(UTC)
+        cutoff = (now - timedelta(seconds=within_seconds)).isoformat()
+        row = self._conn.execute(
+            """SELECT 1 FROM replied_persons
+               WHERE person_id = ? AND mailbox_email = ?
+                 AND gmail_message_id != ? AND replied_at >= ?
+               LIMIT 1""",
+            (person_id, mailbox, exclude_message_id, cutoff),
+        ).fetchone()
+        return row is not None
+
+    def record_person_reply(
+        self,
+        *,
+        person_id: str,
+        mailbox: str,
+        gmail_message_id: str,
+        now: datetime | None = None,
+    ) -> None:
+        """Record that a reply was dispatched for this person from this mailbox."""
+        now = now or datetime.now(UTC)
+        self._conn.execute(
+            """INSERT INTO replied_persons
+                   (person_id, mailbox_email, gmail_message_id, replied_at)
+               VALUES (?, ?, ?, ?)""",
+            (person_id, mailbox, gmail_message_id, now.isoformat()),
         )
         self._conn.commit()
 

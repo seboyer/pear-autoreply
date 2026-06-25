@@ -87,6 +87,15 @@ class Settings(BaseSettings):
     # DEDUP_WINDOW_SECONDS env var.
     dedup_window_seconds: int = 3600
 
+    # Repeated-inquiry detection (Phase 2): person-keyed dedup via shared identity.
+    # Window in seconds: 1209600 = 14 days.
+    repeat_inquiry_window_seconds: int = 1209600
+    # Controls repeat-template behavior.
+    #   off     — Phase 2 inactive (default until RPC + people-sync are live).
+    #   observe — resolve + compute is_repeat + log what would happen; send first-touch.
+    #   enforce — swap to the repeat template on a detected repeat inquiry.
+    repeat_inquiry_mode: Literal["off", "observe", "enforce"] = "off"
+
     @property
     def active_airtable_base_id(self) -> str:
         """Use the staging base when configured (dev/staging only)."""

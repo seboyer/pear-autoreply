@@ -43,6 +43,7 @@ COPY --from=deps /opt/venv /opt/venv
 COPY --chown=app:app src ./src
 COPY --chown=app:app pyproject.toml ./
 COPY --chown=app:app FALLBACK_TEMPLATE.md ./
+COPY --chown=app:app FALLBACK_REPEAT_TEMPLATE.md ./
 
 USER app
 

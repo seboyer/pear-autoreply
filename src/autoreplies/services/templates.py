@@ -28,6 +28,7 @@ TemplateSource = Literal["agent", "pear_default"]
 # relative to this file so it works in editable installs and packaged wheels.
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 _FALLBACK_PATH = _PROJECT_ROOT / "FALLBACK_TEMPLATE.md"
+_FALLBACK_REPEAT_PATH = _PROJECT_ROOT / "FALLBACK_REPEAT_TEMPLATE.md"
 
 
 def _extract_template_body(markdown: str) -> str:
@@ -98,6 +99,33 @@ def _unescape_rich_text(text: str) -> str:
     ``**bold**`` (no backslash to remove).
     """
     return _MARKDOWN_ESCAPE_RE.sub(r"\1", text)
+
+
+@lru_cache(maxsize=1)
+def _load_repeat_fallback_template() -> str:
+    return _extract_template_body(_FALLBACK_REPEAT_PATH.read_text(encoding="utf-8"))
+
+
+def get_pear_repeat_fallback_template() -> str:
+    """Return the Pear-wide repeat-inquiry fallback template body (cached)."""
+    return _load_repeat_fallback_template()
+
+
+def get_repeat_template_for_agent(
+    agent_record: dict[str, Any],
+    *,
+    template_field_id: str,
+) -> tuple[str, TemplateSource]:
+    """Return `(template_text, source)` for one agent's repeat-inquiry template.
+
+    Falls back to the Pear-wide **repeat** fallback (FALLBACK_REPEAT_TEMPLATE.md),
+    NOT the first-touch fallback, when the agent's repeat field is blank or MISSING.
+    """
+    fields = agent_record.get("fields", {}) if agent_record else {}
+    raw = fields.get(template_field_id)
+    if isinstance(raw, str) and raw.strip():
+        return _unescape_rich_text(raw.strip()), "agent"
+    return get_pear_repeat_fallback_template(), "pear_default"
 
 
 def get_template_for_agent(

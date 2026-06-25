@@ -79,6 +79,27 @@ class DedupStore(Protocol):
         now: datetime | None = None,
     ) -> None: ...
 
+    # Phase 2: person-keyed repeated-inquiry detection.
+
+    def recent_person_reply(
+        self,
+        *,
+        person_id: str,
+        mailbox: str,
+        exclude_message_id: str,
+        within_seconds: int,
+        now: datetime | None = None,
+    ) -> bool: ...
+
+    def record_person_reply(
+        self,
+        *,
+        person_id: str,
+        mailbox: str,
+        gmail_message_id: str,
+        now: datetime | None = None,
+    ) -> None: ...
+
 
 class NoopDedup:
     """Default store: never suppresses, never records. Used when no dedup is wired
@@ -102,6 +123,27 @@ class NoopDedup:
         fingerprint: str,
         gmail_message_id: str,
         inquiry_id: str | None,
+        now: datetime | None = None,
+    ) -> None:
+        return None
+
+    def recent_person_reply(
+        self,
+        *,
+        person_id: str,
+        mailbox: str,
+        exclude_message_id: str,
+        within_seconds: int,
+        now: datetime | None = None,
+    ) -> bool:
+        return False
+
+    def record_person_reply(
+        self,
+        *,
+        person_id: str,
+        mailbox: str,
+        gmail_message_id: str,
         now: datetime | None = None,
     ) -> None:
         return None
