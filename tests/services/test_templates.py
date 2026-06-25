@@ -9,8 +9,9 @@ from autoreplies.services import templates
 
 @pytest.fixture(autouse=True)
 def _reset_fallback_cache() -> None:
-    """Drop the @lru_cache so tests see a fresh read of FALLBACK_TEMPLATE.md."""
+    """Drop both @lru_cache entries so tests see fresh reads of both .md files."""
     templates._load_fallback_template.cache_clear()
+    templates._load_repeat_fallback_template.cache_clear()
 
 
 # ── get_pear_fallback_template ────────────────────────────────────────────────
@@ -161,3 +162,48 @@ def test_extract_template_body_raises_when_no_blockquote() -> None:
     md = "## Template body\n\nplain text not blockquoted\n## Next\n"
     with pytest.raises(RuntimeError, match="no blockquote"):
         templates._extract_template_body(md)
+
+
+# ── get_pear_repeat_fallback_template + get_repeat_template_for_agent (Phase 2) ─
+
+
+def test_pear_repeat_fallback_template_loads_and_has_slots() -> None:
+    body = templates.get_pear_repeat_fallback_template()
+    assert isinstance(body, str)
+    assert len(body) > 10
+    assert not body.startswith(">")
+
+
+def test_pear_repeat_fallback_is_separate_from_first_touch() -> None:
+    """The repeat fallback must not be the same text as the first-touch fallback."""
+    first_touch = templates.get_pear_fallback_template()
+    repeat = templates.get_pear_repeat_fallback_template()
+    assert first_touch != repeat
+
+
+def test_get_repeat_template_for_agent_returns_agent_template() -> None:
+    agent = {"fields": {"fldREPEAT": "Hi again {{first_name|there}}, repeat reply!"}}
+    body, source = templates.get_repeat_template_for_agent(agent, template_field_id="fldREPEAT")
+    assert body == "Hi again {{first_name|there}}, repeat reply!"
+    assert source == "agent"
+
+
+def test_get_repeat_template_for_agent_falls_back_to_repeat_fallback_not_first_touch() -> None:
+    """When the repeat field is blank, falls back to the REPEAT fallback (not first-touch)."""
+    agent = {"fields": {"fldREPEAT": ""}}
+    body, source = templates.get_repeat_template_for_agent(agent, template_field_id="fldREPEAT")
+    assert source == "pear_default"
+    assert body == templates.get_pear_repeat_fallback_template()
+    # Crucially, it does NOT fall back to the first-touch template.
+    assert body != templates.get_pear_fallback_template()
+
+
+def test_get_repeat_template_for_agent_missing_field_falls_back(
+    tmp_path: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """field_id='MISSING' is treated as no template — falls back to repeat fallback."""
+    agent = {"fields": {}}
+    body, source = templates.get_repeat_template_for_agent(agent, template_field_id="MISSING")
+    assert source == "pear_default"
+    assert body == templates.get_pear_repeat_fallback_template()

@@ -28,11 +28,15 @@ def _cmd_watch(args: argparse.Namespace) -> int:
     from autoreplies.harness.poller import PollerConfig, run_forever
     from autoreplies.harness.state import HarnessState
     from autoreplies.services.gmail import GmailClient
+    from autoreplies.services.supabase import SupabaseClient
 
     settings = get_settings()
     state = HarnessState(settings.harness_state_path)
     airtable = build_harness_airtable_client()
-    pipeline_run = build_harness_pipeline(dedup=state)
+    supabase = SupabaseClient(
+        url=settings.supabase_url, service_role_key=settings.supabase_service_role_key
+    )
+    pipeline_run = build_harness_pipeline(dedup=state, person_resolver=supabase)
     interval = args.interval or settings.harness_poll_interval_seconds
 
     def gmail_factory(mailbox: str) -> GmailClient:
@@ -61,11 +65,15 @@ def _cmd_backfill(args: argparse.Namespace) -> int:
     from autoreplies.harness.poller import LEAD_SENDER_QUERY
     from autoreplies.harness.state import HarnessState
     from autoreplies.services.gmail import GmailClient
+    from autoreplies.services.supabase import SupabaseClient
 
     settings = get_settings()
     state = HarnessState(settings.harness_state_path)
     airtable = build_harness_airtable_client()
-    pipeline_run = build_harness_pipeline(dedup=state)
+    supabase = SupabaseClient(
+        url=settings.supabase_url, service_role_key=settings.supabase_service_role_key
+    )
+    pipeline_run = build_harness_pipeline(dedup=state, person_resolver=supabase)
 
     since_dt = datetime.fromisoformat(args.since)
     since_unix = int(since_dt.timestamp())

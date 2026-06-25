@@ -182,3 +182,101 @@ def test_unknown_fingerprint_returns_none(state: HarnessState) -> None:
         within_seconds=3600,
     )
     assert result is None
+
+
+# ── replied_persons dedup (Phase 2) ───────────────────────────────────────────
+
+
+def test_record_and_lookup_person_reply(state: HarnessState) -> None:
+    state.record_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        gmail_message_id="msg-A",
+    )
+    result = state.recent_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        exclude_message_id="msg-B",
+        within_seconds=1209600,
+    )
+    assert result is True
+
+
+def test_person_exclude_self_returns_false(state: HarnessState) -> None:
+    """Querying with exclude_message_id=A when only A is recorded returns False."""
+    state.record_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        gmail_message_id="msg-A",
+    )
+    result = state.recent_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        exclude_message_id="msg-A",
+        within_seconds=1209600,
+    )
+    assert result is False
+
+
+def test_person_exclude_self_returns_prior_when_different_exclude(state: HarnessState) -> None:
+    """Recording A, then querying with exclude_message_id=B returns True."""
+    state.record_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        gmail_message_id="msg-A",
+    )
+    result = state.recent_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        exclude_message_id="msg-B",
+        within_seconds=1209600,
+    )
+    assert result is True
+
+
+def test_person_window_expiry_returns_false(state: HarnessState) -> None:
+    """A reply recorded at time T is not returned when queried far in the future."""
+    from datetime import UTC, datetime, timedelta
+
+    past = datetime(2020, 1, 1, tzinfo=UTC)
+    state.record_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        gmail_message_id="msg-old",
+        now=past,
+    )
+    far_future = past + timedelta(days=365)
+    result = state.recent_person_reply(
+        person_id="person-abc",
+        mailbox="agent@pearnyc.com",
+        exclude_message_id="msg-new",
+        within_seconds=1209600,
+        now=far_future,
+    )
+    assert result is False
+
+
+def test_person_mailbox_scoping(state: HarnessState) -> None:
+    """A reply recorded for mailbox A does not match mailbox B."""
+    state.record_person_reply(
+        person_id="person-shared",
+        mailbox="agent-a@pearnyc.com",
+        gmail_message_id="msg-A",
+    )
+    result = state.recent_person_reply(
+        person_id="person-shared",
+        mailbox="agent-b@pearnyc.com",
+        exclude_message_id="msg-B",
+        within_seconds=1209600,
+    )
+    assert result is False
+
+
+def test_person_unknown_returns_false(state: HarnessState) -> None:
+    result = state.recent_person_reply(
+        person_id="person-never-recorded",
+        mailbox="agent@pearnyc.com",
+        exclude_message_id="msg-X",
+        within_seconds=1209600,
+    )
+    assert result is False

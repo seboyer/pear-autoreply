@@ -48,6 +48,8 @@ class TableSpec:
     fields: list[FieldEntry]
     # These fields are added only when generating for a TEST base.
     test_only_fields: list[FieldEntry] = field(default_factory=list)
+    # These fields are added only when generating for a PROD base.
+    prod_only_fields: list[FieldEntry] = field(default_factory=list)
     # Which base const-name keys include this table ("PROD", "TEST", "STAGING").
     bases: tuple[str, ...] = ("PROD", "TEST")
 
@@ -85,6 +87,11 @@ CURATED: dict[str, TableSpec] = {
             # contents of this field into the production one and we'll wire
             # production to read from `autoreply_agent` again.
             ("Autoreply Test Template (Agent)", "autoreply_test_template"),
+        ],
+        prod_only_fields=[
+            # Repeat-inquiry template (Phase 2). Exists only in the PROD base;
+            # schema.users.autoreply_repeat_template is "MISSING" in TEST/STAGING.
+            ("Autoreply Repeat Template (Agent)", "autoreply_repeat_template"),
         ],
     ),
     "Apartments": TableSpec(
@@ -225,6 +232,8 @@ def fetch_curated_base(
         wanted_entries: list[FieldEntry] = list(spec.fields)
         if const_name == "TEST":
             wanted_entries += list(spec.test_only_fields)
+        if const_name == "PROD":
+            wanted_entries += list(spec.prod_only_fields)
 
         live_table = by_name.get(table_name)
         if live_table is None:

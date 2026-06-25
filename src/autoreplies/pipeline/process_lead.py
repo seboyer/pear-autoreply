@@ -32,6 +32,7 @@ from autoreplies.pipeline.dedup import (
     NoopDedup,
     compute_fingerprint,
 )
+from autoreplies.pipeline.identity import NoopResolver, PersonResolver
 from autoreplies.pipeline.reply_route import (
     ReplyDestination,
     resolve_reply_destination,
@@ -39,7 +40,7 @@ from autoreplies.pipeline.reply_route import (
 )
 from autoreplies.pipeline.strategies import PipelineStrategies, build_production_strategies
 from autoreplies.services.llm import TemplateFillError
-from autoreplies.services.templates import get_template_for_agent
+from autoreplies.services.templates import get_repeat_template_for_agent, get_template_for_agent
 
 
 def _build_default_strategies() -> PipelineStrategies:
@@ -116,6 +117,9 @@ def process_lead(
     agent_lookup_by: Literal["leads", "autoreply"] = "leads",
     dedup: DedupStore | None = None,
     dedup_window_seconds: int = 3600,
+    person_resolver: PersonResolver | None = None,
+    repeat_inquiry_window_seconds: int = 1209600,
+    repeat_inquiry_mode: Literal["off", "observe", "enforce"] = "off",
 ) -> None:
     """Drive a single lead message through the full pipeline.
 
@@ -138,6 +142,8 @@ def process_lead(
         strategies = _build_default_strategies()
     if dedup is None:
         dedup = NoopDedup()
+    if person_resolver is None:
+        person_resolver = NoopResolver()
 
     state = _load_state(message_id, mailbox_email)
     if state.fully_done:
@@ -159,6 +165,9 @@ def process_lead(
                 agent_lookup_by=agent_lookup_by,
                 dedup=dedup,
                 dedup_window_seconds=dedup_window_seconds,
+                person_resolver=person_resolver,
+                repeat_inquiry_window_seconds=repeat_inquiry_window_seconds,
+                repeat_inquiry_mode=repeat_inquiry_mode,
             )
             _save_state(state)
 
@@ -219,6 +228,9 @@ def _phase_a_create_airtable(
     agent_lookup_by: Literal["leads", "autoreply"],
     dedup: DedupStore,
     dedup_window_seconds: int,
+    person_resolver: PersonResolver,
+    repeat_inquiry_window_seconds: int,
+    repeat_inquiry_mode: Literal["off", "observe", "enforce"],
 ) -> None:
     """Fetch the email, parse, generate + send the auto-reply, write Airtable.
 
@@ -274,6 +286,52 @@ def _phase_a_create_airtable(
         )
         raise DuplicateLeadSuppressed(fingerprint=fingerprint, prior_message_id=prior)
 
+    # 2c. Person-identity repeated-inquiry detection (Phase 2).
+    #     Resolve after Phase-1 dedup so we never call the RPC for re-sends.
+    #     Gate entirely on repeat_inquiry_mode to keep Phase 2 inert by default.
+    person_id: str | None = None
+    is_repeat = False
+    if repeat_inquiry_mode != "off":
+        try:
+            person_id = person_resolver.resolve_person_id(
+                email=parsed.email,
+                phone=parsed.phone,
+            )
+        except Exception:
+            logger.exception(
+                "_phase_a: person_id resolve failed; failing OPEN message_id=%s",
+                state.message_id,
+            )
+            person_id = None
+
+        if person_id is not None:
+            try:
+                _person_repeat = dedup.recent_person_reply(
+                    person_id=person_id,
+                    mailbox=state.mailbox_email,
+                    exclude_message_id=state.message_id,
+                    within_seconds=repeat_inquiry_window_seconds,
+                )
+            except Exception:
+                logger.exception(
+                    "_phase_a: person dedup lookup failed; failing OPEN message_id=%s",
+                    state.message_id,
+                )
+                _person_repeat = False
+
+            if _person_repeat:
+                if repeat_inquiry_mode == "observe":
+                    logger.info(
+                        "_phase_a: OBSERVE repeat inquiry "
+                        "person_id=%s mailbox=%s message_id=%s "
+                        "(would swap to repeat template in enforce mode)",
+                        person_id,
+                        state.mailbox_email,
+                        state.message_id,
+                    )
+                elif repeat_inquiry_mode == "enforce":
+                    is_repeat = True
+
     # 3. Match apartment.
     apartment_record, apartment_match_strategy, apartment_match_confidence = (
         _match_apartment_for_lead(airtable, parsed)
@@ -295,19 +353,31 @@ def _phase_a_create_airtable(
     if agent_record is None:
         logger.warning("_phase_a: no agent record found for mailbox=%s", state.mailbox_email)
 
-    # 6. Look up reply template. Harness uses autoreply_test_template; production
-    #    uses autoreply_template — the new {{variable}} template field that replaced
-    #    the legacy autoreply_agent at the user-driven changeover. An agent whose
-    #    new field is empty falls back to the Pear-wide FALLBACK_TEMPLATE.
+    # 6. Look up reply template.
+    #    Phase 2 (enforce mode): swap to the agent's repeat template when is_repeat.
+    #    First-touch: harness uses autoreply_test_template; production uses
+    #    autoreply_template. An empty field falls back to the Pear-wide fallback.
     schema = airtable.schema
-    template_field_id = (
-        schema.users.autoreply_test_template
-        if schema.users.autoreply_test_template != "MISSING"
-        else schema.users.autoreply_template
-    )
-    template_text, template_source = get_template_for_agent(
-        agent_record or {}, template_field_id=template_field_id
-    )
+    if is_repeat:
+        template_text, template_source = get_repeat_template_for_agent(
+            agent_record or {},
+            template_field_id=schema.users.autoreply_repeat_template,
+        )
+        logger.info(
+            "_phase_a: repeat template selected person_id=%s message_id=%s source=%s",
+            person_id,
+            state.message_id,
+            template_source,
+        )
+    else:
+        first_touch_field_id = (
+            schema.users.autoreply_test_template
+            if schema.users.autoreply_test_template != "MISSING"
+            else schema.users.autoreply_template
+        )
+        template_text, template_source = get_template_for_agent(
+            agent_record or {}, template_field_id=first_touch_field_id
+        )
 
     # 7. Fill template via LLM (falls back to literal fill; raises TemplateFillError
     #    only when a required slot has no value or default).
@@ -401,6 +471,22 @@ def _phase_a_create_airtable(
                 "_phase_a: dedup record failed (reply already dispatched) message_id=%s",
                 state.message_id,
             )
+
+        # 11c. Record person reply for Phase-2 window (first-touch AND repeat).
+        #      Records whenever person_id resolved — keeps the window warm for
+        #      observe→enforce flip and ensures repeat detection stays accurate.
+        if person_id is not None:
+            try:
+                dedup.record_person_reply(
+                    person_id=person_id,
+                    mailbox=state.mailbox_email,
+                    gmail_message_id=state.message_id,
+                )
+            except Exception:
+                logger.exception(
+                    "_phase_a: person reply record failed (reply already dispatched) message_id=%s",
+                    state.message_id,
+                )
 
     # 12. Update state.
     state.airtable_record_id = inquiry_id

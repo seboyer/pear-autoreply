@@ -17,6 +17,7 @@ from typing import Any, Literal
 from autoreplies.config import get_settings
 from autoreplies.parsers.base import ParsedLead
 from autoreplies.pipeline.dedup import DedupStore
+from autoreplies.pipeline.identity import PersonResolver
 from autoreplies.pipeline.process_lead import process_lead
 from autoreplies.pipeline.strategies import (
     PipelineStrategies,
@@ -163,6 +164,7 @@ def build_harness_strategies(airtable: AirtableClient) -> PipelineStrategies:
 
 def build_harness_pipeline(
     dedup: DedupStore | None = None,
+    person_resolver: PersonResolver | None = None,
 ) -> Callable[[str, str], None]:
     """Return a run(message_id, mailbox) callable wired with harness strategies.
 
@@ -172,6 +174,9 @@ def build_harness_pipeline(
 
     Pass `dedup` to enable content-fingerprint suppression (watch/backfill). Leave
     None (NoopDedup) for replay, which bypasses dedup by design.
+
+    Pass `person_resolver` to enable Phase-2 repeated-inquiry detection
+    (watch/backfill). Leave None (NoopResolver) for replay.
     """
     settings = get_settings()
     airtable = build_harness_airtable_client()
@@ -195,6 +200,9 @@ def build_harness_pipeline(
             agent_lookup_by="autoreply",
             dedup=dedup,
             dedup_window_seconds=settings.dedup_window_seconds,
+            person_resolver=person_resolver,
+            repeat_inquiry_window_seconds=settings.repeat_inquiry_window_seconds,
+            repeat_inquiry_mode=settings.repeat_inquiry_mode,
         )
 
     return run

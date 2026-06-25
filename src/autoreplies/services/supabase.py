@@ -10,6 +10,8 @@ from typing import Any
 
 import httpx
 
+from autoreplies.utils.identifiers import normalize_email, normalize_phone_e164
+
 logger = logging.getLogger(__name__)
 
 
@@ -80,6 +82,61 @@ class SupabaseClient:
             raise RuntimeError(f"Supabase upsert failed {resp.status_code}: {resp.text[:500]}")
         body = resp.json()
         return body[0] if isinstance(body, list) else body
+
+    def resolve_person_id(
+        self,
+        *,
+        email: str | None,
+        phone: str | None,
+    ) -> str | None:
+        """Resolve a shared person_id from message-monitor's core via PostgREST RPC.
+
+        Calls public.person_for_contact(p_email, p_phone) in the shared Supabase
+        project. Returns None when unmatched or on any error (fail-open per spec).
+
+        Normalization (lowercase email, E.164 phone) is applied here before the
+        RPC call. The RPC SQL function also normalizes internally; we do it here
+        so the contract is explicit and logs show the normalized values.
+        """
+        norm_email = normalize_email(email)
+        norm_phone = normalize_phone_e164(phone)
+
+        # RPC calls don't use the merge-duplicates Prefer header.
+        rpc_headers = {k: v for k, v in self._headers.items() if k != "Prefer"}
+
+        try:
+            resp = httpx.post(
+                f"{self.url}/rest/v1/rpc/person_for_contact",
+                headers=rpc_headers,
+                json={"p_email": norm_email, "p_phone": norm_phone},
+                timeout=10.0,
+            )
+        except Exception:
+            logger.exception("resolve_person_id: HTTP error; failing open")
+            return None
+
+        if not resp.is_success:
+            logger.warning(
+                "resolve_person_id: RPC returned %s: %s",
+                resp.status_code,
+                resp.text[:200],
+            )
+            return None
+
+        body = resp.json()
+        # PostgREST SETOF → list. Handle both unmatched shapes:
+        #   []                    (no row returned)
+        #   [{"person_id": null}] (row returned but person_id is null)
+        rows = body if isinstance(body, list) else [body]
+        if not rows:
+            return None
+        row = rows[0]
+        if not isinstance(row, dict):
+            return None
+        person_id = row.get("person_id")
+        if not person_id:
+            return None
+        return str(person_id)
 
     def update_inquiry_reply(
         self,

@@ -172,6 +172,103 @@ def test_upsert_inquiry_raises_on_http_error() -> None:
         )
 
 
+def test_resolve_person_id_returns_uuid_on_match() -> None:
+    """resolve_person_id returns the person_id string when the RPC returns a row."""
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [
+        {"person_id": "550e8400-e29b-41d4-a716-446655440000", "role": "client"}
+    ]
+
+    with patch("autoreplies.services.supabase.httpx.post", return_value=fake_resp) as mock_post:
+        result = client.resolve_person_id(email="casey@example.com", phone="6465550123")
+
+    assert result == "550e8400-e29b-41d4-a716-446655440000"
+    call_kwargs = mock_post.call_args.kwargs
+    assert call_kwargs["json"] == {"p_email": "casey@example.com", "p_phone": "+16465550123"}
+    assert "Prefer" not in call_kwargs["headers"]
+    url = mock_post.call_args.args[0]
+    assert url == "https://test.supabase.co/rest/v1/rpc/person_for_contact"
+
+
+def test_resolve_person_id_normalizes_email_and_phone() -> None:
+    """resolve_person_id lowercases email and prepends +1 to phone before calling RPC."""
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [{"person_id": "abc-123"}]
+
+    with patch("autoreplies.services.supabase.httpx.post", return_value=fake_resp) as mock_post:
+        client.resolve_person_id(email="CASEY@EXAMPLE.COM", phone="6465550123")
+
+    call_kwargs = mock_post.call_args.kwargs
+    assert call_kwargs["json"]["p_email"] == "casey@example.com"
+    assert call_kwargs["json"]["p_phone"] == "+16465550123"
+
+
+def test_resolve_person_id_empty_list_returns_none() -> None:
+    """resolve_person_id returns None when the RPC returns an empty list (no match)."""
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = []
+
+    with patch("autoreplies.services.supabase.httpx.post", return_value=fake_resp):
+        result = client.resolve_person_id(email="unknown@example.com", phone=None)
+
+    assert result is None
+
+
+def test_resolve_person_id_null_person_id_returns_none() -> None:
+    """resolve_person_id returns None when the row has person_id=null."""
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [{"person_id": None, "role": None}]
+
+    with patch("autoreplies.services.supabase.httpx.post", return_value=fake_resp):
+        result = client.resolve_person_id(email="x@example.com", phone=None)
+
+    assert result is None
+
+
+def test_resolve_person_id_http_error_returns_none(caplog: pytest.LogCaptureFixture) -> None:
+    """resolve_person_id returns None (fail-open) on a non-success HTTP status."""
+    client = _client()
+    fake_resp = MagicMock()
+    fake_resp.is_success = False
+    fake_resp.status_code = 500
+    fake_resp.text = "internal error"
+
+    with (
+        patch("autoreplies.services.supabase.httpx.post", return_value=fake_resp),
+        caplog.at_level("WARNING"),
+    ):
+        result = client.resolve_person_id(email="x@example.com", phone=None)
+
+    assert result is None
+    assert any("RPC returned 500" in r.message for r in caplog.records)
+
+
+def test_resolve_person_id_network_exception_returns_none(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """resolve_person_id returns None (fail-open) on a network exception."""
+    client = _client()
+
+    with (
+        patch(
+            "autoreplies.services.supabase.httpx.post",
+            side_effect=ConnectionError("timeout"),
+        ),
+        caplog.at_level("ERROR"),
+    ):
+        result = client.resolve_person_id(email="x@example.com", phone=None)
+
+    assert result is None
+
+
 def test_upsert_inquiry_posts_to_correct_url() -> None:
     client = _client()
     fake_resp = MagicMock()

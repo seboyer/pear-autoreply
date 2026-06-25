@@ -357,6 +357,9 @@ def main() -> int:
             agent_lookup_by="leads",
             dedup=state,
             dedup_window_seconds=settings.dedup_window_seconds,
+            person_resolver=supabase,
+            repeat_inquiry_window_seconds=settings.repeat_inquiry_window_seconds,
+            repeat_inquiry_mode=settings.repeat_inquiry_mode,
         )
 
     cfg = PollerConfig(
