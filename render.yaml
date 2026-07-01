@@ -166,6 +166,14 @@ envVarGroups:
         value: "60"
       - key: HARNESS_BOOTSTRAP_LOOKBACK_SECONDS
         value: "60"
+      # RFC-822 Message-ID stitching (message-monitor Part A). In this shared
+      # group so it reaches ALL services — critically the poller (inbound upsert)
+      # AND the worker (reply writeback in send_reply_job). Keep "false" until the
+      # public.inquiries columns exist (db/inquiries_rfc822_message_id.sql): a flip
+      # before the ALTER TABLE 400s the reply PATCH *after* the Gmail send → RQ
+      # retry → duplicate reply. Order: apply the DDL, flip to "true" here, redeploy.
+      - key: WRITE_RFC822_MESSAGE_ID
+        value: "false"
       # rate limiting (replaces the Caddy /admin/* limiter)
       - key: RATELIMIT_ENABLED
         value: "true"

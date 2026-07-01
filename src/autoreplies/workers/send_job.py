@@ -82,13 +82,31 @@ def send_reply_job(
     )
     logger.info("send_reply_job: airtable updated inquiry=%s", inquiry_record_id)
 
+    # Capture the sent autoreply's RFC-822 Message-ID for cross-system stitching.
+    # Gmail assigns the Message-ID on send, so read it back from the sent message.
+    # Best-effort: a fetch failure must never break the reply writeback. Gated so
+    # nothing is attempted (or written) until the columns exist + the flag is on.
+    reply_rfc822_message_id: str | None = None
+    if settings.write_rfc822_message_id:
+        try:
+            sent_msg, _ = gmail.get_message(sent.message_id)
+            reply_rfc822_message_id = (sent_msg.get("Message-ID") or "").strip() or None
+        except Exception:
+            logger.warning(
+                "send_reply_job: could not read sent Message-ID for gmail_id=%s; "
+                "leaving reply_rfc822_message_id unset",
+                sent.message_id,
+            )
+
     supabase = SupabaseClient(
         url=settings.supabase_url,
         service_role_key=settings.supabase_service_role_key,
+        write_rfc822=settings.write_rfc822_message_id,
     )
     supabase.update_inquiry_reply(
         id=inquiry_record_id,
         reply_gmail_message_id=sent.message_id,
         reply_message=sent.plaintext_body,
+        reply_rfc822_message_id=reply_rfc822_message_id,
     )
     logger.info("send_reply_job: supabase updated inquiry=%s", inquiry_record_id)

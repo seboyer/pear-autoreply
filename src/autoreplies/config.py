@@ -96,6 +96,13 @@ class Settings(BaseSettings):
     #   enforce — swap to the repeat template on a detected repeat inquiry.
     repeat_inquiry_mode: Literal["off", "observe", "enforce"] = "off"
 
+    # Write the RFC-822 Message-ID header to Supabase inquiries (Part A of the
+    # cross-system stitching foundation — message-monitor joins on it). Default
+    # OFF so the code is safe to deploy BEFORE the columns exist: enable only
+    # after `public.inquiries.rfc822_message_id` / `reply_rfc822_message_id` are
+    # added (see db/inquiries_rfc822_message_id.sql), else the upsert 400s.
+    write_rfc822_message_id: bool = False
+
     @property
     def active_airtable_base_id(self) -> str:
         """Use the staging base when configured (dev/staging only)."""

@@ -269,6 +269,110 @@ def test_resolve_person_id_network_exception_returns_none(
     assert result is None
 
 
+def _client_rfc822() -> SupabaseClient:
+    return SupabaseClient(
+        url="https://test.supabase.co",
+        service_role_key="test-key",
+        write_rfc822=True,
+    )
+
+
+_RFC822 = "<_5NrvqZmhOqB5Z49cDIzUA@notifications.google.com>"
+
+
+def test_upsert_inquiry_includes_rfc822_when_enabled() -> None:
+    """With write_rfc822=True, the raw Message-ID (brackets kept) is in the payload."""
+    client = _client_rfc822()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [{"id": "recABC"}]
+
+    with patch("autoreplies.services.supabase.httpx.post", return_value=fake_resp) as mock_post:
+        client.upsert_inquiry(
+            id="recABC",
+            gmail_message_id="msg-1",
+            user_id=None,
+            apartment_id=None,
+            apartment_failsafe=None,
+            name_form=None,
+            email_form=None,
+            name=None,
+            email=None,
+            phone=None,
+            message=None,
+            type_platform="StreetEasy",
+            rfc822_message_id=_RFC822,
+        )
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert payload["rfc822_message_id"] == _RFC822  # raw form, unchanged
+
+
+def test_upsert_inquiry_omits_rfc822_when_disabled() -> None:
+    """Default client (write_rfc822=False) never writes rfc822 even if passed —
+    safe to deploy before the column exists."""
+    client = _client()  # write_rfc822 defaults False
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [{"id": "recABC"}]
+
+    with patch("autoreplies.services.supabase.httpx.post", return_value=fake_resp) as mock_post:
+        client.upsert_inquiry(
+            id="recABC",
+            gmail_message_id="msg-1",
+            user_id=None,
+            apartment_id=None,
+            apartment_failsafe=None,
+            name_form=None,
+            email_form=None,
+            name=None,
+            email=None,
+            phone=None,
+            message=None,
+            type_platform="StreetEasy",
+            rfc822_message_id=_RFC822,
+        )
+
+    payload = mock_post.call_args.kwargs["json"]
+    assert "rfc822_message_id" not in payload
+
+
+def test_update_inquiry_reply_includes_reply_rfc822_when_enabled() -> None:
+    client = _client_rfc822()
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [{"id": "recABC"}]
+
+    with patch("autoreplies.services.supabase.httpx.patch", return_value=fake_resp) as mock_patch:
+        client.update_inquiry_reply(
+            id="recABC",
+            reply_gmail_message_id="sent-id",
+            reply_message="Hi Casey,",
+            reply_rfc822_message_id=_RFC822,
+        )
+
+    payload = mock_patch.call_args.kwargs["json"]
+    assert payload["reply_rfc822_message_id"] == _RFC822
+
+
+def test_update_inquiry_reply_omits_reply_rfc822_when_disabled() -> None:
+    client = _client()  # write_rfc822 defaults False
+    fake_resp = MagicMock()
+    fake_resp.is_success = True
+    fake_resp.json.return_value = [{"id": "recABC"}]
+
+    with patch("autoreplies.services.supabase.httpx.patch", return_value=fake_resp) as mock_patch:
+        client.update_inquiry_reply(
+            id="recABC",
+            reply_gmail_message_id="sent-id",
+            reply_message="Hi Casey,",
+            reply_rfc822_message_id=_RFC822,
+        )
+
+    payload = mock_patch.call_args.kwargs["json"]
+    assert "reply_rfc822_message_id" not in payload
+
+
 def test_upsert_inquiry_posts_to_correct_url() -> None:
     client = _client()
     fake_resp = MagicMock()
