@@ -321,7 +321,9 @@ def main() -> int:
     queue = Queue("default", connection=redis_conn)
     slack = SlackClient(bot_token=settings.slack_bot_token, channel=settings.slack_channel)
     supabase = SupabaseClient(
-        url=settings.supabase_url, service_role_key=settings.supabase_service_role_key
+        url=settings.supabase_url,
+        service_role_key=settings.supabase_service_role_key,
+        write_rfc822=settings.write_rfc822_message_id,
     )
     strategies = build_production_strategies(
         queue=queue, slack_client=slack, supabase_client=supabase

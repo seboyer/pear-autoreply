@@ -57,7 +57,9 @@ def _build_default_strategies() -> PipelineStrategies:
     queue = Queue("default", connection=redis)
     slack = _SlackClient(bot_token=settings.slack_bot_token, channel=settings.slack_channel)
     supabase = _SupabaseClient(
-        url=settings.supabase_url, service_role_key=settings.supabase_service_role_key
+        url=settings.supabase_url,
+        service_role_key=settings.supabase_service_role_key,
+        write_rfc822=settings.write_rfc822_message_id,
     )
     return build_production_strategies(queue=queue, slack_client=slack, supabase_client=supabase)
 
@@ -242,6 +244,12 @@ def _phase_a_create_airtable(
 
     # 1. Fetch raw email.
     message, thread_id = gmail.get_message(state.message_id)
+
+    # RFC-822 Message-ID header of the lead email — the stable, Hiver-immune key
+    # message-monitor stitches conversations on (same across all Hiver copies).
+    # Stored raw (brackets kept, case preserved) to match message-monitor's form;
+    # written to Supabase only when the write flag is enabled (Part A foundation).
+    incoming_rfc822_message_id = (message.get("Message-ID") or "").strip() or None
 
     # 1a. Hiver (shared inbox) drops a copy of every shared-inbox message into
     #     each Hiver user's personal mailbox, keeping the original recipients —
@@ -516,6 +524,7 @@ def _phase_a_create_airtable(
         "email_form": parsed.email,
         "message": parsed.message_body,
         "type_platform": parsed.source,
+        "rfc822_message_id": incoming_rfc822_message_id,
     }
 
     logger.info(
@@ -543,6 +552,8 @@ def _phase_b_write_supabase(state: JobState, strategies: PipelineStrategies) -> 
         phone=extra.get("prospect_phone"),
         message=extra.get("message"),
         type_platform=extra.get("type_platform", ""),
+        # SupabaseClient gates whether this is actually written (write_rfc822).
+        rfc822_message_id=extra.get("rfc822_message_id"),
     )
 
 

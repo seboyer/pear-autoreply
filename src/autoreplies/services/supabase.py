@@ -16,8 +16,11 @@ logger = logging.getLogger(__name__)
 
 
 class SupabaseClient:
-    def __init__(self, url: str, service_role_key: str) -> None:
+    def __init__(self, url: str, service_role_key: str, *, write_rfc822: bool = False) -> None:
         self.url = url.rstrip("/")
+        # Gate RFC-822 Message-ID writes: keep OFF until the inquiries columns
+        # exist, else PostgREST 400s ("column not found") and the upsert fails.
+        self._write_rfc822 = write_rfc822
         self._headers = {
             "apikey": service_role_key,
             "Authorization": f"Bearer {service_role_key}",
@@ -43,6 +46,7 @@ class SupabaseClient:
         method: str = "Web",  # always "Web" — describes the prospect's contact channel
         date_created: str | None = None,
         sales: bool = False,  # rental-platform leads are always sales=False
+        rfc822_message_id: str | None = None,  # raw Message-ID header of the lead email
         **extra: Any,  # forward-compat for fields added later
     ) -> dict[str, Any]:
         """Upsert a row in the `inquiries` table.
@@ -68,6 +72,8 @@ class SupabaseClient:
             ("phone", phone),
             ("message", message),
             ("date_created", date_created),
+            # Omitted entirely when the flag is off (columns may not exist yet).
+            ("rfc822_message_id", rfc822_message_id if self._write_rfc822 else None),
         ]:
             if val is not None:
                 payload[key] = val
@@ -144,6 +150,7 @@ class SupabaseClient:
         id: str,
         reply_gmail_message_id: str,
         reply_message: str,
+        reply_rfc822_message_id: str | None = None,
     ) -> dict[str, Any]:
         """Write the sent reply's Gmail message-id and plaintext body back to the
         Supabase inquiry row after a successful Gmail send.
@@ -156,14 +163,18 @@ class SupabaseClient:
         Mirrors AirtableClient.update_inquiry_autoreply_body. Called by
         send_reply_job after Gmail send completes.
         """
+        patch_body: dict[str, Any] = {
+            "reply_gmail_message_id": reply_gmail_message_id,
+            "reply_message": reply_message,
+        }
+        if self._write_rfc822 and reply_rfc822_message_id is not None:
+            patch_body["reply_rfc822_message_id"] = reply_rfc822_message_id
+
         resp = httpx.patch(
             f"{self.url}/rest/v1/inquiries",
             headers=self._headers,
             params={"id": f"eq.{id}"},
-            json={
-                "reply_gmail_message_id": reply_gmail_message_id,
-                "reply_message": reply_message,
-            },
+            json=patch_body,
             timeout=30.0,
         )
         if not resp.is_success:

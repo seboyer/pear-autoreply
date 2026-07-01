@@ -837,3 +837,34 @@ def test_phase2_off_mode_does_not_call_resolver() -> None:
     assert len(resolver.calls) == 0
     # No person records written.
     assert len(fake_dedup._person_records) == 0
+
+
+# ── RFC-822 Message-ID extraction (Part A: cross-system stitching) ─────────────
+
+
+def test_phase_a_extracts_rfc822_message_id_and_passes_to_supabase() -> None:
+    """The inbound RFC-822 Message-ID header is extracted (raw form, brackets kept)
+    and passed to the Supabase upsert. The SupabaseClient flag gates whether it's
+    actually written, so process_lead always forwards it."""
+    fixture = "streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"
+    expected = (
+        email_lib.message_from_bytes(_load_fixture_bytes(fixture)).get("Message-ID") or ""
+    ).strip()
+    assert expected  # fixture sanity: it carries a Message-ID header
+
+    airtable = _mock_airtable(inquiry_id="recINQ_RFC")
+    llm = _mock_llm()
+    strategies = _harness_strategies(airtable)
+    strategies.supabase = MagicMock()  # capture the upsert kwargs
+
+    process_lead(
+        "gmail-msg-rfc",
+        "garland@pearnyc.com",
+        strategies=strategies,
+        gmail=_mock_gmail(fixture),
+        airtable=airtable,
+        llm=llm,
+    )
+
+    strategies.supabase.upsert_inquiry.assert_called_once()
+    assert strategies.supabase.upsert_inquiry.call_args.kwargs["rfc822_message_id"] == expected

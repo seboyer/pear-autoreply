@@ -10,6 +10,7 @@ def _make_mock_settings() -> MagicMock:
     mock_settings.active_airtable_base_id = "appwPKlnV6YtbIjWz"
     mock_settings.supabase_url = "https://fuacxndojzybijrqdbym.supabase.co"
     mock_settings.supabase_service_role_key = "service-key"
+    mock_settings.write_rfc822_message_id = False
     return mock_settings
 
 
@@ -82,6 +83,73 @@ def test_send_reply_job_calls_gmail_airtable_and_supabase() -> None:
         id="recINQ1",
         reply_gmail_message_id="sent-msg-id",
         reply_message="Hi Casey,\n\nThanks!",
+        reply_rfc822_message_id=None,  # flag off → not captured
+    )
+
+
+def test_send_reply_job_captures_reply_rfc822_when_enabled() -> None:
+    """With WRITE_RFC822_MESSAGE_ID on, the sent message's Message-ID is fetched
+    (Gmail assigns it on send) and passed to Supabase."""
+    from autoreplies.services.gmail import SentMessage
+
+    fake_sent = SentMessage(
+        message_id="sent-msg-id",
+        plaintext_body="Hi Casey,\n\nThanks!",
+        html_body="Hi Casey,<br>\n<br>\nThanks!",
+        raw_rfc822=b"...",
+    )
+    mock_gmail = MagicMock()
+    mock_gmail.send_reply.return_value = fake_sent
+    mock_gmail.get_default_signature_html.return_value = None
+    # The re-fetched sent message carries the Gmail-assigned Message-ID header.
+    sent_msg = MagicMock()
+    sent_msg.get.return_value = "<CAF-sent-id@mail.gmail.com>"
+    mock_gmail.get_message.return_value = (sent_msg, "thread-abc")
+
+    mock_settings = _make_mock_settings()
+    mock_settings.write_rfc822_message_id = True
+
+    mock_airtable = MagicMock()
+    mock_supabase = MagicMock()
+
+    _run_send_reply_job(mock_gmail, mock_airtable, mock_supabase, mock_settings)
+
+    mock_gmail.get_message.assert_called_once_with("sent-msg-id")
+    mock_supabase.update_inquiry_reply.assert_called_once_with(
+        id="recINQ1",
+        reply_gmail_message_id="sent-msg-id",
+        reply_message="Hi Casey,\n\nThanks!",
+        reply_rfc822_message_id="<CAF-sent-id@mail.gmail.com>",
+    )
+
+
+def test_send_reply_job_reply_rfc822_fails_open_on_fetch_error() -> None:
+    """If re-fetching the sent message fails, the reply writeback still happens
+    with reply_rfc822_message_id=None (never block on the header fetch)."""
+    from autoreplies.services.gmail import SentMessage
+
+    fake_sent = SentMessage(
+        message_id="sent-msg-id",
+        plaintext_body="Hi Casey,\n\nThanks!",
+        html_body="Hi Casey,<br>\n<br>\nThanks!",
+        raw_rfc822=b"...",
+    )
+    mock_gmail = MagicMock()
+    mock_gmail.send_reply.return_value = fake_sent
+    mock_gmail.get_default_signature_html.return_value = None
+    mock_gmail.get_message.side_effect = RuntimeError("gmail unavailable")
+
+    mock_settings = _make_mock_settings()
+    mock_settings.write_rfc822_message_id = True
+
+    mock_supabase = MagicMock()
+    _run_send_reply_job(mock_gmail, MagicMock(), mock_supabase, mock_settings)
+
+    mock_supabase.update_inquiry_reply.assert_called_once_with(
+        id="recINQ1",
+        reply_gmail_message_id="sent-msg-id",
+        reply_message="Hi Casey,\n\nThanks!",
+        reply_rfc822_message_id=None,
     )
 
 
@@ -125,6 +193,7 @@ def test_send_reply_job_no_signature_sends_unsigned() -> None:
         id="recINQ1",
         reply_gmail_message_id="sent-msg-id",
         reply_message="Hi Casey,\n\nThanks!",
+        reply_rfc822_message_id=None,  # flag off → not captured
     )
 
 
