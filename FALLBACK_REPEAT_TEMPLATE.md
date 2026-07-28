@@ -18,7 +18,7 @@ Used when an agent's `Users.Autoreply Repeat Template (Agent)` field in Airtable
 
 > Hi {{first_name|there}}!
 >
-> Thank you for your continued interest in {{apartment_address|this listing}}. I wanted to follow up to make sure you have everything you need — please don't hesitate to reach out if you have any questions or would like to schedule a showing.
+> Thank you for your continued interest in working with us! I got your additional inquiry for {{apartment_address|this listing}}. Please let me know if anything has changed or you have any additional questions.
 >
 > Happy Hunting,
 
