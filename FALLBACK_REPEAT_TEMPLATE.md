@@ -24,5 +24,6 @@ Used when an agent's `Users.Autoreply Repeat Template (Agent)` field in Airtable
 
 ## Implementation notes
 
-- This template is loaded at startup from this file. After editing, the service needs a reload (or restart) to pick up changes — no deploy required if the file is volume-mounted.
+- **Editing this file requires a rebuild + deploy.** It is baked into the Docker image at build time (`COPY FALLBACK_REPEAT_TEMPLATE.md ./` in `Dockerfile`) and read from the project root at request time. It is *not* volume-mounted on Render, so a restart re-reads the same image bytes — an edit that isn't in the deployed image cannot take effect. `autoDeploy` is off, so trigger the deploy manually (see RENDER_MIGRATION.md).
+- There is no hot-reload path for this template. `services/templates.py::_load_repeat_fallback_template` is `@lru_cache`d with no `reload_*` counterpart (the first-touch loader has `reload_pear_fallback_template()`; this one does not), and `POST /admin/reload-template` is still a 501 stub.
 - This fallback applies only to the repeat-inquiry path (Phase 2). For first-touch replies, see `FALLBACK_TEMPLATE.md`.

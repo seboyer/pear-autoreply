@@ -80,4 +80,10 @@ The system appends the agent's default Gmail signature directly below "Talk soon
 
 ## Editing
 
-Edit the template body section above. The system loads it from this file at startup. After editing, ping the service to reload via `POST /admin/reload-template` (bearer token required) — no redeploy needed.
+Edit the template body section above, then **rebuild and deploy** — the edit does not reach production any other way.
+
+This file is baked into the Docker image at build time (`COPY FALLBACK_TEMPLATE.md ./` in `Dockerfile`) and read from the project root at request time. It is *not* volume-mounted on Render, so a restart re-reads the same image bytes: an edit that isn't in the deployed image cannot take effect. `autoDeploy` is off, so trigger the deploy manually (see RENDER_MIGRATION.md).
+
+`POST /admin/reload-template` does **not** work today — it is a 501 stub (`routes/admin.py`). The in-process cache-drop it is meant to call (`services/templates.py::reload_pear_fallback_template`) exists but is unwired; even once wired, it would only help if this file could change on disk without a rebuild, which it cannot on Render.
+
+The repeat-inquiry fallback has the same constraints — see `FALLBACK_REPEAT_TEMPLATE.md`.
