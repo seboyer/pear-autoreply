@@ -1,31 +1,82 @@
-# Handoff: Phase 2 dedupe — repeated inquiries from the same person (design)
+# Handoff: Phase 2 dedupe — repeated inquiries from the same person
 
 > **For a fresh session, picked up later.** Self-contained — assumes the repo +
 > CLAUDE.md, not the conversation that produced it. Read CLAUDE.md and PLAN.md first,
 > then this. Phase 1 (duplicate-message suppression) is **done**; this is Phase 2.
+>
+> **This doc is now part design record, part as-built reference.** The original design
+> below was written before implementation and **the shipped behavior diverges from it in
+> three material ways** (see "As built" → *Where the shipped design diverges*). Read the
+> as-built section as authoritative; the rest is retained for rationale.
 
-## Status: BLOCKED on message-monitor go-live
+## Status: IMPLEMENTED and validated — cleared to enforce (2026-08-02)
 
-**Do not start implementing until `message-monitor` is deployed AND its client
-people-sync has run.** Until then this design delivers ~zero suppression (the shared
-identity tables are empty/sparse for prospects), so there's nothing to validate.
+Shipped in **PR #28**, on `main`. The original blocker (message-monitor go-live +
+client people-sync) is **resolved**: `public.person_for_contact` exists and resolves
+~89–93% of inbound leads.
 
-- **The blocker:** Phase 2 recognizes the same prospect *across* inquiries using
-  `message-monitor`'s shared client-identity model (`core.people` /
-  `core.person_identifiers` / `core.conversations`). As of this writing
-  `message-monitor` (`~/Dev/message-monitor`) is **not yet deployed**, and only
-  *agents* are synced into `core.people` — clients become "holding-pen" rows on first
-  inbound, and there's an open `sync_people` merge bug (see its `todo.md`). So prospect
-  identity won't be reliably present until it's live and a **full people-sync (~9,024
-  users)** has run.
-- **Sam's decision (why we wait rather than build a stopgap):** Phase 2 is designed
-  **core-integrated** and launched **in parallel with message-monitor**, so the shared
-  identity architecture is there to use. **No throwaway interim bridge** (e.g. querying
-  autoreplies' own `public.inquiries` by email/phone) — that would reinvent identity
-  and get thrown away.
-- **How to know it's unblocked:** message-monitor deployed (check its `render.yaml` /
-  Render project) and the full Airtable→`core.people` sync run for all users (not just
-  agents). Confirm with Sam.
+Rollout is a three-state flag, `REPEAT_INQUIRY_MODE` ∈ `off` | `observe` | `enforce`
+(`config.py:97`, default `off`), with `REPEAT_INQUIRY_WINDOW_SECONDS` default
+`1209600` (14 days, `config.py:92`).
+
+- `off` — Phase 2 is fully inert; the identity RPC is never called.
+- `observe` — resolves identity, logs `_phase_a: OBSERVE repeat inquiry …`, and
+  **still records `replied_persons`**. Sends are unchanged.
+- `enforce` — same, but swaps the template.
+
+**Observe ran 2026-06-11 → 07-28** (12,942 leads, ~275/day) and validated cleanly:
+identity resolution ~89–93%, zero over-merge, **20.1% of leads flagged as repeats
+≈ 43/day**. Sam cleared the flip to `enforce` on 2026-08-02.
+
+Because `record_person_reply` runs in `observe` as well (gated only on
+`person_id is not None`, `process_lead.py:486`), `replied_persons` is already warm —
+flipping to `enforce` has **no cold-start blind spot**.
+
+## As built (authoritative — read this before the design sections)
+
+**Dedup key: `(person_id, mailbox_email)` within 14 days.** Not the apartment, and not
+an "active conversation" join. A returning prospect who contacts the *same agent
+mailbox* inside the window is a repeat, whether or not it's the same listing.
+
+**Behavior on a repeat: swap the template — do not suppress.** The inquiry is still
+recorded in Airtable, Slack still fires, and a reply is still sent. The only change is
+which template renders: `Users.Autoreply Repeat Template (Agent)`
+(`fldZP0fx15Yp4IRof`), falling back to `FALLBACK_REPEAT_TEMPLATE.md` when that field is
+blank. `template_source` records `"agent"` or `"pear_default"` accordingly.
+
+| Piece | Where |
+|---|---|
+| Mode gate + identity resolve + repeat lookup | `pipeline/process_lead.py` step **2c** (right after the Phase-1 fingerprint dedup) |
+| Template selection | `pipeline/process_lead.py` step **9** — `get_repeat_template_for_agent` when `is_repeat`, else `get_template_for_agent` |
+| Recording the reply into the window | `pipeline/process_lead.py` step **11c** — runs for first-touch **and** repeat sends |
+| Identity RPC | `services/supabase.py::resolve_person_id` → `POST /rest/v1/rpc/person_for_contact` |
+| Window state | `workers/poller_state.py` → `replied_persons` (person_id, mailbox_email, gmail_message_id, replied_at) |
+| Template resolution + rich-text un-escaping | `services/templates.py::get_repeat_template_for_agent`, `_unescape_rich_text` |
+| Tests for the enforce branch | `tests/pipeline/test_process_lead.py:591-771` |
+
+**Fail-open at both steps.** A raised exception from `resolve_person_id` or
+`recent_person_reply` is logged and treated as "not a repeat", so the prospect gets the
+normal first-touch reply. The revenue path never depends on the identity layer being up.
+
+### Where the shipped design diverges from the design sections below
+
+1. **Suppress → swap.** The design recommended *suppressing the auto-send* (route =
+   skipped) on a repeat. What shipped instead **always sends**, using shorter
+   repeat-specific copy. Rationale: a returning prospect should still get an
+   acknowledgment; the thing to avoid is re-firing the full intake questionnaire into a
+   live conversation, not going silent. Anything below describing `route = skipped` or a
+   `should_auto_reply(...) -> Decision` shape is **not** what exists.
+2. **"Active conversation" → mailbox + time window.** The design keyed on *(same
+   person) AND (active conversation)* via a `core.conversations` join. What shipped keys
+   on *(same person) AND (same agent mailbox) AND (within 14 days)*. There is no
+   `core.conversations` read.
+3. **Listing is deliberately not in the key.** The design floated "same person, genuinely
+   new listing after a gap → may still warrant a first-touch." Sam **explicitly rejected**
+   adding apartment to the key (2026-08-02): the goal is that a client with an ongoing
+   thread never receives another first-touch email, same listing or not. The repeat
+   template copy is worded to read correctly either way ("your additional inquiry for
+   {{apartment_address|this listing}}"). Observe data showed the split was ~50/50
+   same-vs-different listing, so this is a real behavioral choice, not a no-op.
 
 ## Why Phase 2 exists (what Phase 1 deliberately leaves on the table)
 
@@ -71,6 +122,10 @@ mechanism; not Phase 2's concern.)
 a recency window, to determine whether there's an *active* conversation.
 
 **Reply policy (the product call — get Sam's sign-off before building).**
+> ⚠️ **Superseded.** This is the pre-implementation proposal. What shipped swaps the
+> template rather than suppressing the send, and keys on mailbox + 14-day window rather
+> than an "active conversation" — see *As built* above. Retained for rationale only.
+
 - New prospect, no prior contact → auto-reply (unchanged).
 - Same person, **active conversation** (recent first-touch already sent, or a
   mid-conversation follow-up) → **do not re-fire the first-touch template.** Recommended:
@@ -83,11 +138,12 @@ a recency window, to determine whether there's an *active* conversation.
 **Hook point.** Reuse Phase 1's seam in `pipeline/process_lead._phase_a_create_airtable`
 — the post-parse / pre-side-effect region. That region already runs, in order: (1a) the
 #25 Hiver recipient-gate, (2) parse, (2b) the Phase-1 fingerprint dedup. Phase 2 adds a
-`should_auto_reply(person, parsed, history) -> Decision` check after those (it needs the
-parsed lead + identity). Unlike Phase 1 (which fully drops the duplicate), a Phase-2
-"suppress" still records the inquiry + notifies Slack — it only skips the auto-send.
+check after those (it needs the parsed lead + identity).
+*(As built: this seam was used as designed — the gate is step 2c. The
+`should_auto_reply(...) -> Decision` shape was not; template selection happens later, at
+step 9, and no send is ever skipped.)*
 
-## The access-path wrinkle (concrete — decide this early)
+## The access-path wrinkle — RESOLVED: option (b)
 
 autoreplies reaches Supabase via **PostgREST HTTP against the `public` schema only**
 (`services/supabase.py` — `httpx` to `/rest/v1/...` with the service-role key). Reading
@@ -95,31 +151,50 @@ autoreplies reaches Supabase via **PostgREST HTTP against the `public` schema on
 Options:
 - **(a)** Add `core` to the project's PostgREST exposed-schemas setting **+** grant the
   autoreplies role SELECT on `core.*`. Project-wide change (message-monitor's project).
-- **(b) Recommended:** have message-monitor expose a **`public` view or RPC** (e.g.
-  `public.person_recent_contact(email, phone)`) that autoreplies calls via PostgREST
-  with no schema exposure — an explicit, owned, minimal contract boundary. Coordinate
-  via a message-monitor migration.
+- **(b) ✅ CHOSEN and shipped:** message-monitor exposes a **`public` RPC** that
+  autoreplies calls via PostgREST with no schema exposure — an explicit, owned, minimal
+  contract boundary. The as-built function is **`public.person_for_contact(p_email,
+  p_phone)`** (the design's `person_recent_contact` name was not used). Caller:
+  `services/supabase.py::resolve_person_id`. autoreplies never reads `core` directly.
 
 ## Safety / rollout
 
 - **Fail open.** Never gate the revenue path on the observer. If `core` is unreachable
   or returns nothing, default to current behavior (auto-reply). autoreplies is the
   revenue path; message-monitor is an observer.
-- **Observe-then-enforce.** Ship behind a flag in "observe" mode first (log what *would*
-  be suppressed), validate against real repeated-inquiry data, then enforce.
+- **Observe-then-enforce.** ✅ Done as designed — `REPEAT_INQUIRY_MODE` shipped `off`,
+  ran 47 days in `observe`, cleared for `enforce` 2026-08-02.
 - **CLAUDE.md hard rules still apply:** never create a User from a lead; Airtable by
   immutable ID; all Airtable formulas via `pyairtable.formulas`.
 
-## Deliverable
+## Operating notes (post-launch)
 
-A written design proposal (data model leveraging `core` identity, reply-policy rules,
-hook point, the access-path decision, migration/rollout), **reviewed by Sam before
-implementation.** Implementation is a follow-up.
+- **Verify a repeat send by its rendered body, not by `template_source`.** All 7
+  autoreply-enabled agents currently have their repeat field *populated* with text
+  identical to `FALLBACK_REPEAT_TEMPLATE.md` — done so agents have something to edit
+  from, not for a technical reason. Consequence: repeat rows record
+  `template_source = "agent"`, **not** `"pear_default"`, and the fallback file is
+  effectively unreachable in production until an agent clears their field or an 8th
+  agent is enabled.
+- **Both template fields are Airtable `richText`**, so values arrive Markdown-escaped
+  (`{{first\_name|there}}`). `_unescape_rich_text` (PR #21) reverses this before slot
+  parsing. A repeat template authored outside Airtable must survive that round-trip.
+- **Deploys are decoupled from the flag.** Render `autoDeploy` is off; changing
+  `REPEAT_INQUIRY_MODE` restarts the service against the *same image* — no rebuild, and
+  no need to ship unrelated commits sitting on `main` just to flip the mode.
+- **Agents' repeat templates may diverge over time.** Identical-to-fallback is the
+  starting state, not an invariant — don't write checks that assume the values match.
+
+## Deliverable — ✅ complete
+
+The design proposal was reviewed and implemented in **PR #28**. This document is now the
+as-built record.
 
 ## Pointers
 
 | What | Where |
 |---|---|
+| **Phase 2 implementation** | **PR #28**; `pipeline/process_lead.py` (2c gate, 9 template swap, 11c record), `workers/poller_state.py` (`replied_persons`), `services/supabase.py` (`resolve_person_id`), `services/templates.py` (`get_repeat_template_for_agent`) |
 | Phase 1 (the dispatch-layer seam Phase 2 reuses) | PR #27; `pipeline/process_lead.py` (1a Hiver gate, 2b fingerprint dedup), `pipeline/dedup.py` |
 | message-monitor repo | `~/Dev/message-monitor` — `CLAUDE.md`, `migrations/0001_core.sql` (identity schema), `todo.md` (people-sync status + `sync_people` merge bug) |
 | message-monitor design/roadmap | `~/.claude/plans/happy-growing-manatee.md` |

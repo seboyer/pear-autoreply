@@ -7,13 +7,15 @@ This task adds **dedupe** so a prospect doesn't receive the same auto-reply more
 once. It was deliberately deferred during launch; it's logged in PLAN.md "Remaining
 open items" (entry "Repeated / duplicate inquiries").
 
-> **STATUS (current):**
+> **STATUS (2026-08-02):**
 > - **Phase 1 (duplicate messages) — ✅ DONE, PR #27.** Content+sender fingerprint
 >   dedupe at the dispatch layer.
-> - **Phase 2 (repeated inquiries from the same person) — DEFERRED, BLOCKED on
->   message-monitor go-live.** The current self-contained brief is
+> - **Phase 2 (repeated inquiries from the same person) — ✅ DONE, PR #28**, observe-
+>   validated and cleared for `enforce`. The as-built record is
 >   **[DEDUPE_PHASE2_HANDOFF.md](./DEDUPE_PHASE2_HANDOFF.md)** — start there. The
 >   Phase 2 section below is the original sketch, superseded by that doc.
+>   **Note:** what shipped *swaps the template* on a repeat; it does **not** suppress
+>   the send. Any "suppress"/"skip" language below is the superseded proposal.
 
 ## Why this exists / current behavior
 
