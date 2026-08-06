@@ -89,6 +89,26 @@ class JobState:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
+def _capitalize_first_name(name: str | None) -> str | None:
+    """Upper-case the leading letter of a prospect's first name for the greeting.
+
+    Prospects routinely type their name lowercase on StreetEasy/Zillow, and both
+    fill paths substitute the slot value verbatim — so "hi katie," went out as-is.
+    Only the first character is touched: `.capitalize()` would flatten "McKenna"
+    to "Mckenna" and "JJ" to "Jj".
+
+    `None` passes through untouched so the template's ``{{first_name|there}}``
+    default still fires for nameless leads (Zillow, and the email-shaped /
+    title-residue cases in `parsers_base.split_name`).
+    """
+    if not name:
+        return name
+    stripped = name.strip()
+    if not stripped:
+        return name
+    return stripped[:1].upper() + stripped[1:]
+
+
 class _NotAddressedToMailbox(Exception):
     """Internal signal: the message wasn't delivered to the polled mailbox (a
     Hiver shared-inbox mirror). process_lead skips it without side effects."""
@@ -390,7 +410,7 @@ def _phase_a_create_airtable(
     # 7. Fill template via LLM (falls back to literal fill; raises TemplateFillError
     #    only when a required slot has no value or default).
     slots: dict[str, Any] = {
-        "first_name": parsed.first_name,
+        "first_name": _capitalize_first_name(parsed.first_name),
         "apartment_address": parsed.apartment_address,
     }
     fill_skipped_reason: str | None = None

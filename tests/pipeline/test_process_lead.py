@@ -17,10 +17,11 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from autoreplies.harness.pipeline import build_harness_strategies
-from autoreplies.pipeline.process_lead import process_lead
+from autoreplies.pipeline.process_lead import _capitalize_first_name, process_lead
 from autoreplies.pipeline.strategies import PipelineStrategies
 from autoreplies.services.airtable import AirtableClient
 from autoreplies.services.airtable_schema import PROD, TEST
+from autoreplies.services.llm import literal_fill
 
 FIXTURES_DIR = Path(__file__).parent.parent.parent / "fixtures" / "anonymized"
 
@@ -175,6 +176,56 @@ def test_streeteasy_tour_calls_llm_fill_template() -> None:
     # Grace Xu is extracted from the StreetEasy subject
     assert slots["first_name"] == "Grace"
     assert "Saint Mark" in (slots["apartment_address"] or "")
+
+
+# ── first_name capitalization ─────────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("katie", "Katie"),  # the bug: prospects type their name lowercase
+        ("Katie", "Katie"),  # already capitalized — untouched
+        ("McKenna", "McKenna"),  # .capitalize() would flatten this to "Mckenna"
+        ("JJ", "JJ"),
+        ("mary-jane", "Mary-jane"),  # only the leading letter is in scope
+        ("  katie  ", "Katie"),  # the LLM path substitutes verbatim — strip first
+        ("élodie", "Élodie"),
+        (None, None),  # nameless lead → template default still fires
+        ("", ""),
+    ],
+)
+def test_capitalize_first_name(raw: str | None, expected: str | None) -> None:
+    assert _capitalize_first_name(raw) == expected
+
+
+def test_capitalize_first_name_none_still_hits_template_default() -> None:
+    """A None first name must reach literal_fill as None so `there` is used."""
+    filled = literal_fill(
+        "Hi {{first_name|there}}, thanks!", {"first_name": _capitalize_first_name(None)}
+    )
+    assert filled == "Hi there, thanks!"
+
+
+def test_lowercase_prospect_name_is_capitalized_in_slots() -> None:
+    """End-to-end: a lead whose name arrives lowercase fills the slot capitalized."""
+    fixture = "streeteasy/tour__65-saint-mark-s-avenue-2b__9.eml"
+    raw = _load_fixture_bytes(fixture).replace(b"Grace Xu", b"grace xu")
+    gmail = MagicMock()
+    gmail.get_message.return_value = (email_lib.message_from_bytes(raw), "thread-abc")
+    airtable = _mock_airtable()
+    llm = _mock_llm()
+
+    process_lead(
+        "gmail-msg-x",
+        "garland@pearnyc.com",
+        strategies=_harness_strategies(airtable),
+        gmail=gmail,
+        airtable=airtable,
+        llm=llm,
+    )
+
+    assert llm.fill_template.call_args.kwargs["slots"]["first_name"] == "Grace"
 
 
 # ── Zillow fixture ────────────────────────────────────────────────────────────
