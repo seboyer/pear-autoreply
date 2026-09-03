@@ -3,6 +3,15 @@
 This document describes the migration of the Pear Autoreplies stack from a
 DigitalOcean droplet (single Docker Compose host) to Render.
 
+> **Status (2026-09-02): migration complete, droplet deleted.** Render is the only
+> deployment target. Every `ssh root@161.35.13.81` step below is historical and
+> cannot be run; the "DO as fallback" rollback path in §6 no longer exists. The
+> droplet's IP was recycled to a third party while `autoreplies.pearnyc.com` still
+> pointed at it, which was exploited as a dangling-DNS subdomain takeover (see
+> CLAUDE.md → *Production*). The remaining action from §5 is the DNS record
+> itself: remove the stale A record, or CNAME the hostname to the Render `-web`
+> service as a Custom Domain.
+
 **Current state (read this first):** DO is running the **testing harness**, which
 writes to the TEST Airtable base — **production has not launched anywhere yet.**
 So this migration is two distinct moves:
@@ -333,11 +342,17 @@ send-traffic cutover.
 
 1. **DNS (Google Domains)** — repoint `autoreplies.pearnyc.com` to Render, or add
    it as a **Custom Domain** on `-web` (CNAME → the `.onrender.com` host; Render
-   auto-provisions the cert).
+   auto-provisions the cert). **Do this before (or at the moment) the old host is
+   decommissioned.** This step was skipped when the droplet was deleted, leaving
+   the A record dangling at a recycled IP — see the status note at the top.
 
 ---
 
 ## 6. Rollback
+
+> **Obsolete:** the DO droplet is deleted, so neither rollback path below can be
+> executed. Kept for the record only. Rollback on Render today means redeploying a
+> previous image from the Render dashboard.
 
 No data migration is needed — SQLite cursors are independent per platform.  The
 two moves roll back separately.

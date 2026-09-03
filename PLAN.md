@@ -398,6 +398,10 @@ This avoids Cloudflare Access / Tailscale / OAuth flows. If we later decide we w
 
 ## Deployment — DigitalOcean droplet
 
+> **Superseded.** Production runs on Render (see `render.yaml` and
+> `RENDER_MIGRATION.md`); the droplet described here was deleted. Retained as the
+> original design rationale only.
+
 For 500+/day, the droplet path beats Render once you factor in always-on workers + Redis + scheduled tasks. Render's free/$7 tier can't run dedicated workers and the cold-start risk on the Pub/Sub webhook is unacceptable.
 
 **Stack:**
