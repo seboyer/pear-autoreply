@@ -3,18 +3,24 @@
 This document describes the migration of the Pear Autoreplies stack from a
 DigitalOcean droplet (single Docker Compose host) to Render.
 
-**Current state (read this first):** DO is running the **testing harness**, which
-writes to the TEST Airtable base — **production has not launched anywhere yet.**
-So this migration is two distinct moves:
+> **Status (2026-09-02): migration complete, droplet deleted.** Render is the only
+> deployment target. Every `ssh root@161.35.13.81` step below is historical and
+> cannot be run; the "DO as fallback" rollback path in §6 no longer exists. The
+> droplet's IP was recycled to a third party while `autoreplies.pearnyc.com` still
+> pointed at it, which was exploited as a dangling-DNS subdomain takeover (see
+> CLAUDE.md → *Production*). The remaining action from §5 is the DNS record
+> itself: remove the stale A record, or CNAME the hostname to the Render `-web`
+> service as a Custom Domain.
+
+**Current state:** both the testing harness and production run on Render; the
+droplet is gone. The text below is the runbook as it was executed. At the time it
+was written, DO was running the **testing harness** (writing the TEST Airtable
+base) and production had not launched anywhere, so the migration was two moves:
 
 1. **Hand the harness off** from DO to Render (stop DO's harness-poller, start
    Render's). Both write the same TEST base, so they must never run at once.
 2. **Launch production for the first time, on Render** (enable the prod poller).
    This is a first-time launch, not a cutover from a running DO prod system.
-
-DO's role is therefore (a) the harness to hand off, and (b) a **fallback launch
-target** for production if Render misbehaves — not a live system to "restore".
-Keep it deployable until production is stable on Render.
 
 ---
 
@@ -34,7 +40,7 @@ Keep it deployable until production is stable on Render.
 
 ### Goal
 
-Move the testing harness to Render and validate parity (parse/match/template) against the DO harness's known-good output, then **launch production for the first time on Render**.  Production has never run on DO, so this is a launch, not a cutover.  Keep DO deployable as a fallback launch target until Render is stable.
+Move the testing harness to Render and validate parity (parse/match/template) against the DO harness's known-good output, then **launch production for the first time on Render**.  Production has never run on DO, so this is a launch, not a cutover.  (DO was kept as a fallback launch target during the migration; it has since been deleted.)
 
 ---
 
@@ -333,11 +339,17 @@ send-traffic cutover.
 
 1. **DNS (Google Domains)** — repoint `autoreplies.pearnyc.com` to Render, or add
    it as a **Custom Domain** on `-web` (CNAME → the `.onrender.com` host; Render
-   auto-provisions the cert).
+   auto-provisions the cert). **Do this before (or at the moment) the old host is
+   decommissioned.** This step was skipped when the droplet was deleted, leaving
+   the A record dangling at a recycled IP — see the status note at the top.
 
 ---
 
 ## 6. Rollback
+
+> **Obsolete:** the DO droplet is deleted, so neither rollback path below can be
+> executed. Kept for the record only. Rollback on Render today means redeploying a
+> previous image from the Render dashboard.
 
 No data migration is needed — SQLite cursors are independent per platform.  The
 two moves roll back separately.

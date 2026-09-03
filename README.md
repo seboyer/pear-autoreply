@@ -19,7 +19,7 @@ See [`FALLBACK_TEMPLATE.md`](./FALLBACK_TEMPLATE.md) for the generic Pear-wide r
 - **FastAPI** for the Pub/Sub webhook + admin endpoints
 - **RQ + Redis** for the worker queue + idempotency state
 - **Caddy** as TLS-terminating reverse proxy (auto Let's Encrypt)
-- **Docker Compose** for both local dev and the production droplet
+- **Docker Compose** for local dev (production runs on Render; see below)
 - Anthropic Claude Haiku 4.5 for templated reply slot-fill
 
 ## Repository layout
@@ -87,7 +87,7 @@ make down      # stop everything
 
 Target: **Render**, declared by [`render.yaml`](./render.yaml) (Blueprint). Render auto-provisions TLS and handles routing — Caddy is not used on Render. The stack maps directly: one `web` service, two `worker` replicas, one `scheduler`, one `poller`, one `harness-poller`, and a managed Key Value (`noeviction`) for RQ.
 
-The DigitalOcean droplet at `161.35.13.81` is retained as a rollback target until the Render environment passes the [RENDER_MIGRATION.md](./RENDER_MIGRATION.md) validation checklist.
+Render is the only deployment target. The DigitalOcean droplet that originally hosted the stack has been deleted; `Caddyfile` / `Dockerfile.caddy` and the droplet steps in older docs are historical. Do not leave `autoreplies.pearnyc.com` pointing at a host you no longer control — a stale A record to the recycled droplet IP was abused as a subdomain takeover in mid-2026.
 
 See [RENDER_MIGRATION.md](./RENDER_MIGRATION.md) for the full migration runbook, one-time dashboard setup (Secret Files, env secrets), staged rollout instructions, and the validation checklist.
 
