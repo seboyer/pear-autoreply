@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     # Slack
     slack_bot_token: str = ""
     slack_channel: str = "#platform-leads"
+    # Ops alerts (poller dispatch failures, writebacks that exhausted retries).
+    # Empty = alerts are logged at ERROR only, never posted to Slack.
+    alert_slack_channel: str = ""
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

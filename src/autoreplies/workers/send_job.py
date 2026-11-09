@@ -14,8 +14,9 @@ from autoreplies.config import get_settings
 from autoreplies.services.airtable import AirtableClient
 from autoreplies.services.airtable_schema import get_schema
 from autoreplies.services.gmail import GmailClient
-from autoreplies.services.supabase import SupabaseClient
+from autoreplies.services.supabase import SupabaseClient, is_transient_supabase_error
 from autoreplies.utils.email_format import plaintext_to_html
+from autoreplies.workers.writeback_jobs import enqueue_writeback, update_inquiry_reply_job
 
 logger = logging.getLogger(__name__)
 
@@ -103,10 +104,35 @@ def send_reply_job(
         service_role_key=settings.supabase_service_role_key,
         write_rfc822=settings.write_rfc822_message_id,
     )
-    supabase.update_inquiry_reply(
+    # The email is already out. This job has no RQ Retry (a retry would resend),
+    # so a transient failure, or a row that phase B hasn't written yet, goes to a
+    # writeback-only job that RQ retries with backoff.
+    try:
+        row = supabase.update_inquiry_reply(
+            id=inquiry_record_id,
+            reply_gmail_message_id=sent.message_id,
+            reply_message=sent.plaintext_body,
+            reply_rfc822_message_id=reply_rfc822_message_id,
+        )
+    except Exception as exc:
+        if not is_transient_supabase_error(exc):
+            raise
+        row, reason = None, repr(exc)
+    else:
+        reason = "0 rows matched (inquiry row not written yet)"
+    if row:
+        logger.info("send_reply_job: supabase updated inquiry=%s", inquiry_record_id)
+        return
+    enqueue_writeback(
+        update_inquiry_reply_job,
+        description=f"update_inquiry_reply_job inquiry={inquiry_record_id}",
         id=inquiry_record_id,
         reply_gmail_message_id=sent.message_id,
         reply_message=sent.plaintext_body,
         reply_rfc822_message_id=reply_rfc822_message_id,
     )
-    logger.info("send_reply_job: supabase updated inquiry=%s", inquiry_record_id)
+    logger.warning(
+        "send_reply_job: supabase writeback deferred to retry job inquiry=%s reason=%s",
+        inquiry_record_id,
+        reason,
+    )

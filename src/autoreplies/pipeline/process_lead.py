@@ -193,17 +193,44 @@ def process_lead(
             )
             _save_state(state)
 
+        # Phases B and C run independently: the reply is already queued, so a
+        # Supabase failure must not cost the agent their Slack notification
+        # (Oct-Nov 2026: 344 leads lost their #platform-leads post this way).
+        # The Live strategies defer transient failures to retrying RQ jobs, so
+        # anything raised here is a permanent error or a failed enqueue.
+        # NEVER re-dispatch process_lead to recover: JobState isn't persisted,
+        # so a re-run would repeat phase A and send a second email.
+        first_error: Exception | None = None
+
         # Phase B — Supabase upsert (idempotent on Airtable record ID).
         if not state.supabase_done:
-            _phase_b_write_supabase(state, strategies)
-            state.supabase_done = True
-            _save_state(state)
+            try:
+                _phase_b_write_supabase(state, strategies)
+                state.supabase_done = True
+                _save_state(state)
+            except Exception as exc:
+                first_error = exc
+                logger.warning(
+                    "process_lead: phase B failed; still posting Slack message_id=%s error=%r",
+                    message_id,
+                    exc,
+                )
 
         # Phase C — Slack notification.
         if not state.slack_done:
-            _phase_c_post_slack(state, strategies)
-            state.slack_done = True
-            _save_state(state)
+            try:
+                _phase_c_post_slack(state, strategies)
+                state.slack_done = True
+                _save_state(state)
+            except Exception as exc:
+                logger.warning(
+                    "process_lead: phase C failed message_id=%s error=%r", message_id, exc
+                )
+                if first_error is None:
+                    first_error = exc
+
+        if first_error is not None:
+            raise first_error
 
         state.fully_done = True
         _save_state(state)
@@ -220,6 +247,12 @@ def process_lead(
             mailbox_email,
             message_id,
         )
+        return
+
+    except parsers_base.NotALeadError as exc:
+        # Not a failure — platform marketing / account mail from a lead sender
+        # address. Skip cleanly; the poller marks it processed (no error).
+        logger.info("process_lead: skip (not a lead) message_id=%s: %s", message_id, exc)
         return
 
     except DuplicateLeadSuppressed as exc:
