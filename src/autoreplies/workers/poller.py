@@ -137,6 +137,7 @@ class PollStats:
     succeeded: int = 0
     failed: int = 0
     max_internal_date_ms: int | None = None
+    failed_message_ids: list[str] = field(default_factory=list)
 
 
 def _default_now_ms() -> int:
@@ -181,6 +182,7 @@ def poll_once(
             dispatch(message_id, mailbox)
         except Exception as exc:
             stats.failed += 1
+            stats.failed_message_ids.append(message_id)
             logger.exception(
                 "poll_once: dispatch failed mailbox=%s message_id=%s",
                 mailbox,
@@ -195,6 +197,57 @@ def poll_once(
     state.set_last_seen(mailbox, max_seen)
     stats.max_internal_date_ms = max_seen
     return stats
+
+
+# ── failure alerts ────────────────────────────────────────────────────────────
+
+AlertFn = Callable[[str, dict[str, Any]], None]
+
+
+class FailureAlerter:
+    """Batch dispatch failures into at most one alert per `min_interval_seconds`.
+
+    A dispatch failure now means a lead most likely got no reply (non-leads are
+    skipped and Supabase/Slack failures are deferred to retry jobs), so each
+    one is worth a human look — but an outage shouldn't post one alert per lead.
+    Failures accumulate until the throttle window has passed, then flush as a
+    single summary; nothing is dropped while the process lives.
+    """
+
+    def __init__(
+        self,
+        alert: AlertFn,
+        *,
+        min_interval_seconds: float = 900,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self._alert = alert
+        self._min_interval = min_interval_seconds
+        self._clock = clock
+        self._last_sent: float | None = None
+        self._pending: list[tuple[str, str]] = []  # (mailbox, message_id)
+
+    def record(self, mailbox: str, message_ids: list[str]) -> None:
+        self._pending.extend((mailbox, mid) for mid in message_ids)
+
+    def flush_if_due(self) -> None:
+        if not self._pending:
+            return
+        now = self._clock()
+        if self._last_sent is not None and now - self._last_sent < self._min_interval:
+            return
+        pending, self._pending = self._pending, []
+        self._last_sent = now
+        sample = ", ".join(f"{mb} {mid}" for mb, mid in pending[:10])
+        details = {
+            "failed dispatches": len(pending),
+            "messages": sample + (" …" if len(pending) > 10 else ""),
+            "where to look": "poller logs: `process_lead: failed message_id=…`",
+        }
+        try:
+            self._alert("Autoreplies poller: lead dispatch failed (reply likely not sent)", details)
+        except Exception:
+            logger.exception("FailureAlerter: alert failed")
 
 
 # ── run_forever ───────────────────────────────────────────────────────────────
@@ -222,6 +275,7 @@ def run_forever(
     dispatch: DispatchFn,
     config: PollerConfig,
     shutdown: ShutdownFlag | None = None,
+    alerter: FailureAlerter | None = None,
 ) -> None:
     """Loop forever: discover primary mailboxes, poll each, sleep, repeat.
 
@@ -271,6 +325,8 @@ def run_forever(
                     stats.succeeded,
                     stats.failed,
                 )
+                if alerter is not None and stats.failed_message_ids:
+                    alerter.record(mailbox, stats.failed_message_ids)
             except Exception:
                 logger.exception("poll_once: unhandled error for mailbox=%s", mailbox)
 
@@ -279,6 +335,9 @@ def run_forever(
 
             if config.mailbox_inter_sleep_seconds > 0:
                 shutdown.wait(config.mailbox_inter_sleep_seconds)
+
+        if alerter is not None:
+            alerter.flush_if_due()
 
         if (
             config._testing_max_iterations is not None
@@ -369,12 +428,19 @@ def main() -> int:
         bootstrap_lookback_seconds=settings.poller_bootstrap_lookback_seconds,
     )
 
+    from autoreplies.workers.writeback_jobs import send_ops_alert
+
+    def alert(summary: str, details: dict[str, Any]) -> None:
+        log.error("%s: %s", summary, details)
+        send_ops_alert(summary, details)
+
     run_forever(
         airtable=airtable,
         gmail_factory=gmail_factory,
         state=state,
         dispatch=dispatch,
         config=cfg,
+        alerter=FailureAlerter(alert),
     )
     return 0
 

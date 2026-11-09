@@ -15,6 +15,30 @@ from autoreplies.utils.identifiers import normalize_email, normalize_phone_e164
 logger = logging.getLogger(__name__)
 
 
+class SupabaseHTTPError(RuntimeError):
+    """PostgREST returned a non-2xx response. Subclasses RuntimeError so existing
+    callers that catch RuntimeError keep working."""
+
+    def __init__(self, message: str, *, status_code: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
+def is_transient_supabase_error(exc: BaseException) -> bool:
+    """True when a retry could succeed: network/timeout errors, 5xx (incl.
+    Cloudflare 52x and Postgres statement timeouts surfaced as 500), 408, 429.
+
+    A client-side timeout often means the write landed anyway (Postgres kept
+    going after httpx gave up), so retries must stay idempotent — they are:
+    upsert merges on the primary key, PATCH targets the primary key.
+    """
+    if isinstance(exc, httpx.TransportError):
+        return True
+    if isinstance(exc, SupabaseHTTPError):
+        return exc.status_code >= 500 or exc.status_code in (408, 429)
+    return False
+
+
 class SupabaseClient:
     def __init__(self, url: str, service_role_key: str, *, write_rfc822: bool = False) -> None:
         self.url = url.rstrip("/")
@@ -47,6 +71,7 @@ class SupabaseClient:
         date_created: str | None = None,
         sales: bool = False,  # rental-platform leads are always sales=False
         rfc822_message_id: str | None = None,  # raw Message-ID header of the lead email
+        created_at: str | None = None,  # ISO-8601; only set by backfills (DB default otherwise)
         **extra: Any,  # forward-compat for fields added later
     ) -> dict[str, Any]:
         """Upsert a row in the `inquiries` table.
@@ -74,6 +99,7 @@ class SupabaseClient:
             ("date_created", date_created),
             # Omitted entirely when the flag is off (columns may not exist yet).
             ("rfc822_message_id", rfc822_message_id if self._write_rfc822 else None),
+            ("created_at", created_at),
         ]:
             if val is not None:
                 payload[key] = val
@@ -85,7 +111,10 @@ class SupabaseClient:
             timeout=30.0,
         )
         if not resp.is_success:
-            raise RuntimeError(f"Supabase upsert failed {resp.status_code}: {resp.text[:500]}")
+            raise SupabaseHTTPError(
+                f"Supabase upsert failed {resp.status_code}: {resp.text[:500]}",
+                status_code=resp.status_code,
+            )
         body = resp.json()
         return body[0] if isinstance(body, list) else body
 
@@ -178,8 +207,9 @@ class SupabaseClient:
             timeout=30.0,
         )
         if not resp.is_success:
-            raise RuntimeError(
-                f"Supabase reply update failed {resp.status_code}: {resp.text[:500]}"
+            raise SupabaseHTTPError(
+                f"Supabase reply update failed {resp.status_code}: {resp.text[:500]}",
+                status_code=resp.status_code,
             )
         body = resp.json()
         rows = body if isinstance(body, list) else [body]

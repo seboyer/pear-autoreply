@@ -8,14 +8,19 @@ without this module needing to know about them.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal, Protocol
 
 from autoreplies.config import get_settings
 from autoreplies.parsers.base import ParsedLead
+from autoreplies.services.supabase import is_transient_supabase_error
 from autoreplies.utils.humanization import compute_send_at
 from autoreplies.workers.send_job import send_reply_job
+from autoreplies.workers.writeback_jobs import enqueue_writeback, post_lead_job, upsert_inquiry_job
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -169,11 +174,16 @@ class LiveSend:
 
 
 class LiveSlack:
-    """Production Slack: posts Block Kit lead notifications."""
+    """Production Slack: posts Block Kit lead notifications.
 
-    def __init__(self, client: Any) -> None:
-        """client: a services.slack.SlackClient instance."""
+    With a queue, a failed lead post is handed to a retrying RQ job instead of
+    raising, so a Slack blip never costs the agent their notification.
+    """
+
+    def __init__(self, client: Any, queue: Any = None) -> None:
+        """client: a services.slack.SlackClient instance. queue: rq.Queue for retries."""
         self._client = client
+        self._queue = queue
 
     def post_lead(
         self,
@@ -190,33 +200,74 @@ class LiveSlack:
         airtable_record_id: str,
         gmail_thread_url: str,
     ) -> str:
-        return self._client.post_lead(
-            source=source,
-            agent_name=agent_name,
-            agent_email=agent_email,
-            prospect_name=prospect_name,
-            prospect_email=prospect_email,
-            prospect_phone=prospect_phone,
-            apartment_address=apartment_address,
-            apartment_match_confidence=apartment_match_confidence,
-            message_excerpt=message_excerpt,
-            airtable_record_id=airtable_record_id,
-            gmail_thread_url=gmail_thread_url,
-        )
+        fields: dict[str, Any] = {
+            "source": source,
+            "agent_name": agent_name,
+            "agent_email": agent_email,
+            "prospect_name": prospect_name,
+            "prospect_email": prospect_email,
+            "prospect_phone": prospect_phone,
+            "apartment_address": apartment_address,
+            "apartment_match_confidence": apartment_match_confidence,
+            "message_excerpt": message_excerpt,
+            "airtable_record_id": airtable_record_id,
+            "gmail_thread_url": gmail_thread_url,
+        }
+        try:
+            ts: str = self._client.post_lead(**fields)
+            return ts
+        except Exception as exc:
+            if self._queue is None:
+                raise
+            enqueue_writeback(
+                post_lead_job,
+                queue=self._queue,
+                description=f"post_lead_job inquiry={airtable_record_id}",
+                fields=fields,
+            )
+            logger.warning(
+                "LiveSlack.post_lead: failed; deferred to retry job inquiry=%s error=%r",
+                airtable_record_id,
+                exc,
+            )
+            return ""
 
     def post_alert(self, *, summary: str, details: dict[str, Any]) -> str:
         return self._client.post_alert(summary=summary, details=details)
 
 
 class LiveSupabase:
-    """Production Supabase: upserts inquiry rows."""
+    """Production Supabase: upserts inquiry rows.
 
-    def __init__(self, client: Any) -> None:
-        """client: a services.supabase.SupabaseClient instance."""
+    With a queue, a transient failure (timeout, 5xx) is handed to a retrying
+    RQ job instead of raising. Permanent errors (4xx) still raise.
+    """
+
+    def __init__(self, client: Any, queue: Any = None) -> None:
+        """client: a services.supabase.SupabaseClient instance. queue: rq.Queue for retries."""
         self._client = client
+        self._queue = queue
 
     def upsert_inquiry(self, *, id: str, **fields: Any) -> dict[str, Any]:
-        return self._client.upsert_inquiry(id=id, **fields)
+        try:
+            row: dict[str, Any] = self._client.upsert_inquiry(id=id, **fields)
+            return row
+        except Exception as exc:
+            if self._queue is None or not is_transient_supabase_error(exc):
+                raise
+            enqueue_writeback(
+                upsert_inquiry_job,
+                queue=self._queue,
+                description=f"upsert_inquiry_job inquiry={id}",
+                fields={"id": id, **fields},
+            )
+            logger.warning(
+                "LiveSupabase.upsert_inquiry: transient failure; deferred to retry job "
+                "inquiry=%s error=%r",
+                id,
+                exc,
+            )
+            return {}
 
 
 def build_production_strategies(
@@ -225,6 +276,6 @@ def build_production_strategies(
     """Construct the production strategy bundle with real client instances."""
     return PipelineStrategies(
         send=LiveSend(queue=queue),
-        slack=LiveSlack(client=slack_client),
-        supabase=LiveSupabase(client=supabase_client),
+        slack=LiveSlack(client=slack_client, queue=queue),
+        supabase=LiveSupabase(client=supabase_client, queue=queue),
     )

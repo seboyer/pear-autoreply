@@ -37,8 +37,8 @@ import re
 from email.message import Message
 
 from .base import (
+    NotALeadError,
     ParsedLead,
-    ParserError,
     extract_reply_to_email,
     get_body_part,
     split_name,
@@ -135,7 +135,7 @@ def parse(message: Message) -> ParsedLead:
     # deduped at the parser layer — that's a known future improvement handled
     # at the dispatch layer.
     if not (canonical or is_prospect_message):
-        raise ParserError(f"StreetEasy email is not a prospect lead (subject={subject!r})")
+        raise NotALeadError(f"StreetEasy email is not a prospect lead (subject={subject!r})")
 
     # ── Name extraction ───────────────────────────────────────────────────────
     if canonical:

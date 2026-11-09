@@ -21,6 +21,15 @@ class ParserError(Exception):
     """Raised when no parser matches or required fields are missing."""
 
 
+class NotALeadError(ParserError):
+    """The email came from a lead platform but is not a prospect inquiry.
+
+    StreetEasy sends marketing, listing-live confirmations, market reports and
+    login codes from the same addresses as leads. These are expected traffic,
+    not failures: process_lead skips them without side effects.
+    """
+
+
 @dataclass(frozen=True)
 class ParsedLead:
     source: Source
